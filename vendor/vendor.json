@@ -67,7 +67,13 @@
 			"path": "github.com/stretchr/objx",
 			"revision": "9e1dfc121bca96d392da5d00591953bdb54ab306",
 			"revisionTime": "2018-06-26T19:55:58Z"
+		},
+		{
+			"checksumSHA1": "j1zFh/bE00tc65eZftuR67UwpNs=",
+			"path": "gopkg.in/goracle.v2",
+			"revision": "6d6011b151714345178020a47dd1b46626bdb51d",
+			"revisionTime": "2018-07-27T07:25:46Z"
 		}
 	],
-	"rootPath": "github.com/newrelic/nri-oracledb/oracledb"
+	"rootPath": "github.com/newrelic/nri-oracledb"
 }

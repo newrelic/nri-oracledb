@@ -1,14 +1,23 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
+
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/data/event"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
+	_ "gopkg.in/goracle.v2"
 )
 
 type argumentList struct {
 	sdkArgs.DefaultArgumentList
+	SID      string `default:"" help:"The Oracle service name"`
+	Username string `default:"" help:"The OracleDB connection user name"`
+	Password string `default:"" help:"The OracleDB connection password"`
+	Hostname string `default:"127.0.0.1" help:"The OracleDB connection host name"`
+	Port     string `default:"1521" help:"The OracleDB connection port"`
 }
 
 const (
@@ -24,6 +33,11 @@ func main() {
 	// Create Integration
 	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
 	panicOnErr(err)
+
+	db, err := sql.Open("goracle", "SYS:password@10.77.17.158/orcl")
+	if err != nil {
+		fmt.Println("Failed to create db object")
+	}
 
 	// Create Entity, entities name must be unique
 	e1, err := i.Entity("instance-1", "custom")
