@@ -47,7 +47,7 @@ func getOrCreateInstanceMetricSet(instID string, m map[string]*metric.Set, i *in
 	}
 
 	e, _ := i.Entity(instID, "instance") //can't error if both name and namespace are defined
-	newSet := e.NewMetricSet("OracleDatabaseSample", metric.Attr("entityName", "instance:instanceID"+instID), metric.Attr("displayName", "instanceID"+instID))
+	newSet := e.NewMetricSet("OracleDatabaseSample", metric.Attr("entityName", "instance:instance"+instID), metric.Attr("displayName", "instance"+instID))
 
 	m[instID] = newSet
 
