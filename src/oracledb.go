@@ -12,9 +12,11 @@ import (
 
 type argumentList struct {
 	sdkArgs.DefaultArgumentList
-	SID             string `default:"" help:"The Oracle service name"`
+	ServiceName     string `default:"" help:"The Oracle service name"`
 	Username        string `default:"" help:"The OracleDB connection user name"`
 	Password        string `default:"" help:"The OracleDB connection password"`
+	IsSysDBA        bool   `default:"false" help:"Is the user a SysDBA"`
+	IsSysOper       bool   `default:"false" help:"Is the user a SysOper"`
 	Hostname        string `default:"127.0.0.1" help:"The OracleDB connection host name"`
 	Port            string `default:"1521" help:"The OracleDB connection port"`
 	ExtendedMetrics bool   `default:"false" help:"Enable extended metrics"`
