@@ -12,10 +12,6 @@ protocol_version: 1
 os: linux
 
 commands:
-  all_data:
-    command:
-      - ./bin/nr-oracledb
-    interval: 15
   metrics:
     command:
       - ./bin/nr-oracledb
@@ -25,10 +21,5 @@ commands:
     command:
       - ./bin/nr-oracledb
       - --inventory
-    prefix: config/nr-oracledb
-    interval: 15
-  events:
-    command:
-    - ./bin/nr-oracledb
-    - --events
+    prefix: config/oracledb
     interval: 15

@@ -9,5 +9,21 @@
 integration_name: com.newrelic.oracledb
 
 instances:
-  - name: oracledb
-    command: all_data
+  - name: oracledb-inventory
+    command: inventory
+    arguments: 
+        extended_metrics: true
+        username: sys
+        password: password
+        hostname: ora18-db-1.bluemedora.localnet
+        is_sys_dba: true
+        service_name: orcl.bluemedora.localnet
+  - name: oracledb-metrics
+    command: metrics
+    arguments: 
+        extended_metrics: true
+        username: sys
+        password: password
+        hostname: ora18-db-1.bluemedora.localnet
+        is_sys_dba: true
+        service_name: orcl.bluemedora.localnet
