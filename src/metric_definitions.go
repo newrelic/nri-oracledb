@@ -45,16 +45,32 @@ func (mg *oracleMetricGroup) Collect(db *sql.DB, wg *sync.WaitGroup, metricChan 
 
 }
 
+// This function is necessary because of how sql-mock auto-converts
+// types for the sql driver. More information about the issue
+// is here https://github.com/DATA-DOG/go-sqlmock/issues/133
+func getInstanceIDString(originalID interface{}) string {
+	switch id := originalID.(type) {
+	case goracle.Number:
+		return id.String()
+	case int:
+		return strconv.Itoa(id)
+	case string:
+		return id
+	default:
+		return ""
+	}
+}
+
 var oracleTablespaceMetrics = oracleMetricGroup{
 	sqlQuery: `
 		SELECT 
-			tablespace_name, 
+			TABLESPACE_NAME, 
 			SUM(bytes) AS "USED", 
 			MAX( CASE WHEN status = 'OFFLINE' THEN 1 ELSE 0 END) AS "OFFLINE", 
 			SUM(maxbytes) AS "SIZE", 
 			SUM( bytes ) / SUM( maxbytes) * 100 AS "USED_PERCENT" 
 		FROM dba_data_files 
-		GROUP BY tablespace_name`,
+		GROUP BY TABLESPACE_NAME`,
 
 	metrics: []*oracleMetric{
 		{
@@ -84,9 +100,21 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 	},
 
 	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) error {
+		columnNames, err := rows.Columns()
+		if err != nil {
+			return fmt.Errorf("failed to retrieve columns from rows")
+		}
 		for rows.Next() {
+			columns := make([]interface{}, len(columnNames))
+			pointers := make([]interface{}, len(columnNames))
+			for i := 0; i < len(columnNames); i++ {
+				pointers[i] = &columns[i]
+			}
 			rowMap := make(map[string]interface{})
-			err := rows.MapScan(rowMap)
+			err := rows.Scan(pointers...)
+			for i, column := range columnNames {
+				rowMap[column] = columns[i]
+			}
 			if err != nil {
 				return err
 			}
@@ -98,7 +126,7 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 					value:      rowMap[metric.identifier],
 				}
 
-				metadata := map[string]string{"type": "metric", "tablespace": rowMap["TABLESPACE_NAME"].(string)}
+				metadata := map[string]string{"tablespace": rowMap["TABLESPACE_NAME"].(string)}
 
 				metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
 			}
@@ -161,9 +189,24 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 	},
 
 	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) error {
+		columnNames, err := rows.Columns()
+		if err != nil {
+			return fmt.Errorf("failed to get column names from rows")
+		}
 		for rows.Next() {
+			columns := make([]interface{}, len(columnNames))
+			pointers := make([]interface{}, len(columnNames))
+			for i := 0; i < len(columnNames); i++ {
+				pointers[i] = &columns[i]
+			}
+			err := rows.Scan(pointers...)
+			if err != nil {
+				return fmt.Errorf("failed to parse row: %s", err)
+			}
 			rowMap := make(map[string]interface{})
-			err := rows.MapScan(rowMap)
+			for i, column := range columnNames {
+				rowMap[column] = columns[i]
+			}
 			if err != nil {
 				return err
 			}
@@ -175,7 +218,9 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 					value:      rowMap[metric.identifier],
 				}
 
-				metadata := map[string]string{"instanceID": rowMap["INST_ID"].(goracle.Number).String(), "type": "metric"}
+				idString := getInstanceIDString(rowMap["INST_ID"])
+
+				metadata := map[string]string{"instanceID": idString}
 
 				metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
 			}
@@ -235,7 +280,7 @@ var oraclePgaMetrics = oracleMetricGroup{
 						metricType: metric.metricType,
 					}
 
-					metadata := map[string]string{"instanceID": strconv.Itoa(tempPgaRow.instID), "type": "metric"}
+					metadata := map[string]string{"instanceID": strconv.Itoa(tempPgaRow.instID)}
 
 					metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
 
@@ -1070,7 +1115,9 @@ var oracleSysMetrics = oracleMetricGroup{
 			value      float64
 		}
 
+		fmt.Println("pre-rows")
 		for rows.Next() {
+			fmt.Println("Next row")
 			err := rows.Scan(&sysScanner.instID, &sysScanner.metricName, &sysScanner.value)
 			if err != nil {
 				return err
@@ -1085,9 +1132,10 @@ var oracleSysMetrics = oracleMetricGroup{
 							metricType: metric.metricType,
 						}
 
-						metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID), "type": "metric"}
+						metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID)}
 
 						metricsChan <- newrelicMetricSender{metadata: metadata, metric: newMetric}
+						break
 					}
 				}
 			}
