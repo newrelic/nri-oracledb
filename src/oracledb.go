@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/jmoiron/sqlx"
@@ -61,17 +60,17 @@ func main() {
 	var populaterWg sync.WaitGroup
 	if args.All() || args.Metrics {
 
-		var wg sync.WaitGroup
+		var collectorWg sync.WaitGroup
 		metricChan := make(chan newRelicMetricSender)
 
-		wg.Add(4)
-		go oracleReadWriteMetrics.Collect(db, &wg, metricChan)
-		go oraclePgaMetrics.Collect(db, &wg, metricChan)
-		go oracleSysMetrics.Collect(db, &wg, metricChan)
-		go oracleTablespaceMetrics.Collect(db, &wg, metricChan)
+		collectorWg.Add(4)
+		go oracleReadWriteMetrics.Collect(db, &collectorWg, metricChan)
+		go oraclePgaMetrics.Collect(db, &collectorWg, metricChan)
+		go oracleSysMetrics.Collect(db, &collectorWg, metricChan)
+		go oracleTablespaceMetrics.Collect(db, &collectorWg, metricChan)
 
 		go func() {
-			wg.Wait()
+			collectorWg.Wait()
 			close(metricChan)
 		}()
 
