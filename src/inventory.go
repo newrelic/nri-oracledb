@@ -1,16 +1,16 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"strconv"
 	"sync"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 )
 
-func populateInventory(db *sqlx.DB, wg *sync.WaitGroup, i *integration.Integration) {
-	wg.Done()
+func populateInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration) {
+	defer wg.Done()
 
 	const sqlQuery = `
 		SELECT
@@ -25,7 +25,7 @@ func populateInventory(db *sqlx.DB, wg *sync.WaitGroup, i *integration.Integrati
 			'version',
 			VERSION,
 			'OracleDB version'
-		FROM gv$instance `
+		FROM gv$instance`
 
 	type inventoryRow struct {
 		instID      int
@@ -34,7 +34,7 @@ func populateInventory(db *sqlx.DB, wg *sync.WaitGroup, i *integration.Integrati
 		description string
 	}
 
-	rows, err := db.Queryx(sqlQuery)
+	rows, err := db.Query(sqlQuery)
 	if err != nil {
 		fmt.Printf("failed to collect inventory: %s", err)
 	}

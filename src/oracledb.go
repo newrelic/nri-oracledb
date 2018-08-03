@@ -1,10 +1,10 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"sync"
 
-	"github.com/jmoiron/sqlx"
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
@@ -51,7 +51,8 @@ func main() {
 	}
 
 	connString := cp.StringWithPassword()
-	db, err := sqlx.Open("goracle", connString)
+	db, err := sql.Open("goracle", connString)
+	defer db.Close()
 	panicOnErr(err)
 
 	err = db.Ping()

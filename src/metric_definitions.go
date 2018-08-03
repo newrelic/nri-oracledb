@@ -1,10 +1,11 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
 	"strconv"
 	"sync"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	goracle "gopkg.in/goracle.v2"
 )
@@ -30,13 +31,13 @@ type newrelicMetricSender struct {
 type oracleMetricGroup struct {
 	sqlQuery         string
 	metrics          []*oracleMetric
-	metricsGenerator func(*sqlx.Rows, []*oracleMetric, *sync.WaitGroup, chan<- newrelicMetricSender) error
+	metricsGenerator func(*sql.Rows, []*oracleMetric, *sync.WaitGroup, chan<- newrelicMetricSender) error
 }
 
-func (mg *oracleMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
+func (mg *oracleMetricGroup) Collect(db *sql.DB, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
 	defer wg.Done()
 
-	rows, err := db.Queryx(mg.sqlQuery)
+	rows, err := db.Query(mg.sqlQuery)
 	panicOnErr(err)
 
 	err = mg.metricsGenerator(rows, mg.metrics, wg, metricChan)
@@ -82,7 +83,7 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sqlx.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) error {
 		for rows.Next() {
 			rowMap := make(map[string]interface{})
 			err := rows.MapScan(rowMap)
@@ -159,7 +160,7 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sqlx.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) error {
 		for rows.Next() {
 			rowMap := make(map[string]interface{})
 			err := rows.MapScan(rowMap)
@@ -212,7 +213,7 @@ var oraclePgaMetrics = oracleMetricGroup{
 			identifier:    "global memory bound",
 		},
 	},
-	metricsGenerator: func(rows *sqlx.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) error {
 
 		type pgaRow struct {
 			instID int
@@ -1060,7 +1061,8 @@ var oracleSysMetrics = oracleMetricGroup{
 			defaultMetric: true,
 		},
 	},
-	metricsGenerator: func(rows *sqlx.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricsChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricsChan chan<- newrelicMetricSender) error {
+		defer close(metricsChan)
 
 		var sysScanner struct {
 			instID     int
