@@ -51,8 +51,7 @@ func main() {
 		MaxSessions: 8,
 	}
 
-	// TODO when new version is released, change String to StringWithPassword
-	connString := strings.Replace(cp.String(), "SECRET", cp.Password, 1)
+	connString := cp.StringWithPassword()
 	db, err := sqlx.Open("goracle", connString)
 	panicOnErr(err)
 

@@ -75,10 +75,10 @@
 			"revisionTime": "2018-06-26T19:55:58Z"
 		},
 		{
-			"checksumSHA1": "j1zFh/bE00tc65eZftuR67UwpNs=",
+			"checksumSHA1": "3x7gsnWrOeJYQLrTdekDDdPHFWk=",
 			"path": "gopkg.in/goracle.v2",
-			"revision": "6d6011b151714345178020a47dd1b46626bdb51d",
-			"revisionTime": "2018-07-27T07:25:46Z"
+			"revision": "d9c552548fcebf9cf3ad2b7db0c449ccdfd051f0",
+			"revisionTime": "2018-08-03T06:09:41Z"
 		},
 		{
 			"path": "https://github.com/go-goracle/goracle",
