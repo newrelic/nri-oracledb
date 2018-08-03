@@ -9,7 +9,7 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/integration"
 )
 
-func inventoryWorker(db *sqlx.DB, wg *sync.WaitGroup, i *integration.Integration) {
+func inventoryPopulater(db *sqlx.DB, wg *sync.WaitGroup, i *integration.Integration) {
 	wg.Done()
 
 	const sqlQuery = `

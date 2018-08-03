@@ -59,7 +59,7 @@ func main() {
 	err = db.Ping()
 	panicOnErr(err)
 
-	var workerWg sync.WaitGroup
+	var populaterWg sync.WaitGroup
 	if args.All() || args.Metrics {
 
 		var wg sync.WaitGroup
@@ -76,16 +76,16 @@ func main() {
 			close(metricChan)
 		}()
 
-		workerWg.Add(1)
-		metricsWorker(metricChan, &workerWg, i)
+		populaterWg.Add(1)
+		go metricsPopulater(metricChan, &populaterWg, i)
 	}
 
 	if args.All() || args.Inventory {
-		workerWg.Add(1)
-		inventoryWorker(db, &workerWg, i)
+		populaterWg.Add(1)
+		go inventoryPopulater(db, &populaterWg, i)
 	}
 
-	workerWg.Wait()
+	populaterWg.Wait()
 
 	panicOnErr(i.Publish())
 }
