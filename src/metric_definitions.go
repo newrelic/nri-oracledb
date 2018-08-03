@@ -5,9 +5,8 @@ import (
 	"sync"
 
 	"github.com/jmoiron/sqlx"
-	goracle "gopkg.in/goracle.v2"
-
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
+	goracle "gopkg.in/goracle.v2"
 )
 
 type oracleMetric struct {
