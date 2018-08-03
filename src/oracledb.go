@@ -61,7 +61,7 @@ func main() {
 	if args.All() || args.Metrics {
 
 		var collectorWg sync.WaitGroup
-		metricChan := make(chan newRelicMetricSender)
+		metricChan := make(chan newrelicMetricSender, 10)
 
 		collectorWg.Add(4)
 		go oracleReadWriteMetrics.Collect(db, &collectorWg, metricChan)

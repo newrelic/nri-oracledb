@@ -1,14 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 )
 
-func populateMetrics(metricChan <-chan newRelicMetricSender, wg *sync.WaitGroup, i *integration.Integration) {
+func populateMetrics(metricChan <-chan newrelicMetricSender, wg *sync.WaitGroup, i *integration.Integration) {
 	defer wg.Done()
 
 	tsMetricSets := make(map[string]*metric.Set)

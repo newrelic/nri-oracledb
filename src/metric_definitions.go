@@ -22,7 +22,7 @@ type newrelicMetric struct {
 	value      interface{}
 }
 
-type newRelicMetricSender struct {
+type newrelicMetricSender struct {
 	metric   *newrelicMetric
 	metadata map[string]string
 }
@@ -30,10 +30,10 @@ type newRelicMetricSender struct {
 type oracleMetricGroup struct {
 	sqlQuery         string
 	metrics          []*oracleMetric
-	metricsGenerator func(*sqlx.Rows, []*oracleMetric, *sync.WaitGroup, chan<- newRelicMetricSender) error
+	metricsGenerator func(*sqlx.Rows, []*oracleMetric, *sync.WaitGroup, chan<- newrelicMetricSender) error
 }
 
-func (mg *oracleMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan chan<- newRelicMetricSender) {
+func (mg *oracleMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
 	defer wg.Done()
 
 	rows, err := db.Queryx(mg.sqlQuery)
@@ -82,7 +82,7 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sqlx.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newRelicMetricSender) error {
+	metricsGenerator: func(rows *sqlx.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) error {
 		for rows.Next() {
 			rowMap := make(map[string]interface{})
 			err := rows.MapScan(rowMap)
@@ -99,7 +99,7 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 
 				metadata := map[string]string{"type": "metric", "tablespace": rowMap["TABLESPACE_NAME"].(string)}
 
-				metricChan <- newRelicMetricSender{metric: newMetric, metadata: metadata}
+				metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
 			}
 		}
 
@@ -159,7 +159,7 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sqlx.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newRelicMetricSender) error {
+	metricsGenerator: func(rows *sqlx.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) error {
 		for rows.Next() {
 			rowMap := make(map[string]interface{})
 			err := rows.MapScan(rowMap)
@@ -176,7 +176,7 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 
 				metadata := map[string]string{"instanceID": rowMap["INST_ID"].(goracle.Number).String(), "type": "metric"}
 
-				metricChan <- newRelicMetricSender{metric: newMetric, metadata: metadata}
+				metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
 			}
 		}
 
@@ -212,7 +212,7 @@ var oraclePgaMetrics = oracleMetricGroup{
 			identifier:    "global memory bound",
 		},
 	},
-	metricsGenerator: func(rows *sqlx.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newRelicMetricSender) error {
+	metricsGenerator: func(rows *sqlx.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) error {
 
 		type pgaRow struct {
 			instID int
@@ -236,7 +236,7 @@ var oraclePgaMetrics = oracleMetricGroup{
 
 					metadata := map[string]string{"instanceID": strconv.Itoa(tempPgaRow.instID), "type": "metric"}
 
-					metricChan <- newRelicMetricSender{metric: newMetric, metadata: metadata}
+					metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
 
 				}
 			}
@@ -1060,7 +1060,7 @@ var oracleSysMetrics = oracleMetricGroup{
 			defaultMetric: true,
 		},
 	},
-	metricsGenerator: func(rows *sqlx.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricsChan chan<- newRelicMetricSender) error {
+	metricsGenerator: func(rows *sqlx.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricsChan chan<- newrelicMetricSender) error {
 
 		var sysScanner struct {
 			instID     int
@@ -1085,7 +1085,7 @@ var oracleSysMetrics = oracleMetricGroup{
 
 						metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID), "type": "metric"}
 
-						metricsChan <- newRelicMetricSender{metadata: metadata, metric: newMetric}
+						metricsChan <- newrelicMetricSender{metadata: metadata, metric: newMetric}
 					}
 				}
 			}
