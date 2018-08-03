@@ -13,17 +13,17 @@ instances:
     command: inventory
     arguments: 
         extended_metrics: true
-        username: sys
+        username: username
         password: password
-        hostname: ora18-db-1.bluemedora.localnet
+        hostname: oracle-host
         is_sys_dba: true
-        service_name: orcl.bluemedora.localnet
+        service_name: oracle-service
   - name: oracledb-metrics
     command: metrics
     arguments: 
         extended_metrics: true
-        username: sys
+        username: username 
         password: password
-        hostname: ora18-db-1.bluemedora.localnet
+        hostname: oracle-host
         is_sys_dba: true
-        service_name: orcl.bluemedora.localnet
+        service_name: oracle-service
