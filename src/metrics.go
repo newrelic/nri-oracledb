@@ -8,7 +8,7 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/integration"
 )
 
-func metricsWorker(metricChan <-chan newRelicMetricSender, wg *sync.WaitGroup, i *integration.Integration) {
+func metricsPopulater(metricChan <-chan newRelicMetricSender, wg *sync.WaitGroup, i *integration.Integration) {
 	defer wg.Done()
 
 	tsMetricSets := make(map[string]*metric.Set)
