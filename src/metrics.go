@@ -23,15 +23,13 @@ func metricsPopulater(metricChan <-chan newRelicMetricSender, wg *sync.WaitGroup
 		metric := metricSender.metric
 
 		if tsName, ok := metricSender.metadata["tablespace"]; ok {
-			ms := getOrCreateTablespaceMetricSet(tsName, tsMetricSets, i)
+			ms := getOrCreateMetricSet(tsName, "tablespace", tsMetricSets, i)
 			err := ms.SetMetric(metric.name, metric.value, metric.metricType)
 			if err != nil {
 				fmt.Println(err)
 			}
-		}
-
-		if instanceName, ok := metricSender.metadata["instanceID"]; ok {
-			ms := getOrCreateInstanceMetricSet(instanceName, instanceMetricSets, i)
+		} else if instanceName, ok := metricSender.metadata["instanceID"]; ok {
+			ms := getOrCreateMetricSet(instanceName, "instance", instanceMetricSets, i)
 			err := ms.SetMetric(metric.name, metric.value, metric.metricType)
 			if err != nil {
 				fmt.Println(err)
@@ -40,30 +38,23 @@ func metricsPopulater(metricChan <-chan newRelicMetricSender, wg *sync.WaitGroup
 	}
 }
 
-func getOrCreateInstanceMetricSet(instID string, m map[string]*metric.Set, i *integration.Integration) *metric.Set {
-	set, ok := m[instID]
+func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[string]*metric.Set, i *integration.Integration) *metric.Set {
+	set, ok := m[entityIdentifier]
 	if ok {
 		return set
 	}
 
-	e, _ := i.Entity(instID, "instance") //can't error if both name and namespace are defined
-	newSet := e.NewMetricSet("OracleDatabaseSample", metric.Attr("entityName", "instance:instance"+instID), metric.Attr("displayName", "instance"+instID))
-
-	m[instID] = newSet
-
-	return newSet
-}
-
-func getOrCreateTablespaceMetricSet(tablespaceName string, m map[string]*metric.Set, i *integration.Integration) *metric.Set {
-	set, ok := m[tablespaceName]
-	if ok {
-		return set
+	e, _ := i.Entity(entityIdentifier, entityType) //can't error if both name and namespace are defined
+	var newSet *metric.Set
+	if entityType == "instance" {
+		newSet = e.NewMetricSet("OracleDatabaseSample", metric.Attr("entityName", "instance:instance"+entityIdentifier), metric.Attr("displayName", "instance"+entityIdentifier))
+	} else if entityType == "tablespace" {
+		newSet = e.NewMetricSet("OracleTablespaceSample", metric.Attr("entityName", "tablespace:"+entityIdentifier), metric.Attr("displayName", entityIdentifier))
+	} else {
+		panic("invalid entity type, unreachable code")
 	}
 
-	e, _ := i.Entity(tablespaceName, "tablespace") //can't error if both name and namespace are defined
-	newSet := e.NewMetricSet("OracleTablespaceSample", metric.Attr("entityName", "tablespace:"+tablespaceName), metric.Attr("displayName", tablespaceName))
-
-	m[tablespaceName] = newSet
+	m[entityIdentifier] = newSet
 
 	return newSet
 }
