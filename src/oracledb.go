@@ -75,12 +75,12 @@ func main() {
 		}()
 
 		populaterWg.Add(1)
-		go metricsPopulater(metricChan, &populaterWg, i)
+		go populateMetrics(metricChan, &populaterWg, i)
 	}
 
 	if args.All() || args.Inventory {
 		populaterWg.Add(1)
-		go inventoryPopulater(db, &populaterWg, i)
+		go populateInventory(db, &populaterWg, i)
 	}
 
 	populaterWg.Wait()
