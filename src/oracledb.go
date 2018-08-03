@@ -39,7 +39,7 @@ func main() {
 	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
 	panicOnErr(err)
 
-	logger = log.NewStdErr(args.Verbose)
+	logger = i.Logger()
 
 	sid := fmt.Sprintf("%s:%s/%s", args.Hostname, args.Port, args.ServiceName)
 	cp := goracle.ConnectionParams{
