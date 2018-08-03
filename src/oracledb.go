@@ -1,14 +1,26 @@
 package main
 
 import (
+	"fmt"
+	"sync"
+
+	"github.com/jmoiron/sqlx"
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/data/event"
-	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
+	"github.com/newrelic/infra-integrations-sdk/log"
+	goracle "gopkg.in/goracle.v2"
 )
 
 type argumentList struct {
 	sdkArgs.DefaultArgumentList
+	ServiceName     string `default:"" help:"The Oracle service name"`
+	Username        string `default:"" help:"The OracleDB connection user name"`
+	Password        string `default:"" help:"The OracleDB connection password"`
+	IsSysDBA        bool   `default:"false" help:"Is the user a SysDBA"`
+	IsSysOper       bool   `default:"false" help:"Is the user a SysOper"`
+	Hostname        string `default:"127.0.0.1" help:"The OracleDB connection host name"`
+	Port            string `default:"1521" help:"The OracleDB connection port"`
+	ExtendedMetrics bool   `default:"false" help:"Enable extended metrics"`
 }
 
 const (
@@ -17,7 +29,8 @@ const (
 )
 
 var (
-	args argumentList
+	args   argumentList
+	logger log.Logger
 )
 
 func main() {
@@ -25,43 +38,52 @@ func main() {
 	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
 	panicOnErr(err)
 
-	// Create Entity, entities name must be unique
-	e1, err := i.Entity("instance-1", "custom")
+	logger = i.Logger()
+
+	sid := fmt.Sprintf("%s:%s/%s", args.Hostname, args.Port, args.ServiceName)
+	cp := goracle.ConnectionParams{
+		Username:    args.Username,
+		Password:    args.Password,
+		SID:         sid,
+		IsSysDBA:    args.IsSysDBA,
+		IsSysOper:   args.IsSysOper,
+		MaxSessions: 8,
+	}
+
+	connString := cp.StringWithPassword()
+	db, err := sqlx.Open("goracle", connString)
 	panicOnErr(err)
 
-	// Add Event
-	if args.All() || args.Events {
-		err = e1.AddEvent(event.New("restart", "status"))
-		panicOnErr(err)
-	}
-
-	// Add Inventory item
-	if args.All() || args.Inventory {
-		err = e1.SetInventoryItem("instance", "version", "3.0.1")
-		panicOnErr(err)
-	}
-
-	// Add Metric
-	if args.All() || args.Metrics {
-		m1 := e1.NewMetricSet("CustomSample")
-		err = m1.SetMetric("some-data", 1000, metric.GAUGE)
-		panicOnErr(err)
-	}
-
-	// Create another Entity
-	e2, err := i.Entity("instance-2", "custom")
+	err = db.Ping()
 	panicOnErr(err)
 
-	if args.All() || args.Inventory {
-		err = e2.SetInventoryItem("instance", "version", "3.0.4")
-		panicOnErr(err)
+	var populaterWg sync.WaitGroup
+	if args.All() || args.Metrics {
+
+		var collectorWg sync.WaitGroup
+		metricChan := make(chan newRelicMetricSender)
+
+		collectorWg.Add(4)
+		go oracleReadWriteMetrics.Collect(db, &collectorWg, metricChan)
+		go oraclePgaMetrics.Collect(db, &collectorWg, metricChan)
+		go oracleSysMetrics.Collect(db, &collectorWg, metricChan)
+		go oracleTablespaceMetrics.Collect(db, &collectorWg, metricChan)
+
+		go func() {
+			collectorWg.Wait()
+			close(metricChan)
+		}()
+
+		populaterWg.Add(1)
+		go populateMetrics(metricChan, &populaterWg, i)
 	}
 
-	if args.All() || args.Metrics {
-		m2 := e2.NewMetricSet("CustomSample")
-		err = m2.SetMetric("some-data", 2000, metric.GAUGE)
-		panicOnErr(err)
+	if args.All() || args.Inventory {
+		populaterWg.Add(1)
+		go populateInventory(db, &populaterWg, i)
 	}
+
+	populaterWg.Wait()
 
 	panicOnErr(i.Publish())
 }

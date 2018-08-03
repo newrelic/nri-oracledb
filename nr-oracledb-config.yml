@@ -9,5 +9,21 @@
 integration_name: com.newrelic.oracledb
 
 instances:
-  - name: oracledb
-    command: all_data
+  - name: oracledb-inventory
+    command: inventory
+    arguments: 
+        extended_metrics: true
+        username: username
+        password: password
+        hostname: oracle-host
+        is_sys_dba: true
+        service_name: oracle-service
+  - name: oracledb-metrics
+    command: metrics
+    arguments: 
+        extended_metrics: true
+        username: username 
+        password: password
+        hostname: oracle-host
+        is_sys_dba: true
+        service_name: oracle-service

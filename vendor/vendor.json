@@ -9,6 +9,12 @@
 			"revisionTime": "2018-02-21T22:46:20Z"
 		},
 		{
+			"checksumSHA1": "h6KodYgdK0WIZRzcLhv4mBg0LgY=",
+			"path": "github.com/go-goracle/goracle",
+			"revision": "c9fc2a8d164364dc34753e5ad83f218b88557de9",
+			"revisionTime": "2018-07-28T07:28:30Z"
+		},
+		{
 			"checksumSHA1": "XdtijzwGRz6BNBgsd/J+d/fvN9k=",
 			"path": "github.com/newrelic/infra-integrations-sdk/args",
 			"revision": "05f41fe052b3dc8861a75b3bd8b4cef90dcb5dc4",
@@ -67,7 +73,17 @@
 			"path": "github.com/stretchr/objx",
 			"revision": "9e1dfc121bca96d392da5d00591953bdb54ab306",
 			"revisionTime": "2018-06-26T19:55:58Z"
+		},
+		{
+			"checksumSHA1": "3x7gsnWrOeJYQLrTdekDDdPHFWk=",
+			"path": "gopkg.in/goracle.v2",
+			"revision": "d9c552548fcebf9cf3ad2b7db0c449ccdfd051f0",
+			"revisionTime": "2018-08-03T06:09:41Z"
+		},
+		{
+			"path": "https://github.com/go-goracle/goracle",
+			"revision": ""
 		}
 	],
-	"rootPath": "github.com/newrelic/nri-oracledb/oracledb"
+	"rootPath": "github.com/newrelic/nri-oracledb"
 }
