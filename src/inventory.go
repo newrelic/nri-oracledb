@@ -12,7 +12,7 @@ import (
 func inventoryWorker(db *sqlx.DB, wg *sync.WaitGroup, i *integration.Integration) {
 	wg.Done()
 
-	sqlQuery := `
+	const sqlQuery = `
 		SELECT
 			INST_ID,
 			NAME,
