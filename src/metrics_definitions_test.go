@@ -32,31 +32,15 @@ func TestOracleTablespaceMetrics(t *testing.T) {
 		close(metricChan)
 	}()
 	var generatedMetrics []newrelicMetricSender
-	for i := 0; i < 4; i++ {
-		generatedMetrics = append(generatedMetrics, <-metricChan)
+	for {
+		newMetric, ok := <-metricChan
+		if !ok {
+			break
+		}
+		generatedMetrics = append(generatedMetrics, newMetric)
 	}
 
 	expectedMetrics := []newrelicMetricSender{
-		{
-			metric: &newrelicMetric{
-				name:       "tablespace.spaceConsumedInBytes",
-				value:      int64(1234),
-				metricType: metric.GAUGE,
-			},
-			metadata: map[string]string{
-				"tablespace": "testtablespace",
-			},
-		},
-		{
-			metric: &newrelicMetric{
-				name:       "tablespace.spaceReservedInBytes",
-				value:      int64(4321),
-				metricType: metric.GAUGE,
-			},
-			metadata: map[string]string{
-				"tablespace": "testtablespace",
-			},
-		},
 		{
 			metric: &newrelicMetric{
 				name:       "tablespace.spaceUsedPercentage",
@@ -187,7 +171,7 @@ func TestOraclePgaMetrics(t *testing.T) {
 
 	mock.ExpectQuery(".*").WillReturnRows(
 		sqlmock.NewRows([]string{"INST_ID", "NAME", "VALUE"}).
-			AddRow("1", "total PGA inuse", 1234.0),
+			AddRow("1", "global memory bound", 1234.0),
 	)
 
 	var wg sync.WaitGroup
@@ -201,14 +185,18 @@ func TestOraclePgaMetrics(t *testing.T) {
 	}()
 
 	var generatedMetrics []newrelicMetricSender
-	for i := 0; i < 1; i++ {
-		generatedMetrics = append(generatedMetrics, <-metricChan)
+	for {
+		newMetric, ok := <-metricChan
+		if !ok {
+			break
+		}
+		generatedMetrics = append(generatedMetrics, newMetric)
 	}
 
 	expectedMetrics := []newrelicMetricSender{
 		{
 			metric: &newrelicMetric{
-				name:       "memory.pgaInUse",
+				name:       "memory.pgaMaxSize",
 				value:      1234.0,
 				metricType: metric.GAUGE,
 			},
