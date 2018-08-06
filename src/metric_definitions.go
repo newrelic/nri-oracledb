@@ -10,6 +10,8 @@ import (
 	goracle "gopkg.in/goracle.v2"
 )
 
+// oracleMetric is a storage struct for the information needed to parse
+// a metric from a query and create a newrelicMetric
 type oracleMetric struct {
 	name          string
 	identifier    string
@@ -17,23 +19,34 @@ type oracleMetric struct {
 	defaultMetric bool
 }
 
+// newrelicMetric is a storage struct for all the information needed
+// to insert a metric into a metric set
 type newrelicMetric struct {
 	name       string
 	metricType metric.SourceType
 	value      interface{}
 }
 
+// newrelicMetricSender is a wrapper struct meant to send a metric through
+// a channel along with the metadata needed to insert it into the correct
+// metric set
 type newrelicMetricSender struct {
 	metric   *newrelicMetric
 	metadata map[string]string
 }
 
+// oracleMetricGroup is a struct that contains all the information needed
+// to collect the list of metrics contained in it: the db query to retrieve
+// the metrics, the list of metrics to collect from that query, and a function
+// to parse the metrics into structs to send down a channel
 type oracleMetricGroup struct {
 	sqlQuery         string
 	metrics          []*oracleMetric
 	metricsGenerator func(*sql.Rows, []*oracleMetric, *sync.WaitGroup, chan<- newrelicMetricSender) error
 }
 
+// Collect is a method on oracleMetricGroups which collects the metrics defined
+// by the metric group and sends them down the channel passed to it
 func (mg *oracleMetricGroup) Collect(db *sql.DB, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
 	defer wg.Done()
 
@@ -106,6 +119,7 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 			return fmt.Errorf("failed to retrieve columns from rows")
 		}
 		for rows.Next() {
+			// Make an array of columns and an array of pointers to each element of the array
 			columns := make([]interface{}, len(columnNames))
 			pointers := make([]interface{}, len(columnNames))
 			for i := 0; i < len(columnNames); i++ {
@@ -120,6 +134,7 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 				return err
 			}
 
+			// Create each metric in the list of metrics we want to collect
 			for _, metric := range metrics {
 				newMetric := &newrelicMetric{
 					name:       metric.name,
@@ -195,16 +210,22 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 		if err != nil {
 			return fmt.Errorf("failed to get column names from rows")
 		}
+
 		for rows.Next() {
+			// Create an array of columns and an array of pointers to the elements of the columns
 			columns := make([]interface{}, len(columnNames))
 			pointers := make([]interface{}, len(columnNames))
 			for i := 0; i < len(columnNames); i++ {
 				pointers[i] = &columns[i]
 			}
+
+			// Scan the row into the array of columns
 			err := rows.Scan(pointers...)
 			if err != nil {
 				return fmt.Errorf("failed to parse row: %s", err)
 			}
+
+			// Put the values into a map indexed by column name
 			rowMap := make(map[string]interface{})
 			for i, column := range columnNames {
 				rowMap[column] = columns[i]
@@ -213,6 +234,7 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 				return err
 			}
 
+			// Create each new metric
 			for _, metric := range metrics {
 				newMetric := &newrelicMetric{
 					name:       metric.name,
@@ -268,12 +290,15 @@ var oraclePgaMetrics = oracleMetricGroup{
 			value  float64
 		}
 		for rows.Next() {
+
+			// Scan the row into a struct
 			var tempPgaRow pgaRow
 			err := rows.Scan(&tempPgaRow.instID, &tempPgaRow.name, &tempPgaRow.value)
 			if err != nil {
 				return err
 			}
 
+			// Match the metric to one of the metrics we want to collect
 			for _, metric := range metrics {
 				if tempPgaRow.name == metric.identifier {
 					newMetric := &newrelicMetric{
@@ -1117,11 +1142,14 @@ var oracleSysMetrics = oracleMetricGroup{
 		}
 
 		for rows.Next() {
+
+			// Scan the row into a struct
 			err := rows.Scan(&sysScanner.instID, &sysScanner.metricName, &sysScanner.value)
 			if err != nil {
 				return err
 			}
 
+			// Match the metric to one of the metrics we want to collect
 			for _, metric := range metrics {
 				if metric.defaultMetric || args.ExtendedMetrics {
 					if sysScanner.metricName == metric.identifier {
@@ -1133,6 +1161,7 @@ var oracleSysMetrics = oracleMetricGroup{
 
 						metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID)}
 
+						// Send the metric down the channel
 						metricsChan <- newrelicMetricSender{metadata: metadata, metric: newMetric}
 						break
 					}
