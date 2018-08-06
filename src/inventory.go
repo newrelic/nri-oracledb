@@ -40,15 +40,17 @@ func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration
 	}
 
 	for rows.Next() {
-		var tempRow inventoryRow
-		rows.Scan(&tempRow.instID, &tempRow.name, &tempRow.value, &tempRow.description)
 
-		e, err := i.Entity(strconv.Itoa(tempRow.instID), "instance")
+		// Scan the row into a struct
+		var inventoryResultRow inventoryRow
+		rows.Scan(&inventoryResultRow.instID, &inventoryResultRow.name, &inventoryResultRow.value, &inventoryResultRow.description)
+
+		e, err := i.Entity(strconv.Itoa(inventoryResultRow.instID), "instance")
 		if err != nil {
-			fmt.Printf("failed to get instance entity %d", tempRow.instID)
+			logger.Errorf("failed to get instance entity %d", inventoryResultRow.instID)
 		}
-		e.SetInventoryItem(tempRow.name, "value", tempRow.value)
-		e.SetInventoryItem(tempRow.name, "description", tempRow.description)
+		e.SetInventoryItem(inventoryResultRow.name, "value", inventoryResultRow.value)
+		e.SetInventoryItem(inventoryResultRow.name, "description", inventoryResultRow.description)
 
 	}
 
