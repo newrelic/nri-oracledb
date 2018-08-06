@@ -211,7 +211,7 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 		{
 			name:          "disk.writeTime",
 			identifier:    "WriteTime",
-			metricType:    metric.GAUGE,
+			metricType:    metric.RATE,
 			defaultMetric: true,
 		},
 	},
