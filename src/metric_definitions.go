@@ -100,6 +100,7 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 	},
 
 	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) error {
+
 		columnNames, err := rows.Columns()
 		if err != nil {
 			return fmt.Errorf("failed to retrieve columns from rows")
@@ -189,6 +190,7 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 	},
 
 	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) error {
+
 		columnNames, err := rows.Columns()
 		if err != nil {
 			return fmt.Errorf("failed to get column names from rows")
@@ -1107,7 +1109,6 @@ var oracleSysMetrics = oracleMetricGroup{
 		},
 	},
 	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricsChan chan<- newrelicMetricSender) error {
-		defer close(metricsChan)
 
 		var sysScanner struct {
 			instID     int
@@ -1115,9 +1116,7 @@ var oracleSysMetrics = oracleMetricGroup{
 			value      float64
 		}
 
-		fmt.Println("pre-rows")
 		for rows.Next() {
-			fmt.Println("Next row")
 			err := rows.Scan(&sysScanner.instID, &sysScanner.metricName, &sysScanner.value)
 			if err != nil {
 				return err
