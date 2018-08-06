@@ -51,11 +51,16 @@ func (mg *oracleMetricGroup) Collect(db *sql.DB, wg *sync.WaitGroup, metricChan 
 	defer wg.Done()
 
 	rows, err := db.Query(mg.sqlQuery)
-	panicOnErr(err)
+	if err != nil {
+		logger.Errorf("Failed to execute query %s: %s", mg.sqlQuery, err)
+		panic(err)
+	}
 
 	err = mg.metricsGenerator(rows, mg.metrics, wg, metricChan)
-	panicOnErr(err)
-
+	if err != nil {
+		logger.Errorf("Failed to generate metrics from db response for query %s: %s", mg.sqlQuery, err)
+		panic(err)
+	}
 }
 
 // This function is necessary because of how sql-mock auto-converts
