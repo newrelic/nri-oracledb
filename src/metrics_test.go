@@ -1,13 +1,62 @@
 package main
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/persist"
 )
+
+func TestCollectMetrics(t *testing.T) {
+	fmt.Println("Creating integration")
+	i, err := integration.New("oracletest", "0.0.1")
+	if err != nil {
+		t.Error(err)
+	}
+
+	fmt.Println("Creating mock db")
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Error(err)
+	}
+
+	mock.MatchExpectationsInOrder(false)
+
+	columns := []string{"INST_ID", "PhysicalReads", "PhysicalWrites", "PhysicalBlockReads", "PhysicalBlockWrites", "ReadTime", "WriteTime"}
+	mock.ExpectQuery(`.*PHYRDS.*`).WillReturnRows(
+		sqlmock.NewRows(columns).AddRow("1", 12, 23, 34, 45, 56, 67),
+	)
+
+	columns = []string{"INST_ID", "NAME", "VALUE"}
+	mock.ExpectQuery(`.*pgastat.*`).WillReturnRows(
+		sqlmock.NewRows(columns).AddRow("1", "total PGA inuse", 135),
+	)
+
+	columns = []string{"INST_ID", "METRIC_NAME", "VALUE"}
+	mock.ExpectQuery(`.*sysmetric.*`).WillReturnRows(
+		sqlmock.NewRows(columns).AddRow("1", "Buffer Cache Hit Ratio", 0.5),
+	)
+
+	columns = []string{"TABLESPACE_NAME", "USED", "OFFLINE", "SIZE", "USED_PERCENT"}
+	mock.ExpectQuery(`.*TABLESPACE_NAME.*`).WillReturnRows(
+		sqlmock.NewRows(columns).AddRow("testtablespace", 11, 0, 123, 12),
+	)
+
+	var populaterWg sync.WaitGroup
+	populaterWg.Add(1)
+	fmt.Println("Starting metrics collection")
+	go collectMetrics(db, &populaterWg, i)
+	populaterWg.Wait()
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Error(err)
+	}
+
+}
 
 func TestGetOrCreateMetricSet(t *testing.T) {
 	testCases := []struct {
