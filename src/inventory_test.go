@@ -25,7 +25,7 @@ func TestPopulateInventory(t *testing.T) {
 	i, _ := integration.New("oracletest", "0.0.1")
 
 	wg.Add(1)
-	go populateInventory(db, &wg, i)
+	go collectInventory(db, &wg, i)
 	wg.Wait()
 
 	marshalled, err := i.MarshalJSON()

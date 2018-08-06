@@ -9,7 +9,7 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/integration"
 )
 
-func populateInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration) {
+func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration) {
 	defer wg.Done()
 
 	const sqlQuery = `
