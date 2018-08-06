@@ -1,16 +1,18 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"strconv"
 	"sync"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 )
 
-func populateInventory(db *sqlx.DB, wg *sync.WaitGroup, i *integration.Integration) {
-	wg.Done()
+// collectInventory queries the database for the inventory items, then populates
+// the integration with the results
+func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration) {
+	defer wg.Done()
 
 	const sqlQuery = `
 		SELECT
@@ -25,8 +27,9 @@ func populateInventory(db *sqlx.DB, wg *sync.WaitGroup, i *integration.Integrati
 			'version',
 			VERSION,
 			'OracleDB version'
-		FROM gv$instance `
+		FROM gv$instance`
 
+	// inventoryRow represents a single row in the database response to sqlQuery
 	type inventoryRow struct {
 		instID      int
 		name        string
@@ -34,22 +37,25 @@ func populateInventory(db *sqlx.DB, wg *sync.WaitGroup, i *integration.Integrati
 		description string
 	}
 
-	rows, err := db.Queryx(sqlQuery)
+	rows, err := db.Query(sqlQuery)
 	if err != nil {
 		fmt.Printf("failed to collect inventory: %s", err)
 	}
 
 	for rows.Next() {
-		var tempRow inventoryRow
-		rows.Scan(&tempRow.instID, &tempRow.name, &tempRow.value, &tempRow.description)
 
-		e, err := i.Entity(strconv.Itoa(tempRow.instID), "instance")
+		// Scan the row into a struct
+		var inventoryResultRow inventoryRow
+		rows.Scan(&inventoryResultRow.instID, &inventoryResultRow.name, &inventoryResultRow.value, &inventoryResultRow.description)
+
+		// Retrieve or create the instance entity
+		e, err := i.Entity(strconv.Itoa(inventoryResultRow.instID), "instance")
 		if err != nil {
-			fmt.Printf("failed to get instance entity %d", tempRow.instID)
+			logger.Errorf("failed to get instance entity %d", inventoryResultRow.instID)
 		}
-		e.SetInventoryItem(tempRow.name, "value", tempRow.value)
-		e.SetInventoryItem(tempRow.name, "description", tempRow.description)
 
+		// Create inventory entry
+		e.SetInventoryItem(inventoryResultRow.name, "value", inventoryResultRow.value)
+		e.SetInventoryItem(inventoryResultRow.name, "description", inventoryResultRow.description)
 	}
-
 }

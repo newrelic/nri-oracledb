@@ -1,14 +1,17 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
 	"strconv"
 	"sync"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	goracle "gopkg.in/goracle.v2"
 )
 
+// oracleMetric is a storage struct for the information needed to parse
+// a metric from a query and create a newrelicMetric
 type oracleMetric struct {
 	name          string
 	identifier    string
@@ -16,44 +19,76 @@ type oracleMetric struct {
 	defaultMetric bool
 }
 
+// newrelicMetric is a storage struct for all the information needed
+// to insert a metric into a metric set
 type newrelicMetric struct {
 	name       string
 	metricType metric.SourceType
 	value      interface{}
 }
 
-type newRelicMetricSender struct {
+// newrelicMetricSender is a wrapper struct meant to send a metric through
+// a channel along with the metadata needed to insert it into the correct
+// metric set
+type newrelicMetricSender struct {
 	metric   *newrelicMetric
 	metadata map[string]string
 }
 
+// oracleMetricGroup is a struct that contains all the information needed
+// to collect the list of metrics contained in it: the db query to retrieve
+// the metrics, the list of metrics to collect from that query, and a function
+// to parse the metrics into structs to send down a channel
 type oracleMetricGroup struct {
 	sqlQuery         string
 	metrics          []*oracleMetric
-	metricsGenerator func(*sqlx.Rows, []*oracleMetric, *sync.WaitGroup, chan<- newRelicMetricSender) error
+	metricsGenerator func(*sql.Rows, []*oracleMetric, *sync.WaitGroup, chan<- newrelicMetricSender) error
 }
 
-func (mg *oracleMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan chan<- newRelicMetricSender) {
+// Collect is a method on oracleMetricGroups which collects the metrics defined
+// by the metric group and sends them down the channel passed to it
+func (mg *oracleMetricGroup) Collect(db *sql.DB, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
 	defer wg.Done()
 
-	rows, err := db.Queryx(mg.sqlQuery)
-	panicOnErr(err)
+	rows, err := db.Query(mg.sqlQuery)
+	if err != nil {
+		logger.Errorf("Failed to execute query %s: %s", mg.sqlQuery, err)
+		panic(err)
+	}
 
 	err = mg.metricsGenerator(rows, mg.metrics, wg, metricChan)
-	panicOnErr(err)
+	if err != nil {
+		logger.Errorf("Failed to generate metrics from db response for query %s: %s", mg.sqlQuery, err)
+		panic(err)
+	}
+}
 
+// This function is necessary because of how sql-mock auto-converts
+// types for the sql driver. More information about the issue
+// is here https://github.com/DATA-DOG/go-sqlmock/issues/133
+func getInstanceIDString(originalID interface{}) string {
+	switch id := originalID.(type) {
+	case goracle.Number:
+		return id.String()
+	case int:
+		return strconv.Itoa(id)
+	case string:
+		return id
+	default:
+		return ""
+	}
 }
 
 var oracleTablespaceMetrics = oracleMetricGroup{
 	sqlQuery: `
 		SELECT 
-			tablespace_name, 
+			TABLESPACE_NAME, 
 			SUM(bytes) AS "USED", 
 			MAX( CASE WHEN status = 'OFFLINE' THEN 1 ELSE 0 END) AS "OFFLINE", 
 			SUM(maxbytes) AS "SIZE", 
 			SUM( bytes ) / SUM( maxbytes) * 100 AS "USED_PERCENT" 
 		FROM dba_data_files 
-		GROUP BY tablespace_name`,
+		GROUP BY TABLESPACE_NAME`,
 
 	metrics: []*oracleMetric{
 		{
@@ -82,24 +117,46 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sqlx.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newRelicMetricSender) error {
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) error {
+
+		columnNames, err := rows.Columns()
+		if err != nil {
+			return fmt.Errorf("failed to retrieve columns from rows")
+		}
 		for rows.Next() {
-			rowMap := make(map[string]interface{})
-			err := rows.MapScan(rowMap)
+			// Make an array of columns and an array of pointers to each element of the array
+			columns := make([]interface{}, len(columnNames))
+			pointers := make([]interface{}, len(columnNames))
+			for i := 0; i < len(columnNames); i++ {
+				pointers[i] = &columns[i]
+			}
+
+			// Scan the row into the array of pointers
+			err := rows.Scan(pointers...)
 			if err != nil {
 				return err
 			}
 
+			// Put the values of the row into a column with the column name as the key
+			rowMap := make(map[string]interface{})
+			for i, column := range columnNames {
+				rowMap[column] = columns[i]
+			}
+
+			// Create each metric in the list of metrics we want to collect
 			for _, metric := range metrics {
-				newMetric := &newrelicMetric{
-					name:       metric.name,
-					metricType: metric.metricType,
-					value:      rowMap[metric.identifier],
+				if metric.defaultMetric || args.ExtendedMetrics {
+					newMetric := &newrelicMetric{
+						name:       metric.name,
+						metricType: metric.metricType,
+						value:      rowMap[metric.identifier],
+					}
+
+					metadata := map[string]string{"tablespace": rowMap["TABLESPACE_NAME"].(string)}
+
+					// Send the new metric down the channel
+					metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
 				}
-
-				metadata := map[string]string{"type": "metric", "tablespace": rowMap["TABLESPACE_NAME"].(string)}
-
-				metricChan <- newRelicMetricSender{metric: newMetric, metadata: metadata}
 			}
 		}
 
@@ -159,24 +216,49 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sqlx.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newRelicMetricSender) error {
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) error {
+
+		columnNames, err := rows.Columns()
+		if err != nil {
+			return fmt.Errorf("failed to get column names from rows")
+		}
+
 		for rows.Next() {
-			rowMap := make(map[string]interface{})
-			err := rows.MapScan(rowMap)
-			if err != nil {
-				return err
+			// Create an array of columns and an array of pointers to the elements of the columns
+			columns := make([]interface{}, len(columnNames))
+			pointers := make([]interface{}, len(columnNames))
+			for i := 0; i < len(columnNames); i++ {
+				pointers[i] = &columns[i]
 			}
 
+			// Scan the row into the array of columns
+			err := rows.Scan(pointers...)
+			if err != nil {
+				return fmt.Errorf("failed to parse row: %s", err)
+			}
+
+			// Put the values into a map indexed by column name
+			rowMap := make(map[string]interface{})
+			for i, column := range columnNames {
+				rowMap[column] = columns[i]
+			}
+
+			// Create each new metric
 			for _, metric := range metrics {
-				newMetric := &newrelicMetric{
-					name:       metric.name,
-					metricType: metric.metricType,
-					value:      rowMap[metric.identifier],
+				if metric.defaultMetric || args.ExtendedMetrics {
+					newMetric := &newrelicMetric{
+						name:       metric.name,
+						metricType: metric.metricType,
+						value:      rowMap[metric.identifier],
+					}
+
+					idString := getInstanceIDString(rowMap["INST_ID"])
+
+					metadata := map[string]string{"instanceID": idString}
+
+					// Send the metric down the channel
+					metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
 				}
-
-				metadata := map[string]string{"instanceID": rowMap["INST_ID"].(goracle.Number).String(), "type": "metric"}
-
-				metricChan <- newRelicMetricSender{metric: newMetric, metadata: metadata}
 			}
 		}
 
@@ -212,7 +294,7 @@ var oraclePgaMetrics = oracleMetricGroup{
 			identifier:    "global memory bound",
 		},
 	},
-	metricsGenerator: func(rows *sqlx.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newRelicMetricSender) error {
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) error {
 
 		type pgaRow struct {
 			instID int
@@ -220,24 +302,31 @@ var oraclePgaMetrics = oracleMetricGroup{
 			value  float64
 		}
 		for rows.Next() {
+
+			// Scan the row into a struct
 			var tempPgaRow pgaRow
 			err := rows.Scan(&tempPgaRow.instID, &tempPgaRow.name, &tempPgaRow.value)
 			if err != nil {
 				return err
 			}
 
+			// Match the metric to one of the metrics we want to collect
 			for _, metric := range metrics {
-				if tempPgaRow.name == metric.identifier {
-					newMetric := &newrelicMetric{
-						name:       metric.name,
-						value:      tempPgaRow.value,
-						metricType: metric.metricType,
+				if metric.defaultMetric || args.ExtendedMetrics {
+					if tempPgaRow.name == metric.identifier {
+						newMetric := &newrelicMetric{
+							name:       metric.name,
+							value:      tempPgaRow.value,
+							metricType: metric.metricType,
+						}
+
+						metadata := map[string]string{"instanceID": strconv.Itoa(tempPgaRow.instID)}
+
+						// Send the new metric down the channel
+						metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
+						break
+
 					}
-
-					metadata := map[string]string{"instanceID": strconv.Itoa(tempPgaRow.instID), "type": "metric"}
-
-					metricChan <- newRelicMetricSender{metric: newMetric, metadata: metadata}
-
 				}
 			}
 		}
@@ -1060,7 +1149,7 @@ var oracleSysMetrics = oracleMetricGroup{
 			defaultMetric: true,
 		},
 	},
-	metricsGenerator: func(rows *sqlx.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricsChan chan<- newRelicMetricSender) error {
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, wg *sync.WaitGroup, metricsChan chan<- newrelicMetricSender) error {
 
 		var sysScanner struct {
 			instID     int
@@ -1069,11 +1158,14 @@ var oracleSysMetrics = oracleMetricGroup{
 		}
 
 		for rows.Next() {
+
+			// Scan the row into a struct
 			err := rows.Scan(&sysScanner.instID, &sysScanner.metricName, &sysScanner.value)
 			if err != nil {
 				return err
 			}
 
+			// Match the metric to one of the metrics we want to collect
 			for _, metric := range metrics {
 				if metric.defaultMetric || args.ExtendedMetrics {
 					if sysScanner.metricName == metric.identifier {
@@ -1083,9 +1175,11 @@ var oracleSysMetrics = oracleMetricGroup{
 							metricType: metric.metricType,
 						}
 
-						metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID), "type": "metric"}
+						metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID)}
 
-						metricsChan <- newRelicMetricSender{metadata: metadata, metric: newMetric}
+						// Send the metric down the channel
+						metricsChan <- newrelicMetricSender{metadata: metadata, metric: newMetric}
+						break
 					}
 				}
 			}
