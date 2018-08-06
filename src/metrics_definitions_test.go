@@ -23,15 +23,18 @@ func TestOracleTablespaceMetrics(t *testing.T) {
 	)
 
 	var wg sync.WaitGroup
-	metricChan := make(chan newrelicMetricSender)
+	metricChan := make(chan newrelicMetricSender, 10)
 
 	wg.Add(1)
 	go oracleTablespaceMetrics.Collect(db, &wg, metricChan)
+	go func() {
+		wg.Wait()
+		close(metricChan)
+	}()
 	var generatedMetrics []newrelicMetricSender
 	for i := 0; i < 4; i++ {
 		generatedMetrics = append(generatedMetrics, <-metricChan)
 	}
-	wg.Wait()
 
 	expectedMetrics := []newrelicMetricSender{
 		{
@@ -94,15 +97,18 @@ func TestOracleReadWriteMetrics(t *testing.T) {
 	)
 
 	var wg sync.WaitGroup
-	metricChan := make(chan newrelicMetricSender)
+	metricChan := make(chan newrelicMetricSender, 100)
 
 	wg.Add(1)
 	go oracleReadWriteMetrics.Collect(db, &wg, metricChan)
+	go func() {
+		wg.Wait()
+		close(metricChan)
+	}()
 	var generatedMetrics []newrelicMetricSender
 	for i := 0; i < 6; i++ {
 		generatedMetrics = append(generatedMetrics, <-metricChan)
 	}
-	wg.Wait()
 
 	expectedMetrics := []newrelicMetricSender{
 		{
@@ -185,15 +191,19 @@ func TestOraclePgaMetrics(t *testing.T) {
 	)
 
 	var wg sync.WaitGroup
-	metricChan := make(chan newrelicMetricSender)
+	metricChan := make(chan newrelicMetricSender, 100)
 
 	wg.Add(1)
 	go oraclePgaMetrics.Collect(db, &wg, metricChan)
+	go func() {
+		wg.Wait()
+		close(metricChan)
+	}()
+
 	var generatedMetrics []newrelicMetricSender
 	for i := 0; i < 1; i++ {
 		generatedMetrics = append(generatedMetrics, <-metricChan)
 	}
-	wg.Wait()
 
 	expectedMetrics := []newrelicMetricSender{
 		{
@@ -230,8 +240,11 @@ func TestOracleSysMetrics(t *testing.T) {
 
 	wg.Add(1)
 	var generatedMetrics []newrelicMetricSender
-	oracleSysMetrics.Collect(db, &wg, metricChan)
-	wg.Wait()
+	go oracleSysMetrics.Collect(db, &wg, metricChan)
+	go func() {
+		wg.Wait()
+		close(metricChan)
+	}()
 
 	for {
 		metric, ok := <-metricChan
