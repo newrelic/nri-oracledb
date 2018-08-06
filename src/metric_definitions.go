@@ -130,26 +130,33 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 			for i := 0; i < len(columnNames); i++ {
 				pointers[i] = &columns[i]
 			}
-			rowMap := make(map[string]interface{})
+
+			// Scan the row into the array of pointers
 			err := rows.Scan(pointers...)
-			for i, column := range columnNames {
-				rowMap[column] = columns[i]
-			}
 			if err != nil {
 				return err
 			}
 
+			// Put the values of the row into a column with the column name as the key
+			rowMap := make(map[string]interface{})
+			for i, column := range columnNames {
+				rowMap[column] = columns[i]
+			}
+
 			// Create each metric in the list of metrics we want to collect
 			for _, metric := range metrics {
-				newMetric := &newrelicMetric{
-					name:       metric.name,
-					metricType: metric.metricType,
-					value:      rowMap[metric.identifier],
+				if metric.defaultMetric || args.ExtendedMetrics {
+					newMetric := &newrelicMetric{
+						name:       metric.name,
+						metricType: metric.metricType,
+						value:      rowMap[metric.identifier],
+					}
+
+					metadata := map[string]string{"tablespace": rowMap["TABLESPACE_NAME"].(string)}
+
+					// Send the new metric down the channel
+					metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
 				}
-
-				metadata := map[string]string{"tablespace": rowMap["TABLESPACE_NAME"].(string)}
-
-				metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
 			}
 		}
 
@@ -235,23 +242,23 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 			for i, column := range columnNames {
 				rowMap[column] = columns[i]
 			}
-			if err != nil {
-				return err
-			}
 
 			// Create each new metric
 			for _, metric := range metrics {
-				newMetric := &newrelicMetric{
-					name:       metric.name,
-					metricType: metric.metricType,
-					value:      rowMap[metric.identifier],
+				if metric.defaultMetric || args.ExtendedMetrics {
+					newMetric := &newrelicMetric{
+						name:       metric.name,
+						metricType: metric.metricType,
+						value:      rowMap[metric.identifier],
+					}
+
+					idString := getInstanceIDString(rowMap["INST_ID"])
+
+					metadata := map[string]string{"instanceID": idString}
+
+					// Send the metric down the channel
+					metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
 				}
-
-				idString := getInstanceIDString(rowMap["INST_ID"])
-
-				metadata := map[string]string{"instanceID": idString}
-
-				metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
 			}
 		}
 
@@ -305,17 +312,21 @@ var oraclePgaMetrics = oracleMetricGroup{
 
 			// Match the metric to one of the metrics we want to collect
 			for _, metric := range metrics {
-				if tempPgaRow.name == metric.identifier {
-					newMetric := &newrelicMetric{
-						name:       metric.name,
-						value:      tempPgaRow.value,
-						metricType: metric.metricType,
+				if metric.defaultMetric || args.ExtendedMetrics {
+					if tempPgaRow.name == metric.identifier {
+						newMetric := &newrelicMetric{
+							name:       metric.name,
+							value:      tempPgaRow.value,
+							metricType: metric.metricType,
+						}
+
+						metadata := map[string]string{"instanceID": strconv.Itoa(tempPgaRow.instID)}
+
+						// Send the new metric down the channel
+						metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
+						break
+
 					}
-
-					metadata := map[string]string{"instanceID": strconv.Itoa(tempPgaRow.instID)}
-
-					metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
-
 				}
 			}
 		}
