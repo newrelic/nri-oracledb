@@ -9,6 +9,8 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/integration"
 )
 
+// collectInventory queries the database for the inventory items, then populates
+// the integration with the results
 func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration) {
 	defer wg.Done()
 
@@ -27,6 +29,7 @@ func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration
 			'OracleDB version'
 		FROM gv$instance`
 
+	// inventoryRow represents a single row in the database response to sqlQuery
 	type inventoryRow struct {
 		instID      int
 		name        string
@@ -45,13 +48,14 @@ func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration
 		var inventoryResultRow inventoryRow
 		rows.Scan(&inventoryResultRow.instID, &inventoryResultRow.name, &inventoryResultRow.value, &inventoryResultRow.description)
 
+		// Retrieve or create the instance entity
 		e, err := i.Entity(strconv.Itoa(inventoryResultRow.instID), "instance")
 		if err != nil {
 			logger.Errorf("failed to get instance entity %d", inventoryResultRow.instID)
 		}
+
+		// Create inventory entry
 		e.SetInventoryItem(inventoryResultRow.name, "value", inventoryResultRow.value)
 		e.SetInventoryItem(inventoryResultRow.name, "description", inventoryResultRow.description)
-
 	}
-
 }
