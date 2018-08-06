@@ -181,31 +181,31 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 		{
 			name:          "disk.reads",
 			identifier:    "PhysicalReads",
-			metricType:    metric.GAUGE,
+			metricType:    metric.RATE,
 			defaultMetric: true,
 		},
 		{
 			name:          "disk.writes",
 			identifier:    "PhysicalWrites",
-			metricType:    metric.GAUGE,
+			metricType:    metric.RATE,
 			defaultMetric: true,
 		},
 		{
 			name:          "disk.blocksRead",
 			identifier:    "PhysicalBlockReads",
-			metricType:    metric.GAUGE,
+			metricType:    metric.RATE,
 			defaultMetric: true,
 		},
 		{
 			name:          "disk.blocksWritten",
 			identifier:    "PhysicalBlockWrites",
-			metricType:    metric.GAUGE,
+			metricType:    metric.RATE,
 			defaultMetric: true,
 		},
 		{
 			name:          "disk.readTime",
 			identifier:    "ReadTime",
-			metricType:    metric.GAUGE,
+			metricType:    metric.RATE,
 			defaultMetric: true,
 		},
 		{
