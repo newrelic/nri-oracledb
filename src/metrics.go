@@ -1,11 +1,31 @@
 package main
 
 import (
+	"database/sql"
 	"sync"
 
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 )
+
+func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Integration) {
+
+	var collectorWg sync.WaitGroup
+	metricChan := make(chan newrelicMetricSender, 100)
+
+	collectorWg.Add(4)
+	go oracleReadWriteMetrics.Collect(db, &collectorWg, metricChan)
+	go oraclePgaMetrics.Collect(db, &collectorWg, metricChan)
+	go oracleSysMetrics.Collect(db, &collectorWg, metricChan)
+	go oracleTablespaceMetrics.Collect(db, &collectorWg, metricChan)
+
+	go func() {
+		collectorWg.Wait()
+		close(metricChan)
+	}()
+
+	go populateMetrics(metricChan, populaterWg, i)
+}
 
 func populateMetrics(metricChan <-chan newrelicMetricSender, wg *sync.WaitGroup, i *integration.Integration) {
 	defer wg.Done()
