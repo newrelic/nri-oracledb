@@ -40,18 +40,16 @@ func main() {
 
 	logger = i.Logger()
 
-	sid := fmt.Sprintf("%s:%s/%s", args.Hostname, args.Port, args.ServiceName)
 	cp := goracle.ConnectionParams{
 		Username:    args.Username,
 		Password:    args.Password,
-		SID:         sid,
+		SID:         fmt.Sprintf("%s:%s/%s", args.Hostname, args.Port, args.ServiceName),
 		IsSysDBA:    args.IsSysDBA,
 		IsSysOper:   args.IsSysOper,
 		MaxSessions: 8,
 	}
 
-	connString := cp.StringWithPassword()
-	db, err := sql.Open("goracle", connString)
+	db, err := sql.Open("goracle", cp.StringWithPassword())
 	defer db.Close()
 	panicOnErr(err)
 
@@ -59,29 +57,17 @@ func main() {
 	panicOnErr(err)
 
 	var populaterWg sync.WaitGroup
-	if args.All() || args.Metrics {
 
-		var collectorWg sync.WaitGroup
-		metricChan := make(chan newrelicMetricSender, 10)
-
-		collectorWg.Add(4)
-		go oracleReadWriteMetrics.Collect(db, &collectorWg, metricChan)
-		go oraclePgaMetrics.Collect(db, &collectorWg, metricChan)
-		go oracleSysMetrics.Collect(db, &collectorWg, metricChan)
-		go oracleTablespaceMetrics.Collect(db, &collectorWg, metricChan)
-
-		go func() {
-			collectorWg.Wait()
-			close(metricChan)
-		}()
-
+	if args.All() {
+		populaterWg.Add(2)
+		go collectMetrics(db, &populaterWg, i)
+		go collectInventory(db, &populaterWg, i)
+	} else if args.Metrics {
 		populaterWg.Add(1)
-		go populateMetrics(metricChan, &populaterWg, i)
-	}
-
-	if args.All() || args.Inventory {
+		go collectMetrics(db, &populaterWg, i)
+	} else if args.Inventory {
 		populaterWg.Add(1)
-		go populateInventory(db, &populaterWg, i)
+		go collectInventory(db, &populaterWg, i)
 	}
 
 	populaterWg.Wait()
