@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"strconv"
 	"sync"
 
@@ -39,7 +38,7 @@ func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration
 
 	rows, err := db.Query(sqlQuery)
 	if err != nil {
-		fmt.Printf("failed to collect inventory: %s", err)
+		logger.Errorf("Failed to collect inventory: %s", err)
 	}
 
 	for rows.Next() {
@@ -48,13 +47,15 @@ func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration
 		var inventoryResultRow inventoryRow
 		err := rows.Scan(&inventoryResultRow.instID, &inventoryResultRow.name, &inventoryResultRow.value, &inventoryResultRow.description)
 		if err != nil {
-			logger.Errorf("failed to scan inventory row: %s", err)
+			logger.Errorf("Failed to scan inventory row: %s", err)
+			continue
 		}
 
 		// Retrieve or create the instance entity
 		e, err := i.Entity(strconv.Itoa(inventoryResultRow.instID), "instance")
 		if err != nil {
-			logger.Errorf("failed to get instance entity %d", inventoryResultRow.instID)
+			logger.Errorf("Failed to get instance entity %d", inventoryResultRow.instID)
+			continue
 		}
 
 		// Create inventory entry
@@ -62,7 +63,7 @@ func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration
 			logger.Errorf("Failed to set value for %s", inventoryResultRow.name)
 		}
 		if err := e.SetInventoryItem(inventoryResultRow.name, "description", inventoryResultRow.description); err != nil {
-			logger.Errorf("Failed to set value for %s", inventoryResultRow.name)
+			logger.Errorf("Failed to set description for %s", inventoryResultRow.name)
 		}
 	}
 }
