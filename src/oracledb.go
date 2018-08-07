@@ -50,7 +50,11 @@ func main() {
 	}
 
 	db, err := sql.Open("goracle", cp.StringWithPassword())
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			logger.Errorf("Failed to close database")
+		}
+	}()
 	panicOnErr(err)
 
 	err = db.Ping()
