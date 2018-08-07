@@ -46,7 +46,10 @@ func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration
 
 		// Scan the row into a struct
 		var inventoryResultRow inventoryRow
-		rows.Scan(&inventoryResultRow.instID, &inventoryResultRow.name, &inventoryResultRow.value, &inventoryResultRow.description)
+		err := rows.Scan(&inventoryResultRow.instID, &inventoryResultRow.name, &inventoryResultRow.value, &inventoryResultRow.description)
+		if err != nil {
+			logger.Errorf("failed to scan inventory row: %s", err)
+		}
 
 		// Retrieve or create the instance entity
 		e, err := i.Entity(strconv.Itoa(inventoryResultRow.instID), "instance")
@@ -55,7 +58,11 @@ func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration
 		}
 
 		// Create inventory entry
-		e.SetInventoryItem(inventoryResultRow.name, "value", inventoryResultRow.value)
-		e.SetInventoryItem(inventoryResultRow.name, "description", inventoryResultRow.description)
+		if err := e.SetInventoryItem(inventoryResultRow.name, "value", inventoryResultRow.value); err != nil {
+			logger.Errorf("Failed to set value for %s", inventoryResultRow.name)
+		}
+		if err := e.SetInventoryItem(inventoryResultRow.name, "description", inventoryResultRow.description); err != nil {
+			logger.Errorf("Failed to set value for %s", inventoryResultRow.name)
+		}
 	}
 }
