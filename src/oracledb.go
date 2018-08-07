@@ -51,21 +51,21 @@ func main() {
 	err = db.Ping()
 	panicOnErr(err)
 
-	var collecterWg sync.WaitGroup
+	var populaterWg sync.WaitGroup
 
 	if args.All() {
-		collecterWg.Add(2)
-		go collectMetrics(db, &collecterWg, i)
-		go collectInventory(db, &collecterWg, i)
+		populaterWg.Add(2)
+		go collectMetrics(db, &populaterWg, i)
+		go collectInventory(db, &populaterWg, i)
 	} else if args.Metrics {
-		collecterWg.Add(1)
-		go collectMetrics(db, &collecterWg, i)
+		populaterWg.Add(1)
+		go collectMetrics(db, &populaterWg, i)
 	} else if args.Inventory {
-		collecterWg.Add(1)
-		go collectInventory(db, &collecterWg, i)
+		populaterWg.Add(1)
+		go collectInventory(db, &populaterWg, i)
 	}
 
-	collecterWg.Wait()
+	populaterWg.Wait()
 
 	panicOnErr(i.Publish())
 }
