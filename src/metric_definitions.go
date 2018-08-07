@@ -56,8 +56,7 @@ func (mg *oracleMetricGroup) Collect(db *sql.DB, wg *sync.WaitGroup, metricChan 
 		panic(err)
 	}
 
-	err = mg.metricsGenerator(rows, mg.metrics, wg, metricChan)
-	if err != nil {
+	if err = mg.metricsGenerator(rows, mg.metrics, metricChan); err != nil {
 		logger.Errorf("Failed to generate metrics from db response for query %s: %s", mg.sqlQuery, err)
 		panic(err)
 	}
