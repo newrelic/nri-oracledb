@@ -40,16 +40,7 @@ func main() {
 
 	logger = i.Logger()
 
-	cp := goracle.ConnectionParams{
-		Username:    args.Username,
-		Password:    args.Password,
-		SID:         fmt.Sprintf("%s:%s/%s", args.Hostname, args.Port, args.ServiceName),
-		IsSysDBA:    args.IsSysDBA,
-		IsSysOper:   args.IsSysOper,
-		MaxSessions: 8,
-	}
-
-	db, err := sql.Open("goracle", cp.StringWithPassword())
+	db, err := sql.Open("goracle", getConnectionString())
 	panicOnErr(err)
 	defer func() {
 		if err := db.Close(); err != nil {
@@ -77,6 +68,20 @@ func main() {
 	collecterWg.Wait()
 
 	panicOnErr(i.Publish())
+}
+
+func getConnectionString() string {
+
+	cp := goracle.ConnectionParams{
+		Username:    args.Username,
+		Password:    args.Password,
+		SID:         fmt.Sprintf("%s:%s/%s", args.Hostname, args.Port, args.ServiceName),
+		IsSysDBA:    args.IsSysDBA,
+		IsSysOper:   args.IsSysOper,
+		MaxSessions: 8,
+	}
+
+	return cp.StringWithPassword()
 }
 
 func panicOnErr(err error) {
