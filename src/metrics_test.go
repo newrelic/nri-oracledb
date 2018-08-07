@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 
@@ -12,13 +11,11 @@ import (
 )
 
 func TestCollectMetrics(t *testing.T) {
-	fmt.Println("Creating integration")
 	i, err := integration.New("oracletest", "0.0.1")
 	if err != nil {
 		t.Error(err)
 	}
 
-	fmt.Println("Creating mock db")
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Error(err)
@@ -48,7 +45,6 @@ func TestCollectMetrics(t *testing.T) {
 
 	var populaterWg sync.WaitGroup
 	populaterWg.Add(1)
-	fmt.Println("Starting metrics collection")
 	go collectMetrics(db, &populaterWg, i)
 	populaterWg.Wait()
 
