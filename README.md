@@ -1,31 +1,61 @@
-# New Relic Infrastructure Integration for oracledb
+# New Relic Infrastructure Integration for Oracle Database
 
-Reports status and metrics for oracledb service
+The New Relic Infrastructure Integration for Oracle Database monitors key performance metrics for Oracle Database.
 
 ## Requirements
 
-Document if the Integration has some special requirement. Ex: Installing an
-extra module, permissions to execute a binary, etc.
+Have a working installation of the Oracle Instant Client
 
 ## Configuration
 
-Document if the Integration needs some configuration for running. Ex: Set
-up permissions, add a special user, etc.
+TODO investigate configuration/permissions
 
 ## Installation
 
-Describe the installation process for the Integration.
+- install the [New Relic Infrastructure Agent](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/installation/install-infrastructure-linux)
+- download and exctract the archive file for the `Oracle Database` integration
+- build the integration as described above
+- copy `nr-oracledb-definition.yml` to `/var/db/newrelic-infra/newrelic-integrations`
+- copy the binary in `bin/` that matches your target OS/architecture into `/var/db/newrelic-infra/newrelic-integrations`
+- add execute permissions for the binary file
+- copy `nr-oracledb-config.yml.template` into `/etc/newrelic-infra/integrations.d`, rename it to `nr-oracledb-config.yml`, and edit it to represent the environment you are monitoring
+- install the [Oracle Instant Client](http://www.oracle.com/technetwork/database/database-technologies/instant-client/downloads/index.html)
 
 ## Usage
 
-Document mandatory and optional arguments for running the Integration, and how to execute it.
+To configure the plugin, edit `nr-oracledb-config.yml` to add the OracleDB connection information. If extended metrics are required, set `extended_metrics: true`. Once configuration is complete, restart the Infrastructure agent. 
+
+You can view your data in Insights by creating your own custom NRQL queries. To do so, use **OracleDatabaseSample** and **OracleTablespaceSample** event types.
 
 ## Compatibility
 
-* Supported OS:
-* oracledb versions:
-* Edition:
+* Supported OS: No limitations
+* oracledb versions: 11.2+
 
 ## Integration Development usage
 
-Describe the development workflow for this Integration.
+The OracleDB integration uses the `goracle` package to connect to an Oracle database. The package uses go bindings to the C library
+ODPI-C, which complicates the process for cross compiling since both go code and C code need be compiled for the target OS and architecture. 
+To help simplify that process, the `make` target `cross-compile-all` has been defined which uses `xgo` to compile the integration for Linux, 
+Mac, and Windows for both `amd64` and `386` architectures. `xgo` requires a working docker installation on the compiling machine. Further
+installation instructions for `xgo` can be found [here](https://github.com/karalabe/xgo). Once `xgo` is installed, simply run `make cross-compile-all` 
+to compile the integration for all architectures. The compiled binaries can all be found in the `bin/` directory.
+
+The integration can also be run locally.
+
+* Go to the directory of the OracleDB integration and build it
+```bash 
+$ make
+```
+
+* The command above will execute tests for the OracleDB integration and build an executable file called `nr-oracledb` in the `bin/` directory.
+```bash
+$ ./bin/nr-oracledb
+```
+
+* If you want to know more about the usage of `./nr-oracledb`, check
+```bash
+$ ./bin/nr-kafka --help
+```
+
+For managing external dependencies [govendor tool](https://github.com/kardianos/govendor) is used. It is required to lock all external dependencies to specific version (if possible) into vendor directory.
