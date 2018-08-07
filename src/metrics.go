@@ -11,6 +11,7 @@ import (
 // collectMetrics spins off goroutines for each of the metric groups, which
 // send their metrics to the populateMetrics goroutine
 func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Integration) {
+	defer populaterWg.Done()
 
 	var collectorWg sync.WaitGroup
 	metricChan := make(chan newrelicMetricSender, 100) // large buffer for speed
@@ -29,13 +30,12 @@ func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Inte
 	}()
 
 	// Create a goroutine to read from the metric channel and insert the metrics
-	go populateMetrics(metricChan, populaterWg, i)
+	populateMetrics(metricChan, i)
 }
 
 // populateMetrics reads metrics from the metricChan, then populates the correct
 // metric set with the read metric
-func populateMetrics(metricChan <-chan newrelicMetricSender, wg *sync.WaitGroup, i *integration.Integration) {
-	defer wg.Done()
+func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Integration) {
 
 	// Create storage maps for tablespace and instance metric sets
 	tsMetricSets := make(map[string]*metric.Set)
