@@ -11,6 +11,7 @@ import (
 // collectMetrics spins off goroutines for each of the metric groups, which
 // send their metrics to the populateMetrics goroutine
 func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Integration) {
+	defer populaterWg.Done()
 
 	var collectorWg sync.WaitGroup
 	metricChan := make(chan newrelicMetricSender, 100) // large buffer for speed
@@ -29,13 +30,12 @@ func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Inte
 	}()
 
 	// Create a goroutine to read from the metric channel and insert the metrics
-	go populateMetrics(metricChan, populaterWg, i)
+	populateMetrics(metricChan, i)
 }
 
 // populateMetrics reads metrics from the metricChan, then populates the correct
 // metric set with the read metric
-func populateMetrics(metricChan <-chan newrelicMetricSender, wg *sync.WaitGroup, i *integration.Integration) {
-	defer wg.Done()
+func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Integration) {
 
 	// Create storage maps for tablespace and instance metric sets
 	tsMetricSets := make(map[string]*metric.Set)
@@ -52,14 +52,12 @@ func populateMetrics(metricChan <-chan newrelicMetricSender, wg *sync.WaitGroup,
 		// If the metric belongs to a tablespace, otherwise it belongs to an instance
 		if tsName, ok := metricSender.metadata["tablespace"]; ok {
 			ms := getOrCreateMetricSet(tsName, "tablespace", tsMetricSets, i)
-			err := ms.SetMetric(metric.name, metric.value, metric.metricType)
-			if err != nil {
+			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
 				logger.Errorf("Failed to set metric %s", metric.name)
 			}
 		} else if instanceName, ok := metricSender.metadata["instanceID"]; ok {
 			ms := getOrCreateMetricSet(instanceName, "instance", instanceMetricSets, i)
-			err := ms.SetMetric(metric.name, metric.value, metric.metricType)
-			if err != nil {
+			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
 				logger.Errorf("Failed to set metric %s", metric.name)
 			}
 		}

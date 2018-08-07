@@ -132,15 +132,14 @@ func TestPopulateMetrics(t *testing.T) {
 
 	for _, tc := range testCases {
 		i, _ := integration.New("oracletest", "0.0.1")
-		var wg sync.WaitGroup
 		metricChan := make(chan newrelicMetricSender)
-		wg.Add(1)
-		go populateMetrics(metricChan, &wg, i)
 
-		metricChan <- tc.inputMetric
-		close(metricChan)
+		go func() {
+			metricChan <- tc.inputMetric
+			close(metricChan)
+		}()
 
-		wg.Wait()
+		populateMetrics(metricChan, i)
 
 		marshalled, err := i.MarshalJSON()
 		if err != nil {

@@ -40,16 +40,7 @@ func main() {
 
 	logger = i.Logger()
 
-	cp := goracle.ConnectionParams{
-		Username:    args.Username,
-		Password:    args.Password,
-		SID:         fmt.Sprintf("%s:%s/%s", args.Hostname, args.Port, args.ServiceName),
-		IsSysDBA:    args.IsSysDBA,
-		IsSysOper:   args.IsSysOper,
-		MaxSessions: 8,
-	}
-
-	db, err := sql.Open("goracle", cp.StringWithPassword())
+	db, err := sql.Open("goracle", getConnectionString())
 	panicOnErr(err)
 	defer func() {
 		if err := db.Close(); err != nil {
@@ -60,23 +51,37 @@ func main() {
 	err = db.Ping()
 	panicOnErr(err)
 
-	var collecterWg sync.WaitGroup
+	var populaterWg sync.WaitGroup
 
 	if args.All() {
-		collecterWg.Add(2)
-		go collectMetrics(db, &collecterWg, i)
-		go collectInventory(db, &collecterWg, i)
+		populaterWg.Add(2)
+		go collectMetrics(db, &populaterWg, i)
+		go collectInventory(db, &populaterWg, i)
 	} else if args.Metrics {
-		collecterWg.Add(1)
-		go collectMetrics(db, &collecterWg, i)
+		populaterWg.Add(1)
+		go collectMetrics(db, &populaterWg, i)
 	} else if args.Inventory {
-		collecterWg.Add(1)
-		go collectInventory(db, &collecterWg, i)
+		populaterWg.Add(1)
+		go collectInventory(db, &populaterWg, i)
 	}
 
-	collecterWg.Wait()
+	populaterWg.Wait()
 
 	panicOnErr(i.Publish())
+}
+
+func getConnectionString() string {
+
+	cp := goracle.ConnectionParams{
+		Username:    args.Username,
+		Password:    args.Password,
+		SID:         fmt.Sprintf("%s:%s/%s", args.Hostname, args.Port, args.ServiceName),
+		IsSysDBA:    args.IsSysDBA,
+		IsSysOper:   args.IsSysOper,
+		MaxSessions: 8,
+	}
+
+	return cp.StringWithPassword()
 }
 
 func panicOnErr(err error) {
