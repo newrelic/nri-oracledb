@@ -52,14 +52,12 @@ func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Inte
 		// If the metric belongs to a tablespace, otherwise it belongs to an instance
 		if tsName, ok := metricSender.metadata["tablespace"]; ok {
 			ms := getOrCreateMetricSet(tsName, "tablespace", tsMetricSets, i)
-			err := ms.SetMetric(metric.name, metric.value, metric.metricType)
-			if err != nil {
+			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
 				logger.Errorf("Failed to set metric %s", metric.name)
 			}
 		} else if instanceName, ok := metricSender.metadata["instanceID"]; ok {
 			ms := getOrCreateMetricSet(instanceName, "instance", instanceMetricSets, i)
-			err := ms.SetMetric(metric.name, metric.value, metric.metricType)
-			if err != nil {
+			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
 				logger.Errorf("Failed to set metric %s", metric.name)
 			}
 		}
