@@ -8,7 +8,18 @@ Have a working installation of the Oracle Instant Client
 
 ## Configuration
 
-TODO investigate configuration/permissions
+A user with the necessary permissions to collect all the metrics and inventory can be configured as follows
+```sql
+alter session set "_ORACLE_SCRIPT"=true;
+CREATE USER <username> IDENTIFIED BY "<password>";
+GRANT CONNECT TO <username>;
+GRANT SELECT ON gv_$sysmetric TO <username>;
+GRANT SELECT ON gv_$pgastat TO <username>;
+GRANT SELECT ON gv_$instance TO <username>;
+GRANT SELECT ON gv_$filestat TO <username>;
+GRANT SELECT ON gv_$parameter TO <username>;
+GRANT SELECT ON sys.dba_data_files TO <username>;
+```
 
 ## Installation
 
