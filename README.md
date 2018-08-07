@@ -4,7 +4,7 @@ The New Relic Infrastructure Integration for Oracle Database monitors key perfor
 
 ## Requirements
 
-Have a working installation of the Oracle Instant Client
+Have a working installation of the Oracle Instant Client. Installation instructions [here](http://www.oracle.com/technetwork/database/database-technologies/instant-client/downloads/index.html)
 
 ## Configuration
 
@@ -52,7 +52,7 @@ Mac, and Windows for both `amd64` and `386` architectures. `xgo` requires a work
 installation instructions for `xgo` can be found [here](https://github.com/karalabe/xgo). Once `xgo` is installed, simply run `make cross-compile-all` 
 to compile the integration for all architectures. The compiled binaries can all be found in the `bin/` directory.
 
-The integration can also be run locally.
+The integration can also be run locally. If run locally, you must have a working installation of the Oracle Instant Client.
 
 * Go to the directory of the OracleDB integration and build it
 ```bash 
@@ -66,7 +66,7 @@ $ ./bin/nr-oracledb
 
 * If you want to know more about the usage of `./nr-oracledb`, check
 ```bash
-$ ./bin/nr-kafka --help
+$ ./bin/nr-oracledb --help
 ```
 
 For managing external dependencies [govendor tool](https://github.com/kardianos/govendor) is used. It is required to lock all external dependencies to specific version (if possible) into vendor directory.
