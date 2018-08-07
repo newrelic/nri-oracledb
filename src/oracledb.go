@@ -50,27 +50,31 @@ func main() {
 	}
 
 	db, err := sql.Open("goracle", cp.StringWithPassword())
-	defer db.Close()
 	panicOnErr(err)
+	defer func() {
+		if err := db.Close(); err != nil {
+			logger.Errorf("Failed to close database")
+		}
+	}()
 
 	err = db.Ping()
 	panicOnErr(err)
 
-	var populaterWg sync.WaitGroup
+	var collecterWg sync.WaitGroup
 
 	if args.All() {
-		populaterWg.Add(2)
-		go collectMetrics(db, &populaterWg, i)
-		go collectInventory(db, &populaterWg, i)
+		collecterWg.Add(2)
+		go collectMetrics(db, &collecterWg, i)
+		go collectInventory(db, &collecterWg, i)
 	} else if args.Metrics {
-		populaterWg.Add(1)
-		go collectMetrics(db, &populaterWg, i)
+		collecterWg.Add(1)
+		go collectMetrics(db, &collecterWg, i)
 	} else if args.Inventory {
-		populaterWg.Add(1)
-		go collectInventory(db, &populaterWg, i)
+		collecterWg.Add(1)
+		go collectInventory(db, &collecterWg, i)
 	}
 
-	populaterWg.Wait()
+	collecterWg.Wait()
 
 	panicOnErr(i.Publish())
 }
