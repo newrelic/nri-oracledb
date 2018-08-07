@@ -99,7 +99,7 @@ func TestOracleReadWriteMetrics(t *testing.T) {
 			metric: &newrelicMetric{
 				name:       "disk.reads",
 				value:      int64(12),
-				metricType: metric.GAUGE,
+				metricType: metric.RATE,
 			},
 			metadata: map[string]string{
 				"instanceID": "1",
@@ -109,7 +109,7 @@ func TestOracleReadWriteMetrics(t *testing.T) {
 			metric: &newrelicMetric{
 				name:       "disk.writes",
 				value:      int64(23),
-				metricType: metric.GAUGE,
+				metricType: metric.RATE,
 			},
 			metadata: map[string]string{
 				"instanceID": "1",
@@ -119,7 +119,7 @@ func TestOracleReadWriteMetrics(t *testing.T) {
 			metric: &newrelicMetric{
 				name:       "disk.blocksRead",
 				value:      int64(34),
-				metricType: metric.GAUGE,
+				metricType: metric.RATE,
 			},
 			metadata: map[string]string{
 				"instanceID": "1",
@@ -129,7 +129,7 @@ func TestOracleReadWriteMetrics(t *testing.T) {
 			metric: &newrelicMetric{
 				name:       "disk.blocksWritten",
 				value:      int64(45),
-				metricType: metric.GAUGE,
+				metricType: metric.RATE,
 			},
 			metadata: map[string]string{
 				"instanceID": "1",
@@ -139,7 +139,7 @@ func TestOracleReadWriteMetrics(t *testing.T) {
 			metric: &newrelicMetric{
 				name:       "disk.readTime",
 				value:      int64(56),
-				metricType: metric.GAUGE,
+				metricType: metric.RATE,
 			},
 			metadata: map[string]string{
 				"instanceID": "1",
@@ -149,7 +149,7 @@ func TestOracleReadWriteMetrics(t *testing.T) {
 			metric: &newrelicMetric{
 				name:       "disk.writeTime",
 				value:      int64(67),
-				metricType: metric.GAUGE,
+				metricType: metric.RATE,
 			},
 			metadata: map[string]string{
 				"instanceID": "1",
