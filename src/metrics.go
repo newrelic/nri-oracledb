@@ -2,10 +2,12 @@ package main
 
 import (
 	"database/sql"
+	"os"
 	"sync"
 
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
+	"github.com/newrelic/infra-integrations-sdk/log"
 )
 
 // collectMetrics spins off goroutines for each of the metric groups, which
@@ -53,12 +55,12 @@ func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Inte
 		if tsName, ok := metricSender.metadata["tablespace"]; ok {
 			ms := getOrCreateMetricSet(tsName, "tablespace", tsMetricSets, i)
 			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
-				logger.Errorf("Failed to set metric %s", metric.name)
+				log.Error("Failed to set metric %s", metric.name)
 			}
 		} else if instanceName, ok := metricSender.metadata["instanceID"]; ok {
 			ms := getOrCreateMetricSet(instanceName, "instance", instanceMetricSets, i)
 			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
-				logger.Errorf("Failed to set metric %s", metric.name)
+				log.Error("Failed to set metric %s", metric.name)
 			}
 		}
 	}
@@ -82,7 +84,8 @@ func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[stri
 	} else if entityType == "tablespace" {
 		newSet = e.NewMetricSet("OracleTablespaceSample", metric.Attr("entityName", "tablespace:"+entityIdentifier), metric.Attr("displayName", entityIdentifier))
 	} else {
-		panic("invalid entity type, unreachable code")
+		log.Error("Unreachable code")
+		os.Exit(1)
 	}
 
 	// Put the new metric set the map
