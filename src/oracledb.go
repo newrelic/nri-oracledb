@@ -36,15 +36,10 @@ var (
 func main() {
 	// Create Integration
 	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
-	if err != nil {
-		log.Error("Failed to create integration")
-		os.Exit(1)
-	}
+	exitOnErr(err)
 
 	db, err := sql.Open("goracle", getConnectionString())
-	if err != nil {
-		log.Error("Failed to create database connection %s", getConnectionString())
-	}
+	exitOnErr(err)
 
 	defer func() {
 		if err := db.Close(); err != nil {
@@ -53,9 +48,7 @@ func main() {
 	}()
 
 	err = db.Ping()
-	if err != nil {
-		log.Error("Failed to connect to database %s", getConnectionString())
-	}
+	exitOnErr(err)
 
 	var populaterWg sync.WaitGroup
 
@@ -73,10 +66,7 @@ func main() {
 
 	populaterWg.Wait()
 
-	if err := i.Publish(); err != nil {
-		log.Error("Failed to publish integration metrics")
-		os.Exit(1)
-	}
+	exitOnErr(i.Publish())
 }
 
 func getConnectionString() string {
@@ -91,4 +81,9 @@ func getConnectionString() string {
 	}
 
 	return cp.StringWithPassword()
+}
+
+func exitOnErr(err error) {
+	log.Error("%s", err)
+	os.Exit(1)
 }
