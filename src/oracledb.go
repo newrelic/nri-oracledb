@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"os"
 	"sync"
 
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
@@ -29,27 +30,32 @@ const (
 )
 
 var (
-	args   argumentList
-	logger log.Logger
+	args argumentList
 )
 
 func main() {
 	// Create Integration
 	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
-	panicOnErr(err)
-
-	logger = i.Logger()
+	if err != nil {
+		log.Error("Failed to create integration")
+		os.Exit(1)
+	}
 
 	db, err := sql.Open("goracle", getConnectionString())
-	panicOnErr(err)
+	if err != nil {
+		log.Error("Failed to create database connection %s", getConnectionString())
+	}
+
 	defer func() {
 		if err := db.Close(); err != nil {
-			logger.Errorf("Failed to close database")
+			log.Error("Failed to close database")
 		}
 	}()
 
 	err = db.Ping()
-	panicOnErr(err)
+	if err != nil {
+		log.Error("Failed to connect to database %s", getConnectionString())
+	}
 
 	var populaterWg sync.WaitGroup
 
@@ -67,7 +73,10 @@ func main() {
 
 	populaterWg.Wait()
 
-	panicOnErr(i.Publish())
+	if err := i.Publish(); err != nil {
+		log.Error("Failed to publish integration metrics")
+		os.Exit(1)
+	}
 }
 
 func getConnectionString() string {
@@ -82,10 +91,4 @@ func getConnectionString() string {
 	}
 
 	return cp.StringWithPassword()
-}
-
-func panicOnErr(err error) {
-	if err != nil {
-		panic(err)
-	}
 }

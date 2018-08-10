@@ -3,10 +3,12 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"os"
 	"strconv"
 	"sync"
 
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
+	"github.com/newrelic/infra-integrations-sdk/log"
 	goracle "gopkg.in/goracle.v2"
 )
 
@@ -52,13 +54,13 @@ func (mg *oracleMetricGroup) Collect(db *sql.DB, wg *sync.WaitGroup, metricChan 
 
 	rows, err := db.Query(mg.sqlQuery)
 	if err != nil {
-		logger.Errorf("Failed to execute query %s: %s", mg.sqlQuery, err)
-		panic(err)
+		log.Error("Failed to execute query %s: %s", mg.sqlQuery, err)
+		os.Exit(1)
 	}
 
 	if err = mg.metricsGenerator(rows, mg.metrics, metricChan); err != nil {
-		logger.Errorf("Failed to generate metrics from db response for query %s: %s", mg.sqlQuery, err)
-		panic(err)
+		log.Error("Failed to generate metrics from db response for query %s: %s", mg.sqlQuery, err)
+		os.Exit(1)
 	}
 }
 
