@@ -881,7 +881,7 @@ var oracleSysMetrics = oracleMetricGroup{
 			defaultMetric: false,
 		},
 		{
-			name:          "db.GcCurrentBlockReceivedPerTransactino",
+			name:          "db.GcCurrentBlockReceivedPerTransaction",
 			identifier:    "GC Current Block Received Per Txn",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
