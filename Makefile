@@ -63,7 +63,7 @@ cross-compile-linux64: deps-only
 
 test: deps
 	@echo "=== $(INTEGRATION) === [ test ]: Running unit tests..."
-	@gocov test $(GO_PKGS) | gocov-xml > coverage.xml
+	@gocov test -race $(GO_PKGS) | gocov-xml > coverage.xml
 
 # Include thematic Makefiles
 include Makefile-*.mk
