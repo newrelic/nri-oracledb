@@ -887,13 +887,13 @@ var oracleSysMetrics = oracleMetricGroup{
 			defaultMetric: false,
 		},
 		{
-			name:          "db.globalCacheAverageCrGetTimePerSecond",
+			name:          "db.globalCacheAverageCrGetTime",
 			identifier:    "Global Cache Average CR Get Time",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
 		},
 		{
-			name:          "db.globalCacheAverageCurrentGetTimePerSecond",
+			name:          "db.globalCacheAverageCurrentGetTime",
 			identifier:    "Global Cache Average Current Get Time",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
