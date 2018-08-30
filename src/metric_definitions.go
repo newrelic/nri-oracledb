@@ -275,7 +275,7 @@ var oraclePgaMetrics = oracleMetricGroup{
 			name:          "memory.pgaInUseInBytes",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
-			identifier:    "total PGA in use",
+			identifier:    "total PGA inuse",
 		},
 		{
 			name:          "memory.pgaAllocatedInBytes",
