@@ -174,8 +174,8 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 			SUM(PHYWRTS) AS "PhysicalWrites",
 			SUM(PHYBLKRD) AS "PhysicalBlockReads",
 			SUM(PHYBLKWRT) AS "PhysicalBlockWrites",
-			SUM(READTIM) AS "ReadTime",
-			SUM(WRITETIM) AS "WriteTime"
+			SUM(READTIM) * 10 AS "ReadTime",
+			SUM(WRITETIM) * 10 AS "WriteTime"
 		FROM gv$filestat 
 		GROUP BY INST_ID`,
 
@@ -205,13 +205,13 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 			defaultMetric: true,
 		},
 		{
-			name:          "disk.readTime",
+			name:          "disk.readTimeInMilliseconds",
 			identifier:    "ReadTime",
 			metricType:    metric.RATE,
 			defaultMetric: true,
 		},
 		{
-			name:          "disk.writeTime",
+			name:          "disk.writeTimeInMilliseconds",
 			identifier:    "WriteTime",
 			metricType:    metric.RATE,
 			defaultMetric: true,
@@ -272,25 +272,25 @@ var oraclePgaMetrics = oracleMetricGroup{
 	sqlQuery: `SELECT INST_ID, NAME, VALUE FROM gv$pgastat`,
 	metrics: []*oracleMetric{
 		{
-			name:          "memory.pgaInUse",
+			name:          "memory.pgaInUseInBytes",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
-			identifier:    "total PGA inuse",
+			identifier:    "total PGA in use",
 		},
 		{
-			name:          "memory.pgaAllocated",
+			name:          "memory.pgaAllocatedInBytes",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
 			identifier:    "total PGA allocated",
 		},
 		{
-			name:          "memory.pgaFreeable",
+			name:          "memory.pgaFreeableInBytes",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
 			identifier:    "total freeable PGA memory",
 		},
 		{
-			name:          "memory.pgaMaxSize",
+			name:          "memory.pgaMaxSizeInBytes",
 			metricType:    metric.GAUGE,
 			defaultMetric: true,
 			identifier:    "global memory bound",
@@ -887,13 +887,13 @@ var oracleSysMetrics = oracleMetricGroup{
 			defaultMetric: false,
 		},
 		{
-			name:          "db.globalCacheAverageCrGetTime",
+			name:          "db.globalCacheAverageCrGetTimePerSecond",
 			identifier:    "Global Cache Average CR Get Time",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
 		},
 		{
-			name:          "db.globalCacheAverageCurrentGetTime",
+			name:          "db.globalCacheAverageCurrentGetTimePerSecond",
 			identifier:    "Global Cache Average Current Get Time",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
@@ -1139,7 +1139,7 @@ var oracleSysMetrics = oracleMetricGroup{
 			defaultMetric: false,
 		},
 		{
-			name:          "disk.tempSpaceUsed",
+			name:          "disk.tempSpaceUsedInBytes",
 			identifier:    "Temp Space Used",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,

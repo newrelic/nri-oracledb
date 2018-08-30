@@ -137,7 +137,7 @@ func TestOracleReadWriteMetrics(t *testing.T) {
 		},
 		{
 			metric: &newrelicMetric{
-				name:       "disk.readTime",
+				name:       "disk.readTimeInMilliseconds",
 				value:      int64(56),
 				metricType: metric.RATE,
 			},
@@ -147,7 +147,7 @@ func TestOracleReadWriteMetrics(t *testing.T) {
 		},
 		{
 			metric: &newrelicMetric{
-				name:       "disk.writeTime",
+				name:       "disk.writeTimeInMilliseconds",
 				value:      int64(67),
 				metricType: metric.RATE,
 			},
@@ -196,7 +196,7 @@ func TestOraclePgaMetrics(t *testing.T) {
 	expectedMetrics := []newrelicMetricSender{
 		{
 			metric: &newrelicMetric{
-				name:       "memory.pgaMaxSize",
+				name:       "memory.pgaMaxSizeInBytes",
 				value:      1234.0,
 				metricType: metric.GAUGE,
 			},
