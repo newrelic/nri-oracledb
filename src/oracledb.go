@@ -84,6 +84,8 @@ func getConnectionString() string {
 }
 
 func exitOnErr(err error) {
-	log.Error("%s", err)
-	os.Exit(1)
+	if err != nil {
+		log.Error("%s", err.Error())
+		os.Exit(1)
+	}
 }
