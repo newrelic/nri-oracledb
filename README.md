@@ -29,7 +29,7 @@ GRANT SELECT ON sys.dba_data_files TO <username>;
 - copy `nr-oracledb-definition.yml` to `/var/db/newrelic-infra/newrelic-integrations`
 - copy the binary in `bin/` that matches your target OS/architecture into `/var/db/newrelic-infra/newrelic-integrations`
 - add execute permissions for the binary file
-- copy `nr-oracledb-config.yml.template` into `/etc/newrelic-infra/integrations.d`, rename it to `nr-oracledb-config.yml`, and edit it to represent the environment you are monitoring
+- copy `nr-oracledb-config.yml.sample` into `/etc/newrelic-infra/integrations.d`, rename it to `nr-oracledb-config.yml`, and edit it to represent the environment you are monitoring
 - install the [Oracle Instant Client](http://www.oracle.com/technetwork/database/database-technologies/instant-client/downloads/index.html)
 
 ## Usage
