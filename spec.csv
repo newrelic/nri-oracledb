@@ -1,6 +1,6 @@
 integration,metric_name,metric_type,metric_enabled,metric_description
 OracleDB,db.GcCurrentBlockReceivedPerTransaction,Gauge,true,GC Current Block Received Per Transaction
-OracleDB,db.globalCacheAverageCrGetTimePerSecond,,Gauge,true,Global Cache Average CR Get Time
+OracleDB,db.globalCacheAverageCrGetTimePerSecond,Gauge,true,Global Cache Average CR Get Time
 OracleDB,db.globalCacheAverageCurrentGetTimePerSecond,Gauge,true,Global Cache Average Current Get Time
 OracleDB,disk.tempSpaceUsedInBytes,Gauge,true,Temp Space Used
 OracleDB,memory.pgaInUseInBytes,Gauge,true,Indicates how much PGA memory is currently consumed by work areas
