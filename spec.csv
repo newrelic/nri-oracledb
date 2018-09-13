@@ -107,7 +107,7 @@ OracleDB,db.GcCurrentBlockReceivedPerSecond,Gauge,true,GC Current Block Received
 OracleDB,disk.physicalWriteTotalIoRequestsPerSecond,Gauge,true,Physical Write Total IO Requests Per Second
 OracleDB,memory.globalCacheBlocksCorrupted,Gauge,true,Global Cache Blocks Corrupted
 OracleDB,memory.globalCacheBlocksLost,Gauge,true,Global Cache Blocks Lost
-OracleDB,db.currentLogons,,gv$sysmetric,Gauge,true,Current Logons Count
+OracleDB,db.currentLogons,Gauge,true,Current Logons Count
 OracleDB,db.currentOpenCursors,Gauge,true,Current Open Cursors Count
 OracleDB,db.userLimitPercentage,Gauge,true,User Limit %
 OracleDB,db.sqlServiceResponseTime,Gauge,true,SQL Service Response Time
