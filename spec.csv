@@ -1,149 +1,149 @@
-description,OnHost Metric Name,Default?,Source ( View ),Source (component,Origin Metric Name,Unit,Rate,Event type,Dashboard?,Alert use-case,Changed
-GC Current Block Received Per Transaction,db.GcCurrentBlockReceivedPerTransaction,,gv$sysmetric,,GC Current Block Received Per Txn,Blocks/Transaction,Gauge,OracleDatabaseSample,,,Yes
-Global Cache Average CR Get Time,db.globalCacheAverageCrGetTimePerSecond,,gv$sysmetric,,Global Cache Average CR Get Time,Centiseconds/Second,Gauge,OracleDatabaseSample,,,Yes
-Global Cache Average Current Get Time,db.globalCacheAverageCurrentGetTimePerSecond,,gv$sysmetric,,Global Cache Average Current Get Time,Centiseconds/Second,Gauge,OracleDatabaseSample,,,Yes
-Temp Space Used,disk.tempSpaceUsedInBytes,,gv$sysmetric,,Temp Space Used,Bytes,Gauge,OracleDatabaseSample,,,Yes
-"Indicates how much PGA memory is currently consumed by work areas. This number can be used to determine how much memory is consumed by other consumers of the PGA memory (for example, PL/SQL or Java).",memory.pgaInUseInBytes,,gv$pgastat,,total PGA inuse,Bytes,Gauge,OracleDatabaseSample,,,Yes
-"Current amount of PGA memory allocated by the instance. The Oracle Database attempts to keep this number below the value of the PGA_AGGREGATE_TARGET initialization parameter. However, it is possible for the PGA allocated to exceed that value by a small percentage and for a short period of time when the work area workload is increasing very rapidly or when PGA_AGGREGATE_TARGET is set to a small value.",memory.pgaAllocatedInBytes,,gv$pgastat,,total PGA allocated,Bytes,Gauge,OracleDatabaseSample,,,Yes
-Number of bytes of PGA memory in all processes that could be freed back to the operating system.,memory.pgaFreeableInBytes,,gv$pgastat,,total freeable PGA memory,Bytes,Gauge,OracleDatabaseSample,,,Yes
-Maximum size of a work area executed in automatic mode. This value is continuously adjusted by the Oracle Database to reflect the current state of the work area workload. The global memory bound generally decreases when the number of active work areas is increasing in the system.,memory.pgaMaxSizeInBytes,y,gv$pgastat,,global memory bound,Bytes,Gauge,OracleDatabaseSample,y,"If the value of the global bound decreases below 1 MB, then the value of PGA_AGGREGATE_TARGET should be increased.",Yes
-amount of file read time,disk.readTimeInMiliseconds,y,gv$filestat group by inst_id,,SUM(ReadTim),Miliseconds,Rate,OracleDatabaseSample,,,Yes - miliseconds
-amount of file write time,disk.writeTimeInMiliseconds,y,gv$filestat group by inst_id,,Sum(WriteTim),Miliseconds,Rate,OracleDatabaseSample,,,Yes - miliseconds
-Consumed amount of tablespace in bytes,tablespace.spaceConsumedInBytes,,"SELECT tablespace_name, SUM(bytes) AS ""USED"", MAX( CASE WHEN status = 'OFFLINE' THEN 1 ELSE 0 END) AS ""OFFLINE"", SUM(maxbytes) AS ""SIZE"", SUM( bytes / maxbytes) AS ""USED_RATIO"" FROM dba_data_files GROUP BY tablespace_name",,tablespace.used,Bytes,Gauge,OracleTablespaceSample,,,
-Total reserved tablespace in bytes,tablespace.spaceReservedInBytes,,"SELECT tablespace_name, SUM(bytes) AS ""USED"", MAX( CASE WHEN status = 'OFFLINE' THEN 1 ELSE 0 END) AS ""OFFLINE"", SUM(maxbytes) AS ""SIZE"", SUM( bytes / maxbytes) AS ""USED_RATIO"" FROM dba_data_files GROUP BY tablespace_name",,tablespace.size,Bytes,Gauge,OracleTablespaceSample,,,
-Total number of physical reads,disk.reads,y,gv$filestat group by inst_id,,SUM(PhyRds),Reads,Rate,OracleDatabaseSample,y,,
-Total number of physical writes,disk.writes,y,gv$filestat group by inst_id,,SUM(Phywrts),Writes,Rate,OracleDatabaseSample,y,,
-number of block reads,disk.blocksRead,y,gv$filestat group by inst_id,,SUM(Phyblkrd),Block Reads,Rate,OracleDatabaseSample,,,
-number of block writes,disk.blocksWritten,y,gv$filestat group by inst_id,,SUM(Phyblkwrt),Block Writes,Rate,OracleDatabaseSample,,,
-Buffer Cache Hit Ratio,memory.bufferCacheHitRatio,y,gv$sysmetric,,Buffer Cache Hit Ratio,%,Gauge,OracleDatabaseSample,,,
-Memory Sorts Ratio,memory.sortsRatio,,gv$sysmetric,,Memory Sorts Ratio,%,Gauge,OracleDatabaseSample,,,
-Redo Allocation Hit Ratio,memory.redoAllocationHitRatio,,gv$sysmetric,,Redo Allocation Hit Ratio,%,Gauge,OracleDatabaseSample,,,
-User Transaction Per Second,query.transactionsPerSecond,y,gv$sysmetric,,User Transaction Per Sec,Transaction/Second,Gauge,OracleDatabaseSample,y,,
-Physical Reads Per Transaction,query.physicalReadsPerTransaction,,gv$sysmetric,,Physical Reads Per Txn,Reads/Transaction,Gauge,OracleDatabaseSample,,,
-Physical Writes Per Transaction,query.physicalWritesPerTransaction,,gv$sysmetric,,Physical Writes Per Txn,Writes/Transaction,Gauge,OracleDatabaseSample,,,
-Physical Reads Direct Per Second,disk.physicalReadsPerSecond,y,gv$sysmetric,,Physical Reads Direct Per Sec,Reads/Second,Gauge,OracleDatabaseSample,y,,
-Physical Reads Direct Per Transaction,query.physicalReadsPerTransaction,,gv$sysmetric,,Physical Reads Direct Per Txn,Reads/Transaction,Gauge,OracleDatabaseSample,,,
-Physical Writes Direct Per Second,disk.physicalWritesPerSecond,y,gv$sysmetric,,Physical Writes Direct Per Sec,Writes/Second,Gauge,OracleDatabaseSample,y,,
-Physical Writes Direct Per Transaction,query.physicalWritesPerTransaction,,gv$sysmetric,,Physical Writes Direct Per Txn,Writes/Transaction,Gauge,OracleDatabaseSample,,,
-Physical Reads Direct Lobs Per Second,disk.physicalLobsReadsPerSecond,,gv$sysmetric,,Physical Reads Direct Lobs Per Sec,Reads/Second,Gauge,OracleDatabaseSample,,,
-Physical Reads Direct Lobs Per Transaction,query.physicalLobsReadsPerTransaction,,gv$sysmetric,,Physical Reads Direct Lobs Per Txn,Reads/Transaction,Gauge,OracleDatabaseSample,,,
-Physical Writes Direct Lobs Per Second,disk.physicalLobsWritesPerSecond,,gv$sysmetric,,Physical Writes Direct Lobs Per Sec,Writes/Second,Gauge,OracleDatabaseSample,,,
-Physical Writes Direct Lobs Per Transaction,query.physicalLobsWritesPerTransaction,,gv$sysmetric,,Physical Writes Direct Lobs Per Txn,Writes/Transaction,Gauge,OracleDatabaseSample,,,
-Redo Generated Bytes Per Second,memory.redoGeneratedBytesPerSecond,,gv$sysmetric,,Redo Generated Per Sec,Bytes/Second,Gauge,OracleDatabaseSample,,,
-Redo Generated Bytes Per Transaction,memory.redoGeneratedBytesPerTransaction,,gv$sysmetric,,Redo Generated Per Txn,Bytes/Transaction,Gauge,OracleDatabaseSample,,,
-Logons Per Second,db.logonsPerSecond,,gv$sysmetric,,Logons Per Sec,Logons/Second,Gauge,OracleDatabaseSample,,,
-Logons Per Transaction,db.logonsPerTransaction,,gv$sysmetric,,Logons Per Txn,Logons/Transaction,Gauge,OracleDatabaseSample,,,
-Open Cursors Per Second,db.openCursorsPerSecond,,gv$sysmetric,,Open Cursors Per Sec,Cursors/Second,Gauge,OracleDatabaseSample,,,
-Open Cursors Per Transaction,db.openCursorsPerTransaction,,gv$sysmetric,,Open Cursors Per Txn,Cursors/Transaction,Gauge,OracleDatabaseSample,,,
-User Commits Per Second,db.userCommitsPerSecond,,gv$sysmetric,,User Commits Per Sec,Commits/Second,Gauge,OracleDatabaseSample,,,
-User Commits Percentage,db.userCommitsPercentage,,gv$sysmetric,,User Commits Percentage,%,Gauge,OracleDatabaseSample,,,
-User Rollbacks Per Second,db.userRollbacksPerSecond,,gv$sysmetric,,User Rollbacks Per Sec,Rollbacks/Second,Gauge,OracleDatabaseSample,,,
-User Rollbacks Percentage,db.userRollbacksPercentage,,gv$sysmetric,,User Rollbacks Percentage,%,Gauge,OracleDatabaseSample,,,
-User Calls Per Second,db.userCallsPerSecond,,gv$sysmetric,,User Calls Per Sec,Calls/Second,Gauge,OracleDatabaseSample,,,
-User Calls Per Transaction,db.userCallsPerTransaction,,gv$sysmetric,,User Calls Per Txn,Calls/Transaction,Gauge,OracleDatabaseSample,,,
-Recursive Calls Per Second,db.recursiveCallsPerSecond,,gv$sysmetric,,Recursive Calls Per Sec,Calls/Second,Gauge,OracleDatabaseSample,,,
-Recursive Calls Per Transaction,db.recursiveCallsPerTransaction,,gv$sysmetric,,Recursive Calls Per Txn,Calls/Transaction,Gauge,OracleDatabaseSample,,,
-Logical Reads Per Second,db.logicalReadsPerSecond,,gv$sysmetric,,Logical Reads Per Sec,Reads/Second,Gauge,OracleDatabaseSample,,,
-Logical Reads Per Transaction,db.logicalReadsPerTransaction,,gv$sysmetric,,Logical Reads Per Txn,Reads/Transaction,Gauge,OracleDatabaseSample,,,
-DBWR Checkpoints Per Second,db.dbwrCheckpointsPerSecond,,gv$sysmetric,,DBWR Checkpoints Per Sec,Checkpoints/Second,Gauge,OracleDatabaseSample,,,
-Background Checkpoints Per Second,db.backgroundCheckpointsPerSecond,,gv$sysmetric,,Background Checkpoints Per Sec,Checkpoints/Second,Gauge,OracleDatabaseSample,,,
-Redo Writes Per Second,db.redoWritesPerSecond,,gv$sysmetric,,Redo Writes Per Sec,Writes/Second,Gauge,OracleDatabaseSample,,,
-Redo Writes Per Transaction,db.redoWritesPerTransaction,,gv$sysmetric,,Redo Writes Per Txn,Writes/Transaction,Gauge,OracleDatabaseSample,,,
-Long Table Scans Per Second,db.longTableScansPerSecond,,gv$sysmetric,,Long Table Scans Per Sec,Scans/Second,Gauge,OracleDatabaseSample,,,
-Long Table Scans Per Transaction,db.longTableScansPerTransaction,,gv$sysmetric,,Long Table Scans Per Txn,Scans/Transaction,Gauge,OracleDatabaseSample,,,
-Total Table Scans Per Second,db.totalTableScansPerSecond,y,gv$sysmetric,,Total Table Scans Per Sec,Scans/Second,Gauge,OracleDatabaseSample,,,
-Total Table Scans Per Transaction,db.totalTableScansPerTransaction,,gv$sysmetric,,Total Table Scans Per Txn,Scans/Transaction,Gauge,OracleDatabaseSample,,,
-Full Index Scans Per Second,db.fullIndexScansPerSecond,,gv$sysmetric,,Full Index Scans Per Sec,Scans/Second,Gauge,OracleDatabaseSample,,,
-Full Index Scans Per Transaction,db.fullIndexScansPerTransaction,,gv$sysmetric,,Full Index Scans Per Txn,Scans/Transaction,Gauge,OracleDatabaseSample,,,
-Total Index Scans Per Second,db.totalIndexScansPerSecond,y,gv$sysmetric,,Total Index Scans Per Sec,Scans/Second,Gauge,OracleDatabaseSample,,,
-Total Index Scans Per Transaction,db.totalIndexScansPerTransaction,,gv$sysmetric,,Total Index Scans Per Txn,Scans/Transaction,Gauge,OracleDatabaseSample,,,
-Total Parse Count Per Second,db.totalParseCountPerSecond,,gv$sysmetric,,Total Parse Count Per Sec,Parses/Second,Gauge,OracleDatabaseSample,,,
-Total Parse Count Per Transaction,db.totalParseCountPerTransaction,,gv$sysmetric,,Total Parse Count Per Txn,Parses/Transaction,Gauge,OracleDatabaseSample,,,
-Hard Parse Count Per Second,db.hardParseCountPerSecond,,gv$sysmetric,,Hard Parse Count Per Sec,Parses/Second,Gauge,OracleDatabaseSample,,,
-Hard Parse Count Per Transaction,db.hardParseCountPerTransaction,,gv$sysmetric,,Hard Parse Count Per Txn,Parse/Transaction,Gauge,OracleDatabaseSample,,,
-Parse Failure Count Per Second,db.parseFailureCountPerSecond,,gv$sysmetric,,Parse Failure Count Per Sec,Failures/Second,Gauge,OracleDatabaseSample,,,
-Parse Failure Count Per Transaction,db.parseFailureCountPerTransaction,,gv$sysmetric,,Parse Failure Count Per Txn,Failures/Transaction,Gauge,OracleDatabaseSample,,,
-Cursor Cache Hit Ratio,db.cursorCacheHitsPerAttempts,,gv$sysmetric,,Cursor Cache Hit Ratio,Hits/Attempts,Gauge,OracleDatabaseSample,,,
-Disk Sort Per Second,disk.sortPerSecond,,gv$sysmetric,,Disk Sort Per Sec,Sorts/Second,Gauge,OracleDatabaseSample,,,
-Disk Sort Per Transaction,disk.sortPerTransaction,,gv$sysmetric,,Disk Sort Per Txn,Sorts/Transaction,Gauge,OracleDatabaseSample,,,
-Rows Per Sort,db.rowsPerSort,,gv$sysmetric,,Rows Per Sort,Rows/Sort,Gauge,OracleDatabaseSample,,,
-Soft Parse Ratio,db.softParseRatio,,gv$sysmetric,,Soft Parse Ratio,%,Gauge,OracleDatabaseSample,,,
-User Calls Ratio,db.userCallsRatio,,gv$sysmetric,,User Calls Ratio,%,Gauge,OracleDatabaseSample,,,
-Host CPU Utilization (%),db.hostCpuUtilization,y,gv$sysmetric,,Host CPU Utilization (%),%,Gauge,OracleDatabaseSample,y,,
-Network Traffic Volume Per Second,network.trafficBytePerSecond,y,gv$sysmetric,,Network Traffic Volume Per Sec,Bytes/Second,Gauge,OracleDatabaseSample,,,
-Enqueue Timeouts Per Second,db.enqueueTimeoutsPerSecond,,gv$sysmetric,,Enqueue Timeouts Per Sec,Timeouts/Second,Gauge,OracleDatabaseSample,,,
-Enqueue Timeouts Per Transaction,db.enqueueTimeoutsPerTransaction,,gv$sysmetric,,Enqueue Timeouts Per Txn,Timeouts/Transaction,Gauge,OracleDatabaseSample,,,
-Enqueue Waits Per Second,db.enqueueWaitsPerSecond,,gv$sysmetric,,Enqueue Waits Per Sec,Waits/Second,Gauge,OracleDatabaseSample,,,
-Enqueue Waits Per Transaction,db.enqueueWaitsPerTransaction,,gv$sysmetric,,Enqueue Waits Per Txn,Waits/Transaction,Gauge,OracleDatabaseSample,,,
-Enqueue Deadlocks Per Second,db.enqueueDeadlocksPerSecond,,gv$sysmetric,,Enqueue Deadlocks Per Sec,Deadlocks/Second,Gauge,OracleDatabaseSample,,,
-Enqueue Deadlocks Per Transaction,db.enqueueDeadlocksPerTransaction,,gv$sysmetric,,Enqueue Deadlocks Per Txn,Deadlocks/Transaction,Gauge,OracleDatabaseSample,,,
-Enqueue Requests Per Second,db.enqueueRequestsPerSecond,,gv$sysmetric,,Enqueue Requests Per Sec,Requests/Second,Gauge,OracleDatabaseSample,,,
-Enqueue Requests Per Transaction,db.enqueueRequestsPerTransaction,,gv$sysmetric,,Enqueue Requests Per Txn,Requests/Transaction,Gauge,OracleDatabaseSample,,,
-DB Block Gets Per Second,db.blockGetsPerSecond,,gv$sysmetric,,DB Block Gets Per Sec,Gets/Second,Gauge,OracleDatabaseSample,,,
-DB Block Gets Per Transaction,db.blockGetsPerTransaction,,gv$sysmetric,,DB Block Gets Per Txn,Gets/Transaction,Gauge,OracleDatabaseSample,,,
-Consistent Read Gets Per Second,db.consistentReadGetsPerSecond,,gv$sysmetric,,Consistent Read Gets Per Sec,Reads/Second,Gauge,OracleDatabaseSample,,,
-DB Block Changes Per Second,db.blockChangesPerSecond,,gv$sysmetric,,DB Block Changes Per Sec,Changes/Second,Gauge,OracleDatabaseSample,,,
-Consistent Read Gets Per Transaction,db.consistentReadGetsPerTransaction,,gv$sysmetric,,Consistent Read Gets Per Txn,Reads/Transaction,Gauge,OracleDatabaseSample,,,
-DB Block Changes Per Transaction,db.blockChangesPerTransaction,,gv$sysmetric,,DB Block Changes Per Txn,Changes/Transaction,Gauge,OracleDatabaseSample,,,
-Consistent Read Changes Per Second,db.consistentReadChangesPerSecond,,gv$sysmetric,,Consistent Read Changes Per Sec,Changes/Second,Gauge,OracleDatabaseSample,,,
-Consistent Read Changes Per Transaction,db.consistentReadChangesPerTransaction,,gv$sysmetric,,Consistent Read Changes Per Txn,Changes/Transaction,Gauge,OracleDatabaseSample,,,
-CPU Usage Per Second,db.cpuUsagePerSecond,y,gv$sysmetric,,CPU Usage Per Sec,Centiseconds/Second,Gauge,OracleDatabaseSample,,,
-CPU Usage Per Transaction,db.cpuUsagePerTransaction,,gv$sysmetric,,CPU Usage Per Txn,Centiseconds/Transaction,Gauge,OracleDatabaseSample,,,
-CR Blocks Created Per Second,db.crBlocksCreatedPerSecond,,gv$sysmetric,,CR Blocks Created Per Sec,Creates/Second,Gauge,OracleDatabaseSample,,,
-CR Blocks Created Per Transaction,db.crBlocksCreatedPerTransaction,,gv$sysmetric,,CR Blocks Created Per Txn,Creates/Transaction,Gauge,OracleDatabaseSample,,,
-CR Undo Records Applied Per Second,db.crUndoRecordsAppliedPerSecond,,gv$sysmetric,,CR Undo Records Applied Per Sec,Applies/Second,Gauge,OracleDatabaseSample,,,
-CR Undo Records Applied Per Transaction,db.crUndoRecordsAppliedPerTransaction,,gv$sysmetric,,CR Undo Records Applied Per Txn,Applies/Transaction,Gauge,OracleDatabaseSample,,,
-User Rollback UndoRec Applied Per Second,db.userRollbackUndoRecordsAppliedPerSecond,,gv$sysmetric,,User Rollback UndoRec Applied Per Sec,Applies/Second,Gauge,OracleDatabaseSample,,,
-User Rollback Undo Records Applied Per Transaction,db.userRollbackUndoRecordsAppliedPerTransaction,,gv$sysmetric,,User Rollback Undo Records Applied Per Txn,Applies/Transaction,Gauge,OracleDatabaseSample,,,
-Leaf Node Splits Per Second,db.leafNodeSplitsPerSecond,,gv$sysmetric,,Leaf Node Splits Per Sec,Splits/Second,Gauge,OracleDatabaseSample,,,
-Leaf Node Splits Per Transaction,db.leafNodeSplitsPerTransaction,,gv$sysmetric,,Leaf Node Splits Per Txn,Splits/Transaction,Gauge,OracleDatabaseSample,,,
-Branch Node Splits Per Second,db.branchNodeSplitsPerSecond,,gv$sysmetric,,Branch Node Splits Per Sec,Splits/Second,Gauge,OracleDatabaseSample,,,
-Branch Node Splits Per Transaction,db.branchNodeSplitsPerTransaction,,gv$sysmetric,,Branch Node Splits Per Txn,Splits/Transaction,Gauge,OracleDatabaseSample,,,
-Physical Read Total IO Requests Per Second,disk.physicalReadIoRequestsPerSecond,y,gv$sysmetric,,Physical Read Total IO Requests Per Sec,Requests/Second,Gauge,OracleDatabaseSample,,,
-Physical Read Total Bytes Per Second,disk.physicalReadBytesPerSecond,y,gv$sysmetric,,Physical Read Total Bytes Per Sec,Bytes/Second,Gauge,OracleDatabaseSample,y,,
-GC CR Block Received Per Second,db.GcCrBlockRecievedPerSecond,,gv$sysmetric,,GC CR Block Received Per Second,Blocks/Second,Gauge,OracleDatabaseSample,,,
-GC CR Block Received Per Transaction,db.GcCrBlockRecievedPerTransaction,,gv$sysmetric,,GC CR Block Received Per Txn,Blocks/Transaction,Gauge,OracleDatabaseSample,,,
-GC Current Block Received Per Second,db.GcCurrentBlockReceivedPerSecond,,gv$sysmetric,,GC Current Block Received Per Second,Blockes/Second,Gauge,OracleDatabaseSample,,,
-Physical Write Total IO Requests Per Second,disk.physicalWriteTotalIoRequestsPerSecond,y,gv$sysmetric,,Physical Write Total IO Requests Per Sec,Requests/Second,Gauge,OracleDatabaseSample,,,
-Global Cache Blocks Corrupted,memory.globalCacheBlocksCorrupted,,gv$sysmetric,,Global Cache Blocks Corrupted,Blocks,Gauge,OracleDatabaseSample,,,
-Global Cache Blocks Lost,memory.globalCacheBlocksLost,,gv$sysmetric,,Global Cache Blocks Lost,Blocks,Gauge,OracleDatabaseSample,,,
-Current Logons Count,db.currentLogons,,gv$sysmetric,,Current Logons Count,Logons,Gauge,OracleDatabaseSample,,,
-Current Open Cursors Count,db.currentOpenCursors,,gv$sysmetric,,Current Open Cursors Count,Cursors,Gauge,OracleDatabaseSample,,,
-User Limit %,db.userLimitPercentage,,gv$sysmetric,,User Limit %,%,Gauge,OracleDatabaseSample,,,
-SQL Service Response Time,db.sqlServiceResponseTime,y,gv$sysmetric,,SQL Service Response Time,Centiseconds,Gauge,OracleDatabaseSample,,,
-Database Wait Time Ratio,db.waitTimeRatio,,gv$sysmetric,,Database Wait Time Ratio,%,Gauge,OracleDatabaseSample,,,
-Database CPU Time Ratio,db.cpuTimeRatio,,gv$sysmetric,,Database CPU Time Ratio,%,Gauge,OracleDatabaseSample,,,
-Response Time Per Transaction,db.responseTimePerTransaction,,gv$sysmetric,,Response Time Per Txn,Centiseconds/Transaction,Gauge,OracleDatabaseSample,,,
-Row Cache Hit Ratio,db.rowCacheHitRatio,,gv$sysmetric,,Row Cache Hit Ratio,%,Gauge,OracleDatabaseSample,,,
-Row Cache Miss Ratio,db.rowCacheMissRatio,,gv$sysmetric,,Row Cache Miss Ratio,%,Gauge,OracleDatabaseSample,,,
-Library Cache Hit Ratio,db.libraryCacheHitRatio,,gv$sysmetric,,Library Cache Hit Ratio,%,Gauge,OracleDatabaseSample,,,
-Library Cache Miss Ratio,db.libraryCacheMissRatio,,gv$sysmetric,,Library Cache Miss Ratio,%,Gauge,OracleDatabaseSample,,,
-Shared Pool Free %,db.sharedPoolFreePercentage,,gv$sysmetric,,Shared Pool Free %,%,Gauge,OracleDatabaseSample,,,
-PGA Cache Hit %,db.pgaCacheHitPercentage,,gv$sysmetric,,PGA Cache Hit %,%,Gauge,OracleDatabaseSample,,,
-Process Limit %,db.processLimitPercentage,,gv$sysmetric,,Process Limit %,%,Gauge,OracleDatabaseSample,,,
-Session Limit %,db.sessionLimitPercentage,,gv$sysmetric,,Session Limit %,%,Gauge,OracleDatabaseSample,,,
-Executions Per Transaction,db.executionsPerTransaction,,gv$sysmetric,,Executions Per Txn,Executions/Transaction,Gauge,OracleDatabaseSample,,,
-Executions Per Second,db.executionsPerSecond,y,gv$sysmetric,,Executions Per Sec,Executions/Second,Gauge,OracleDatabaseSample,y,,
-Txns Per Logon,db.TransactionsPerLogon,,gv$sysmetric,,Txns Per Logon,Transactions/Logon,Gauge,OracleDatabaseSample,,,
-Database Time Per Second,db.databaseCpuTimePerSecond,,gv$sysmetric,,Database Time Per Sec,Centiseconds/Second,Gauge,OracleDatabaseSample,,,
-Physical Write Total Bytes Per Second,disk.physicalWriteBytesPerSecond,,gv$sysmetric,,Physical Write Total Bytes Per Sec,Bytes/Second,Gauge,OracleDatabaseSample,,,
-Physical Write IO Requests Per Second,disk.physicalWriteIoRequestsPerSecond,,gv$sysmetric,,Physical Write IO Requests Per Sec,Requests/Second,Gauge,OracleDatabaseSample,,,
-DB Block Changes Per User Call,db.blockChangesPerUserCall,,gv$sysmetric,,DB Block Changes Per User Call,Changes/Call,Gauge,OracleDatabaseSample,,,
-DB Block Gets Per User Call,db.blockGetsPerUserCall,,gv$sysmetric,,DB Block Gets Per User Call,Gets/Call,Gauge,OracleDatabaseSample,,,
-Executions Per User Call,db.executionsPerUserCall,,gv$sysmetric,,Executions Per User Call,Executions/Call,Gauge,OracleDatabaseSample,,,
-Logical Reads Per User Call,disk.logicalReadsPerUserCall,,gv$sysmetric,,Logical Reads Per User Call,Reads/Call,Gauge,OracleDatabaseSample,,,
-Total Sorts Per User Call,db.sortsPerUserCall,,gv$sysmetric,,Total Sorts Per User Call,Sorts/Call,Gauge,OracleDatabaseSample,,,
-Total Table Scans Per User Call,db.tableScansPerUserCall,,gv$sysmetric,,Total Table Scans Per User Call,Scans/Call,Gauge,OracleDatabaseSample,,,
-Current OS Load,db.osLoad,,gv$sysmetric,,Current OS Load,Processes,Gauge,OracleDatabaseSample,,,
-Streams Pool Usage Percentage,db.streamsPoolUsagePercentage,,gv$sysmetric,,Streams Pool Usage Percentage,%,Gauge,OracleDatabaseSample,,,
-I/O Megabytes per Second,network.ioMegabytesPerSecond,y,gv$sysmetric,,I/O Megabytes per Second,megabytes per second,Gauge,OracleDatabaseSample,y,,
-I/O Requests per Second,network.ioRequestsPerSecond,y,gv$sysmetric,,I/O Requests per Second,Requests/Second,Gauge,OracleDatabaseSample,,,
-Average Active Sessions,db.averageActiveSessions,,gv$sysmetric,,Average Active Sessions,Sessions,Gauge,OracleDatabaseSample,,,
-Active Serial Sessions,db.activeSerialSessions,,gv$sysmetric,,Active Serial Sessions,Sessions,Gauge,OracleDatabaseSample,,,
-Active Parallel Sessions,db.activeParallelSessions,,gv$sysmetric,,Active Parallel Sessions,Sessions,Gauge,OracleDatabaseSample,,,
-Background CPU Usage Per Second,db.backgroundCpuUsagePerSecond,,gv$sysmetric,,Background CPU Usage Per Sec,Centiseconds/Second,Gauge,OracleDatabaseSample,,,
-Background Time Per Second,db.backgroundTimePerSecond,,gv$sysmetric,,Background Time Per Sec,Centiseconds/Second,Gauge,OracleDatabaseSample,,,
-Host CPU Usage Per Second,db.hostCpuUsagePerSecond,,gv$sysmetric,,Host CPU Usage Per Sec,Centiseconds/Second,Gauge,OracleDatabaseSample,,,
-session count,db.sessionCount,y,gv$sysmetric,,Session Count,Sessons,Gauge,OracleDatabaseSample,y,,
-Ratio of used to total tablespace,tablespace.spaceUsedPercentage,y,"SELECT tablespace_name, SUM(bytes) AS ""USED"", MAX( CASE WHEN status = 'OFFLINE' THEN 1 ELSE 0 END) AS ""OFFLINE"", SUM(maxbytes) AS ""SIZE"", SUM( bytes / maxbytes) AS ""USED_RATIO"" FROM dba_data_files GROUP BY tablespace_name",,tablesace.in_use,%,Gauge,OracleTablespaceSample,y,,
-Boolean for Tablespace Offline status,tablespace.isOffline,y,"SELECT tablespace_name, SUM(bytes) AS ""USED"", MAX( CASE WHEN status = 'OFFLINE' THEN 1 ELSE 0 END) AS ""OFFLINE"", SUM(maxbytes) AS ""SIZE"", SUM( bytes / maxbytes) AS ""USED_RATIO"" FROM dba_data_files GROUP BY tablespace_name",,tablespace.offline,Boolean,Gauge,OracleTablespaceSample,y,,
+integration,metric_name,metric_type,metric_enabled,metric_description
+OracleDB,db.GcCurrentBlockReceivedPerTransaction,Gauge,true,GC Current Block Received Per Transaction
+OracleDB,db.globalCacheAverageCrGetTimePerSecond,,Gauge,true,Global Cache Average CR Get Time
+OracleDB,db.globalCacheAverageCurrentGetTimePerSecond,Gauge,true,Global Cache Average Current Get Time
+OracleDB,disk.tempSpaceUsedInBytes,Gauge,true,Temp Space Used
+OracleDB,memory.pgaInUseInBytes,Gauge,true,Indicates how much PGA memory is currently consumed by work areas
+OracleDB,memory.pgaAllocatedInBytes,Gauge,true,Current amount of PGA memory allocated by the instance. The Oracle Database attempts to keep this number below the value of the PGA_AGGREGATE_TARGET initialization parameter. However, it is possible for the PGA allocated to exceed that value by a small percentage and for a short period of time when the work area workload is increasing very rapidly or when PGA_AGGREGATE_TARGET is set to a small value
+OracleDB,memory.pgaFreeableInBytes,Gauge,true,Number of bytes of PGA memory in all processes that could be freed back to the operating system
+OracleDB,memory.pgaMaxSizeInBytes,Gauge,true,Maximum size of a work area executed in automatic mode. This value is continuously adjusted by the Oracle Database to reflect the current state of the work area workload. The global memory bound generally decreases when the number of active work areas is increasing in the system
+OracleDB,disk.readTimeInMiliseconds,Rate,true,amount of file read time
+OracleDB,disk.writeTimeInMiliseconds,Rate,true,amount of file write time
+OracleDB,tablespace.spaceConsumedInBytes,Gauge,true,Consumed amount of tablespace in bytes
+OracleDB,tablespace.spaceReservedInBytes,Gauge,true,Total reserved tablespace in bytes
+OracleDB,disk.reads,Rate,true,Total number of physical reads
+OracleDB,disk.writes,Rate,true,Total number of physical writes
+OracleDB,disk.blocksRead,Rate,true,number of block reads
+OracleDB,disk.blocksWritten,Rate,true,number of block writes
+OracleDB,memory.bufferCacheHitRatio,Gauge,true,Buffer Cache Hit Ratio
+OracleDB,memory.sortsRatio,Gauge,true,Memory Sorts Ratio
+OracleDB,memory.redoAllocationHitRatio,Gauge,true,Redo Allocation Hit Ratio
+OracleDB,query.transactionsPerSecond,Gauge,true,User Transaction Per Second
+OracleDB,query.physicalReadsPerTransaction,Gauge,true,Physical Reads Per Transaction
+OracleDB,query.physicalWritesPerTransaction,Gauge,true,Physical Writes Per Transaction
+OracleDB,disk.physicalReadsPerSecond,Gauge,true,Physical Reads Direct Per Second
+OracleDB,query.physicalReadsPerTransaction,Gauge,true,Physical Reads Direct Per Transaction
+OracleDB,disk.physicalWritesPerSecond,Gauge,true,Physical Writes Direct Per Second
+OracleDB,query.physicalWritesPerTransaction,Gauge,true,Physical Writes Direct Per Transaction
+OracleDB,disk.physicalLobsReadsPerSecond,Gauge,true,Physical Reads Direct Lobs Per Second
+OracleDB,query.physicalLobsReadsPerTransaction,Gauge,true,Physical Reads Direct Lobs Per Transaction
+OracleDB,disk.physicalLobsWritesPerSecond,Gauge,true,Physical Writes Direct Lobs Per Second
+OracleDB,query.physicalLobsWritesPerTransaction,Gauge,true,Physical Writes Direct Lobs Per Transaction
+OracleDB,memory.redoGeneratedBytesPerSecond,Gauge,true,Redo Generated Bytes Per Second
+OracleDB,memory.redoGeneratedBytesPerTransaction,Gauge,true,Redo Generated Bytes Per Transaction
+OracleDB,db.logonsPerSecond,Gauge,true,Logons Per Second
+OracleDB,db.logonsPerTransaction,Gauge,true,Logons Per Transaction
+OracleDB,db.openCursorsPerSecond,Gauge,true,Open Cursors Per Second
+OracleDB,db.openCursorsPerTransaction,Gauge,true,Open Cursors Per Transaction
+OracleDB,db.userCommitsPerSecond,Gauge,true,User Commits Per Second
+OracleDB,db.userCommitsPercentage,Gauge,true,User Commits Percentage
+OracleDB,db.userRollbacksPerSecond,Gauge,true,User Rollbacks Per Second
+OracleDB,db.userRollbacksPercentage,Gauge,true,User Rollbacks Percentage
+OracleDB,db.userCallsPerSecond,Gauge,true,User Calls Per Second
+OracleDB,db.userCallsPerTransaction,Gauge,true,User Calls Per Transaction
+OracleDB,db.recursiveCallsPerSecond,Gauge,true,Recursive Calls Per Second
+OracleDB,db.recursiveCallsPerTransaction,Gauge,true,Recursive Calls Per Transaction
+OracleDB,db.logicalReadsPerSecond,Gauge,true,Logical Reads Per Second
+OracleDB,db.logicalReadsPerTransaction,Gauge,true,Logical Reads Per Transaction
+OracleDB,db.dbwrCheckpointsPerSecond,Gauge,true,DBWR Checkpoints Per Second
+OracleDB,db.backgroundCheckpointsPerSecond,Gauge,true,Background Checkpoints Per Second
+OracleDB,db.redoWritesPerSecond,Gauge,true,Redo Writes Per Second
+OracleDB,db.redoWritesPerTransaction,Gauge,true,Redo Writes Per Transaction
+OracleDB,db.longTableScansPerSecond,Gauge,true,Long Table Scans Per Second
+OracleDB,db.longTableScansPerTransaction,Gauge,true,Long Table Scans Per Transaction
+OracleDB,db.totalTableScansPerSecond,Gauge,true,Total Table Scans Per Second
+OracleDB,db.totalTableScansPerTransaction,Gauge,true,Total Table Scans Per Transaction
+OracleDB,db.fullIndexScansPerSecond,Gauge,true,Full Index Scans Per Second
+OracleDB,db.fullIndexScansPerTransaction,Gauge,true,Full Index Scans Per Transaction
+OracleDB,db.totalIndexScansPerSecond,Gauge,true,Total Index Scans Per Second
+OracleDB,db.totalIndexScansPerTransaction,Gauge,true,Total Index Scans Per Transaction
+OracleDB,db.totalParseCountPerSecond,Gauge,true,Total Parse Count Per Second
+OracleDB,db.totalParseCountPerTransaction,Gauge,true,Total Parse Count Per Transaction
+OracleDB,db.hardParseCountPerSecond,Gauge,true,Hard Parse Count Per Second
+OracleDB,db.hardParseCountPerTransaction,Gauge,true,Hard Parse Count Per Transaction
+OracleDB,db.parseFailureCountPerSecond,Gauge,true,Parse Failure Count Per Second
+OracleDB,db.parseFailureCountPerTransaction,Gauge,true,Parse Failure Count Per Transaction
+OracleDB,db.cursorCacheHitsPerAttempts,Gauge,true,Cursor Cache Hit Ratio
+OracleDB,disk.sortPerSecond,Gauge,true,Disk Sort Per Second
+OracleDB,disk.sortPerTransaction,Gauge,true,Disk Sort Per Transaction
+OracleDB,db.rowsPerSort,Gauge,true,Rows Per Sort
+OracleDB,db.softParseRatio,Gauge,true,Soft Parse Ratio
+OracleDB,db.userCallsRatio,Gauge,true,User Calls Ratio
+OracleDB,db.hostCpuUtilization,Gauge,true,Host CPU Utilization (%)
+OracleDB,network.trafficBytePerSecond,Gauge,true,Network Traffic Volume Per Second
+OracleDB,db.enqueueTimeoutsPerSecond,Gauge,true,Enqueue Timeouts Per Second
+OracleDB,db.enqueueTimeoutsPerTransaction,Gauge,true,Enqueue Timeouts Per Transaction
+OracleDB,db.enqueueWaitsPerSecond,Gauge,true,Enqueue Waits Per Second
+OracleDB,db.enqueueWaitsPerTransaction,Gauge,true,Enqueue Waits Per Transaction
+OracleDB,db.enqueueDeadlocksPerSecond,Gauge,true,Enqueue Deadlocks Per Second
+OracleDB,db.enqueueDeadlocksPerTransaction,Gauge,true,Enqueue Deadlocks Per Transaction
+OracleDB,db.enqueueRequestsPerSecond,Gauge,true,Enqueue Requests Per Second
+OracleDB,db.enqueueRequestsPerTransaction,Gauge,true,Enqueue Requests Per Transaction
+OracleDB,db.blockGetsPerSecond,Gauge,true,DB Block Gets Per Second
+OracleDB,db.blockGetsPerTransaction,Gauge,true,DB Block Gets Per Transaction
+OracleDB,db.consistentReadGetsPerSecond,Gauge,true,Consistent Read Gets Per Second
+OracleDB,db.blockChangesPerSecond,Gauge,true,DB Block Changes Per Second
+OracleDB,db.consistentReadGetsPerTransaction,Gauge,true,Consistent Read Gets Per Transaction
+OracleDB,db.blockChangesPerTransaction,Gauge,true,DB Block Changes Per Transaction
+OracleDB,db.consistentReadChangesPerSecond,Gauge,true,Consistent Read Changes Per Second
+OracleDB,db.consistentReadChangesPerTransaction,Gauge,true,Consistent Read Changes Per Transaction
+OracleDB,db.cpuUsagePerSecond,Gauge,true,CPU Usage Per Second
+OracleDB,db.cpuUsagePerTransaction,Gauge,true,CPU Usage Per Transaction
+OracleDB,db.crBlocksCreatedPerSecond,Gauge,true,CR Blocks Created Per Second
+OracleDB,db.crBlocksCreatedPerTransaction,Gauge,true,CR Blocks Created Per Transaction
+OracleDB,db.crUndoRecordsAppliedPerSecond,Gauge,true,CR Undo Records Applied Per Second
+OracleDB,db.crUndoRecordsAppliedPerTransaction,Gauge,true,CR Undo Records Applied Per Transaction
+OracleDB,db.userRollbackUndoRecordsAppliedPerSecond,Gauge,true,User Rollback UndoRec Applied Per Second
+OracleDB,db.userRollbackUndoRecordsAppliedPerTransaction,Gauge,true,User Rollback Undo Records Applied Per Transaction
+OracleDB,db.leafNodeSplitsPerSecond,Gauge,true,Leaf Node Splits Per Second
+OracleDB,db.leafNodeSplitsPerTransaction,Gauge,true,Leaf Node Splits Per Transaction
+OracleDB,db.branchNodeSplitsPerSecond,Gauge,true,Branch Node Splits Per Second
+OracleDB,db.branchNodeSplitsPerTransaction,Gauge,true,Branch Node Splits Per Transaction
+OracleDB,disk.physicalReadIoRequestsPerSecond,Gauge,true,Physical Read Total IO Requests Per Second
+OracleDB,disk.physicalReadBytesPerSecond,Gauge,true,Physical Read Total Bytes Per Second
+OracleDB,db.GcCrBlockRecievedPerSecond,Gauge,true,GC CR Block Received Per Second
+OracleDB,db.GcCrBlockRecievedPerTransaction,Gauge,true,GC CR Block Received Per Transaction
+OracleDB,db.GcCurrentBlockReceivedPerSecond,Gauge,true,GC Current Block Received Per Second
+OracleDB,disk.physicalWriteTotalIoRequestsPerSecond,Gauge,true,Physical Write Total IO Requests Per Second
+OracleDB,memory.globalCacheBlocksCorrupted,Gauge,true,Global Cache Blocks Corrupted
+OracleDB,memory.globalCacheBlocksLost,Gauge,true,Global Cache Blocks Lost
+OracleDB,db.currentLogons,,gv$sysmetric,Gauge,true,Current Logons Count
+OracleDB,db.currentOpenCursors,Gauge,true,Current Open Cursors Count
+OracleDB,db.userLimitPercentage,Gauge,true,User Limit %
+OracleDB,db.sqlServiceResponseTime,Gauge,true,SQL Service Response Time
+OracleDB,db.waitTimeRatio,Gauge,true,Database Wait Time Ratio
+OracleDB,db.cpuTimeRatio,Gauge,true,Database CPU Time Ratio
+OracleDB,db.responseTimePerTransaction,Gauge,true,Response Time Per Transaction,
+OracleDB,db.rowCacheHitRatio,Gauge,true,Row Cache Hit Ratio
+OracleDB,db.rowCacheMissRatio,Gauge,true,Row Cache Miss Ratio
+OracleDB,db.libraryCacheHitRatio,Gauge,true,Library Cache Hit Ratio
+OracleDB,db.libraryCacheMissRatio,Gauge,true,Library Cache Miss Ratio
+OracleDB,db.sharedPoolFreePercentage,Gauge,true,Shared Pool Free %
+OracleDB,db.pgaCacheHitPercentage,Gauge,true,PGA Cache Hit %
+OracleDB,db.processLimitPercentage,Gauge,true,Process Limit %
+OracleDB,db.sessionLimitPercentage,Gauge,true,Session Limit %
+OracleDB,db.executionsPerTransaction,Gauge,true,Executions Per Transaction
+OracleDB,db.executionsPerSecond,Gauge,true,Executions Per Second
+OracleDB,db.TransactionsPerLogon,Gauge,true,Txns Per Logon
+OracleDB,db.databaseCpuTimePerSecond,Gauge,true,Database Time Per Second
+OracleDB,disk.physicalWriteBytesPerSecond,Gauge,true,Physical Write Total Bytes Per Second
+OracleDB,disk.physicalWriteIoRequestsPerSecond,Gauge,true,Physical Write IO Requests Per Second
+OracleDB,db.blockChangesPerUserCall,Gauge,true,DB Block Changes Per User Call
+OracleDB,db.blockGetsPerUserCall,Gauge,true,DB Block Gets Per User Call
+OracleDB,db.executionsPerUserCall,Gauge,true,Executions Per User Call
+OracleDB,disk.logicalReadsPerUserCall,Gauge,true,Logical Reads Per User Call
+OracleDB,db.sortsPerUserCall,Gauge,true,Total Sorts Per User Call
+OracleDB,db.tableScansPerUserCall,Gauge,true,Total Table Scans Per User Call
+OracleDB,db.osLoad,Gauge,true,Current OS Load
+OracleDB,db.streamsPoolUsagePercentage,Gauge,true,Streams Pool Usage Percentage,
+OracleDB,network.ioMegabytesPerSecond,Gauge,true,I/O Megabytes per Second
+OracleDB,network.ioRequestsPerSecond,Gauge,true,I/O Requests per Second
+OracleDB,db.averageActiveSessions,Gauge,true,Average Active Sessions
+OracleDB,db.activeSerialSessions,Gauge,true,Active Serial Sessions
+OracleDB,db.activeParallelSessions,Gauge,true,Active Parallel Sessions
+OracleDB,db.backgroundCpuUsagePerSecond,Gauge,true,Background CPU Usage Per Second
+OracleDB,db.backgroundTimePerSecond,Gauge,true,Background Time Per Second
+OracleDB,db.hostCpuUsagePerSecond,Gauge,true,Host CPU Usage Per Second
+OracleDB,db.sessionCount,Gauge,true,session count
+OracleDB,tablespace.spaceUsedPercentage,Gauge,true,Ratio of used to total tablespace
+OracleDB,tablespace.isOffline,Gauge,true,Boolean for Tablespace Offline status
