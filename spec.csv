@@ -113,7 +113,7 @@ OracleDB,db.userLimitPercentage,Gauge,true,User Limit %
 OracleDB,db.sqlServiceResponseTime,Gauge,true,SQL Service Response Time
 OracleDB,db.waitTimeRatio,Gauge,true,Database Wait Time Ratio
 OracleDB,db.cpuTimeRatio,Gauge,true,Database CPU Time Ratio
-OracleDB,db.responseTimePerTransaction,Gauge,true,Response Time Per Transaction,
+OracleDB,db.responseTimePerTransaction,Gauge,true,Response Time Per Transaction
 OracleDB,db.rowCacheHitRatio,Gauge,true,Row Cache Hit Ratio
 OracleDB,db.rowCacheMissRatio,Gauge,true,Row Cache Miss Ratio
 OracleDB,db.libraryCacheHitRatio,Gauge,true,Library Cache Hit Ratio
@@ -135,7 +135,7 @@ OracleDB,disk.logicalReadsPerUserCall,Gauge,true,Logical Reads Per User Call
 OracleDB,db.sortsPerUserCall,Gauge,true,Total Sorts Per User Call
 OracleDB,db.tableScansPerUserCall,Gauge,true,Total Table Scans Per User Call
 OracleDB,db.osLoad,Gauge,true,Current OS Load
-OracleDB,db.streamsPoolUsagePercentage,Gauge,true,Streams Pool Usage Percentage,
+OracleDB,db.streamsPoolUsagePercentage,Gauge,true,Streams Pool Usage Percentage
 OracleDB,network.ioMegabytesPerSecond,Gauge,true,I/O Megabytes per Second
 OracleDB,network.ioRequestsPerSecond,Gauge,true,I/O Requests per Second
 OracleDB,db.averageActiveSessions,Gauge,true,Average Active Sessions
