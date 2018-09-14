@@ -26,15 +26,15 @@ GRANT SELECT ON sys.dba_data_files TO <username>;
 - install the [New Relic Infrastructure Agent](https://docs.newrelic.com/docs/infrastructure/new-relic-infrastructure/installation/install-infrastructure-linux)
 - download and exctract the archive file for the `Oracle Database` integration
 - build the integration as described above
-- copy `nr-oracledb-definition.yml` to `/var/db/newrelic-infra/newrelic-integrations`
+- copy `oracledb-definition.yml` to `/var/db/newrelic-infra/newrelic-integrations`
 - copy the binary in `bin/` that matches your target OS/architecture into `/var/db/newrelic-infra/newrelic-integrations`
 - add execute permissions for the binary file
-- copy `nr-oracledb-config.yml.template` into `/etc/newrelic-infra/integrations.d`, rename it to `nr-oracledb-config.yml`, and edit it to represent the environment you are monitoring
+- copy `oracledb-config.yml.sample` into `/etc/newrelic-infra/integrations.d`, rename it to `oracledb-config.yml`, and edit it to represent the environment you are monitoring
 - install the [Oracle Instant Client](http://www.oracle.com/technetwork/database/database-technologies/instant-client/downloads/index.html)
 
 ## Usage
 
-To configure the plugin, edit `nr-oracledb-config.yml` to add the OracleDB connection information. If extended metrics are required, set `extended_metrics: true`. Once configuration is complete, restart the Infrastructure agent. 
+To configure the plugin, edit `oracledb-config.yml` to add the OracleDB connection information. If extended metrics are required, set `extended_metrics: true`. Once configuration is complete, restart the Infrastructure agent. 
 
 You can view your data in Insights by creating your own custom NRQL queries. To do so, use **OracleDatabaseSample** and **OracleTablespaceSample** event types.
 
