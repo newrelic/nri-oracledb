@@ -134,9 +134,12 @@ func queryNumTablespaces(db *sql.DB) (int, error) {
 	}
 
 	var count int
-	err = rows.Scan(&count)
-	if err != nil {
-		return 0, err
+	if rows.Next() {
+		err = rows.Scan(&count)
+		if err != nil {
+			return 0, err
+		}
+
 	}
 
 	return count, nil

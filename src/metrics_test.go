@@ -152,3 +152,32 @@ func TestPopulateMetrics(t *testing.T) {
 
 	}
 }
+
+func Test_collectTableSpaces_NoWhitelist_Ok(t *testing.T) {
+	tableSpaceWhiteList = nil
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Error(err)
+	}
+
+	mock.ExpectQuery(`SELECT count\(1\) FROM DBA_TABLESPACES WHERE TABLESPACE_NAME <> 'TEMP'`).WillReturnRows(
+		sqlmock.NewRows([]string{"COUNT(1)"}).
+			AddRow(1),
+	)
+
+	mock.ExpectQuery(`.*FROM dba_data_files.*`).WillReturnRows(
+		sqlmock.NewRows([]string{"TABLESPACE_NAME", "USED", "OFFLINE", "SIZE", "USED_PERCENT"}).
+			AddRow("testtablespace", 1234, 0, 4321, 12),
+	)
+
+	metricChan := make(chan newrelicMetricSender, 10)
+	var collectorWg sync.WaitGroup
+
+	collectTableSpaces(db, &collectorWg, metricChan)
+
+	collectorWg.Wait()
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("Expectations not met: %s", err.Error())
+	}
+}

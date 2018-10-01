@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"os"
 	"strconv"
 	"sync"
 
@@ -55,12 +54,12 @@ func (mg *oracleMetricGroup) Collect(db *sql.DB, wg *sync.WaitGroup, metricChan 
 	rows, err := db.Query(mg.sqlQuery())
 	if err != nil {
 		log.Error("Failed to execute query %s: %s", mg.sqlQuery, err)
-		os.Exit(1)
+		return
 	}
 
 	if err = mg.metricsGenerator(rows, mg.metrics, metricChan); err != nil {
 		log.Error("Failed to generate metrics from db response for query %s: %s", mg.sqlQuery, err)
-		os.Exit(1)
+		return
 	}
 }
 
