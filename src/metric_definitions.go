@@ -42,7 +42,7 @@ type newrelicMetricSender struct {
 // the metrics, the list of metrics to collect from that query, and a function
 // to parse the metrics into structs to send down a channel
 type oracleMetricGroup struct {
-	sqlQuery         string
+	sqlQuery         func() string
 	metrics          []*oracleMetric
 	metricsGenerator func(*sql.Rows, []*oracleMetric, chan<- newrelicMetricSender) error
 }
@@ -52,7 +52,7 @@ type oracleMetricGroup struct {
 func (mg *oracleMetricGroup) Collect(db *sql.DB, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
 	defer wg.Done()
 
-	rows, err := db.Query(mg.sqlQuery)
+	rows, err := db.Query(mg.sqlQuery())
 	if err != nil {
 		log.Error("Failed to execute query %s: %s", mg.sqlQuery, err)
 		os.Exit(1)
@@ -81,15 +81,35 @@ func getInstanceIDString(originalID interface{}) string {
 }
 
 var oracleTablespaceMetrics = oracleMetricGroup{
-	sqlQuery: `
+	sqlQuery: func() string {
+		query := `
 		SELECT 
 			TABLESPACE_NAME, 
 			SUM(bytes) AS "USED", 
 			MAX( CASE WHEN status = 'OFFLINE' THEN 1 ELSE 0 END) AS "OFFLINE", 
 			SUM(maxbytes) AS "SIZE", 
 			SUM( bytes ) / SUM( maxbytes) * 100 AS "USED_PERCENT" 
-		FROM dba_data_files 
-		GROUP BY TABLESPACE_NAME`,
+		FROM dba_data_files`
+
+		if len(tableSpaceWhiteList) > 0 {
+			query += `
+			WHERE TABLESPACE_NAME IN (`
+
+			for i, tablespace := range tableSpaceWhiteList {
+				query += fmt.Sprintf(`'%s'`, tablespace)
+
+				if i != len(tableSpaceWhiteList)+1 {
+					query += ","
+				}
+			}
+
+			query += ")"
+		}
+
+		query += `
+		GROUP BY TABLESPACE_NAME`
+		return query
+	},
 
 	metrics: []*oracleMetric{
 		{
@@ -167,7 +187,8 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 }
 
 var oracleReadWriteMetrics = oracleMetricGroup{
-	sqlQuery: `
+	sqlQuery: func() string {
+		return `
 		SELECT 
 			INST_ID,
 			SUM(PHYRDS) AS "PhysicalReads",
@@ -177,7 +198,8 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 			SUM(READTIM) * 10 AS "ReadTime",
 			SUM(WRITETIM) * 10 AS "WriteTime"
 		FROM gv$filestat 
-		GROUP BY INST_ID`,
+		GROUP BY INST_ID`
+	},
 
 	metrics: []*oracleMetric{
 		{
@@ -269,7 +291,9 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 }
 
 var oraclePgaMetrics = oracleMetricGroup{
-	sqlQuery: `SELECT INST_ID, NAME, VALUE FROM gv$pgastat`,
+	sqlQuery: func() string {
+		return `SELECT INST_ID, NAME, VALUE FROM gv$pgastat`
+	},
 	metrics: []*oracleMetric{
 		{
 			name:          "memory.pgaInUseInBytes",
@@ -338,12 +362,14 @@ var oraclePgaMetrics = oracleMetricGroup{
 }
 
 var oracleSysMetrics = oracleMetricGroup{
-	sqlQuery: `
-	SELECT 
-		INST_ID,
-		METRIC_NAME,
-		VALUE
-	FROM gv$sysmetric`,
+	sqlQuery: func() string {
+		return `
+		SELECT 
+			INST_ID,
+			METRIC_NAME,
+			VALUE
+		FROM gv$sysmetric`
+	},
 
 	metrics: []*oracleMetric{
 		{
