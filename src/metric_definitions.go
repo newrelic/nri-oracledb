@@ -98,7 +98,7 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 			for i, tablespace := range tableSpaceWhiteList {
 				query += fmt.Sprintf(`'%s'`, tablespace)
 
-				if i != len(tableSpaceWhiteList)+1 {
+				if i != len(tableSpaceWhiteList)-1 {
 					query += ","
 				}
 			}

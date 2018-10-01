@@ -100,6 +100,7 @@ func exitOnErr(err error) {
 func parseTablespaceWhitelist() error {
 	if args.Tablespaces == "" {
 		tableSpaceWhiteList = nil
+		return nil
 	}
 
 	return json.Unmarshal([]byte(args.Tablespaces), &tableSpaceWhiteList)
