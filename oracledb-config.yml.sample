@@ -1,16 +1,27 @@
 integration_name: com.newrelic.oracledb
 
 instances:
-  - name: <INSTANCE IDENTIFIER>
+  - name: oracle-metrics
+    # Command can be one of "metrics" or "inventory"
     command: metrics
     arguments:
-      arg1: <ARG_VALUE>
+      # The service name for the Oracle instance
+      service_name: ORCL
+      # The host on which Oracle is listening. Defaults to 127.0.0.1
+      hostname: oracle_host
+      # The port on which Oracle is listening. Defaults to 1521
+      port: 12345
+      # The username for the monitoring user.
+      username: oracle_monitor
+      # The password for the monitoring user.
+      password: password
+      # True if the monitoring user is a SysDBA.
+      is_sys_dba: true
+      # True if the monitoring user is a SysOper.
+      is_sys_oper: false
+      # A JSON array of tablespaces to collect. Collects all if empty.
+      tablespaces: '["tablespace1", "tablespace2"]'
+      # Collect extended metrics. Defaults to false.
+      extended_metrics: true
     labels:
-      key1: <LABEL_VALUE>
-
-  - name: <OTHER INSTANCE IDENTIFIER>
-    command: inventory
-    arguments:
-      arg1: <ARG_VALUE>
-    labels:
-      key1: <LABEL_VALUE>
+      env: production
