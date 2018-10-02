@@ -66,7 +66,65 @@ func TestOracleTablespaceMetrics(t *testing.T) {
 	if !reflect.DeepEqual(expectedMetrics, generatedMetrics) {
 		t.Errorf("failed to get expected metric: %s", pretty.Diff(expectedMetrics, generatedMetrics))
 	}
+}
 
+func TestOracleTablespaceMetrics_Whitlist(t *testing.T) {
+	tablespaceWhiteList = []string{"testtablespace", "othertablespace"}
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Error(err)
+	}
+
+	mock.ExpectQuery(`.*WHERE TABLESPACE_NAME IN \('testtablespace','othertablespace'\).*`).WillReturnRows(
+		sqlmock.NewRows([]string{"TABLESPACE_NAME", "USED", "OFFLINE", "SIZE", "USED_PERCENT"}).
+			AddRow("testtablespace", 1234, 0, 4321, 12),
+	)
+
+	var wg sync.WaitGroup
+	metricChan := make(chan newrelicMetricSender, 10)
+
+	wg.Add(1)
+	go oracleTablespaceMetrics.Collect(db, &wg, metricChan)
+	go func() {
+		wg.Wait()
+		close(metricChan)
+	}()
+	var generatedMetrics []newrelicMetricSender
+	for {
+		newMetric, ok := <-metricChan
+		if !ok {
+			break
+		}
+		generatedMetrics = append(generatedMetrics, newMetric)
+	}
+
+	expectedMetrics := []newrelicMetricSender{
+		{
+			metric: &newrelicMetric{
+				name:       "tablespace.spaceUsedPercentage",
+				value:      int64(12),
+				metricType: metric.GAUGE,
+			},
+			metadata: map[string]string{
+				"tablespace": "testtablespace",
+			},
+		},
+		{
+			metric: &newrelicMetric{
+				name:       "tablespace.isOffline",
+				value:      int64(0),
+				metricType: metric.GAUGE,
+			},
+			metadata: map[string]string{
+				"tablespace": "testtablespace",
+			},
+		},
+	}
+
+	if !reflect.DeepEqual(expectedMetrics, generatedMetrics) {
+		t.Errorf("failed to get expected metric: %s", pretty.Diff(expectedMetrics, generatedMetrics))
+	}
 }
 
 func TestOracleReadWriteMetrics(t *testing.T) {

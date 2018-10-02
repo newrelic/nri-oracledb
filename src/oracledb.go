@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
@@ -20,22 +21,28 @@ type argumentList struct {
 	IsSysDBA        bool   `default:"false" help:"Is the user a SysDBA"`
 	IsSysOper       bool   `default:"false" help:"Is the user a SysOper"`
 	Hostname        string `default:"127.0.0.1" help:"The OracleDB connection host name"`
+	Tablespaces     string `default:"" help:"JSON Array of Tablespaces to collect. If empty will collect all tablespaces."`
 	Port            string `default:"1521" help:"The OracleDB connection port"`
 	ExtendedMetrics bool   `default:"false" help:"Enable extended metrics"`
 }
 
 const (
 	integrationName    = "com.newrelic.oracledb"
-	integrationVersion = "0.1.1"
+	integrationVersion = "0.1.2"
 )
 
 var (
-	args argumentList
+	args                argumentList
+	tablespaceWhiteList []string
 )
 
 func main() {
 	// Create Integration
 	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
+	exitOnErr(err)
+
+	// parse tablespace whitelist
+	err = parseTablespaceWhitelist()
 	exitOnErr(err)
 
 	db, err := sql.Open("goracle", getConnectionString())
@@ -88,4 +95,13 @@ func exitOnErr(err error) {
 		log.Error("%s", err.Error())
 		os.Exit(1)
 	}
+}
+
+func parseTablespaceWhitelist() error {
+	if args.Tablespaces == "" {
+		tablespaceWhiteList = nil
+		return nil
+	}
+
+	return json.Unmarshal([]byte(args.Tablespaces), &tablespaceWhiteList)
 }
