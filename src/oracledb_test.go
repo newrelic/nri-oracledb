@@ -49,14 +49,14 @@ func Test_parseTablespaceWhitelist(t *testing.T) {
 
 	for _, tc := range testCases {
 		args.Tablespaces = tc.arg
-		tableSpaceWhiteList = nil
+		tablespaceWhiteList = nil
 		if err := parseTablespaceWhitelist(); err != nil {
 			t.Errorf("Test Case %s Failed: Unexpected error: %s", tc.name, err.Error())
 			t.FailNow()
 		}
 
-		if !reflect.DeepEqual(tableSpaceWhiteList, tc.want) {
-			t.Errorf("Test Case %s Failed: Expected '%+v', got '%+v'", tc.name, tc.want, tableSpaceWhiteList)
+		if !reflect.DeepEqual(tablespaceWhiteList, tc.want) {
+			t.Errorf("Test Case %s Failed: Expected '%+v', got '%+v'", tc.name, tc.want, tablespaceWhiteList)
 		}
 	}
 }

@@ -69,7 +69,7 @@ func TestOracleTablespaceMetrics(t *testing.T) {
 }
 
 func TestOracleTablespaceMetrics_Whitlist(t *testing.T) {
-	tableSpaceWhiteList = []string{"testtablespace", "othertablespace"}
+	tablespaceWhiteList = []string{"testtablespace", "othertablespace"}
 
 	db, mock, err := sqlmock.New()
 	if err != nil {

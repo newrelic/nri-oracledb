@@ -33,7 +33,7 @@ const (
 
 var (
 	args                argumentList
-	tableSpaceWhiteList []string
+	tablespaceWhiteList []string
 )
 
 func main() {
@@ -99,9 +99,9 @@ func exitOnErr(err error) {
 
 func parseTablespaceWhitelist() error {
 	if args.Tablespaces == "" {
-		tableSpaceWhiteList = nil
+		tablespaceWhiteList = nil
 		return nil
 	}
 
-	return json.Unmarshal([]byte(args.Tablespaces), &tableSpaceWhiteList)
+	return json.Unmarshal([]byte(args.Tablespaces), &tablespaceWhiteList)
 }

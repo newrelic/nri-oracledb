@@ -154,7 +154,7 @@ func TestPopulateMetrics(t *testing.T) {
 }
 
 func Test_collectTableSpaces_NoWhitelist_Ok(t *testing.T) {
-	tableSpaceWhiteList = nil
+	tablespaceWhiteList = nil
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Error(err)

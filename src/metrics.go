@@ -104,7 +104,7 @@ const tablespaceCountQuery = `SELECT count(1) FROM DBA_TABLESPACES WHERE TABLESP
 
 func collectTableSpaces(db *sql.DB, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
 	// Get count from database
-	if tableSpaceWhiteList == nil {
+	if tablespaceWhiteList == nil {
 		tablespaceCount, err := queryNumTablespaces(db)
 		if err != nil {
 			log.Error("Unable to determine the number of tablespaces due to '%s'. Skipping tablespace collection", err.Error())
@@ -115,10 +115,10 @@ func collectTableSpaces(db *sql.DB, wg *sync.WaitGroup, metricChan chan<- newrel
 			log.Error("There are %d tablespaces in collection, the maximum amount of tablespaces to collect is %d. Use the tablespace whitelist configuration parameter to limit collection size.", tablespaceCount, maxTablespaces)
 			return
 		}
-	} else if length := len(tableSpaceWhiteList); length > maxTablespaces {
+	} else if length := len(tablespaceWhiteList); length > maxTablespaces {
 		log.Error("There are %d tablespaces in collection, the maximum amount of tablespaces to collect is %d. Use the tablespace whitelist configuration parameter to limit collection size.", length, maxTablespaces)
 		return
-	} else if len(tableSpaceWhiteList) == 0 {
+	} else if len(tablespaceWhiteList) == 0 {
 		log.Info("No tablespaces specified, skipping tablespace collection.")
 		return
 	}

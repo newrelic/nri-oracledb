@@ -90,14 +90,14 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 			SUM( bytes ) / SUM( maxbytes) * 100 AS "USED_PERCENT" 
 		FROM dba_data_files`
 
-		if len(tableSpaceWhiteList) > 0 {
+		if len(tablespaceWhiteList) > 0 {
 			query += `
 			WHERE TABLESPACE_NAME IN (`
 
-			for i, tablespace := range tableSpaceWhiteList {
+			for i, tablespace := range tablespaceWhiteList {
 				query += fmt.Sprintf(`'%s'`, tablespace)
 
-				if i != len(tableSpaceWhiteList)-1 {
+				if i != len(tablespaceWhiteList)-1 {
 					query += ","
 				}
 			}
