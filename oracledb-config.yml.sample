@@ -7,21 +7,21 @@ instances:
     arguments:
       # The service name for the Oracle instance
       service_name: ORCL
-      # The host on which Oracle is listening. Defaults to 127.0.0.1
+      # The host on which Oracle is listening. If omitted, defaults to 127.0.0.1
       hostname: oracle_host
-      # The port on which Oracle is listening. Defaults to 1521
+      # The port on which Oracle is listening. If omitted, defaults to 1521
       port: 12345
       # The username for the monitoring user.
       username: oracle_monitor
       # The password for the monitoring user.
       password: password
-      # True if the monitoring user is a SysDBA.
+      # True if the monitoring user is a SysDBA. If omitted, defaults to false.
       is_sys_dba: true
-      # True if the monitoring user is a SysOper.
+      # True if the monitoring user is a SysOper. If omitted, defaults to false.
       is_sys_oper: false
-      # A JSON array of tablespaces to collect. Collects all if empty.
+      # A JSON array of tablespaces to collect. If omitted, collects all tablespaces.
       tablespaces: '["tablespace1", "tablespace2"]'
-      # Collect extended metrics. Defaults to false.
+      # Collect extended metrics. If omitted, defaults to false.
       extended_metrics: true
     labels:
       env: production
