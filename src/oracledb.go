@@ -28,7 +28,7 @@ type argumentList struct {
 
 const (
 	integrationName    = "com.newrelic.oracledb"
-	integrationVersion = "0.1.2"
+	integrationVersion = "0.1.3"
 )
 
 var (
@@ -59,16 +59,19 @@ func main() {
 
 	var populaterWg sync.WaitGroup
 
+	instanceLookUp, err := createInstanceIDLookup(db)
+	exitOnErr(err)
+
 	if args.All() {
 		populaterWg.Add(2)
-		go collectMetrics(db, &populaterWg, i)
-		go collectInventory(db, &populaterWg, i)
+		go collectMetrics(db, &populaterWg, i, instanceLookUp)
+		go collectInventory(db, &populaterWg, i, instanceLookUp)
 	} else if args.Metrics {
 		populaterWg.Add(1)
-		go collectMetrics(db, &populaterWg, i)
+		go collectMetrics(db, &populaterWg, i, instanceLookUp)
 	} else if args.Inventory {
 		populaterWg.Add(1)
-		go collectInventory(db, &populaterWg, i)
+		go collectInventory(db, &populaterWg, i, instanceLookUp)
 	}
 
 	populaterWg.Wait()
@@ -104,4 +107,33 @@ func parseTablespaceWhitelist() error {
 	}
 
 	return json.Unmarshal([]byte(args.Tablespaces), &tablespaceWhiteList)
+}
+
+func createInstanceIDLookup(db *sql.DB) (map[string]string, error) {
+	const instanceQuery = "select instance_name, instance_number, inst_id from gv$instance;"
+
+	rows, err := db.Query(instanceQuery)
+	if err != nil {
+		log.Error("Failed running query: %s", instanceQuery)
+		return nil, err
+	}
+
+	var instance struct {
+		Name string
+		ID   interface{}
+	}
+
+	lookup := make(map[string]string)
+
+	for rows.Next() {
+		err := rows.Scan(&instance.Name, &instance.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		stringID := getInstanceIDString(instance.ID)
+		lookup[stringID] = instance.Name
+	}
+
+	return lookup, nil
 }

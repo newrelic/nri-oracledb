@@ -43,9 +43,13 @@ func TestCollectMetrics(t *testing.T) {
 		sqlmock.NewRows(columns).AddRow("testtablespace", 11, 0, 123, 12),
 	)
 
+	lookup := map[string]string{
+		"1": "MyInstance",
+	}
+
 	var populaterWg sync.WaitGroup
 	populaterWg.Add(1)
-	go collectMetrics(db, &populaterWg, i)
+	go collectMetrics(db, &populaterWg, i, lookup)
 	populaterWg.Wait()
 
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -70,10 +74,10 @@ func TestGetOrCreateMetricSet(t *testing.T) {
 			expectedMetricSet: `{"event_type":"NewEventSample"}`,
 		},
 		{
-			inputEntityID:     "1",
+			inputEntityID:     "MyInstance",
 			inputEntityType:   "instance",
 			inputMap:          map[string]*metric.Set{},
-			expectedMetricSet: `{"displayName":"instance1","entityName":"instance:instance1","event_type":"OracleDatabaseSample"}`,
+			expectedMetricSet: `{"displayName":"MyInstance","entityName":"instance:MyInstance","event_type":"OracleDatabaseSample"}`,
 		},
 		{
 			inputEntityID:     "testtablespace",
@@ -92,7 +96,7 @@ func TestGetOrCreateMetricSet(t *testing.T) {
 		}
 
 		if string(marshalled) != tc.expectedMetricSet {
-			t.Errorf("Expected metric set %s, got %s", string(marshalled), tc.expectedMetricSet)
+			t.Errorf("Expected metric set %s, got %s", tc.expectedMetricSet, string(marshalled))
 		}
 	}
 }
@@ -126,7 +130,7 @@ func TestPopulateMetrics(t *testing.T) {
 					"instanceID": "1",
 				},
 			},
-			expectedJSON: `{"name":"oracletest","protocol_version":"2","integration_version":"0.0.1","data":[{"entity":{"name":"1","type":"instance"},"metrics":[{"displayName":"instance1","entityName":"instance:instance1","event_type":"OracleDatabaseSample","testmetric":"testattr"}],"inventory":{},"events":[]}]}`,
+			expectedJSON: `{"name":"oracletest","protocol_version":"2","integration_version":"0.0.1","data":[{"entity":{"name":"MyInstance","type":"instance"},"metrics":[{"displayName":"MyInstance","entityName":"instance:MyInstance","event_type":"OracleDatabaseSample","testmetric":"testattr"}],"inventory":{},"events":[]}]}`,
 		},
 	}
 
@@ -134,12 +138,16 @@ func TestPopulateMetrics(t *testing.T) {
 		i, _ := integration.New("oracletest", "0.0.1")
 		metricChan := make(chan newrelicMetricSender)
 
+		lookup := map[string]string{
+			"1": "MyInstance",
+		}
+
 		go func() {
 			metricChan <- tc.inputMetric
 			close(metricChan)
 		}()
 
-		populateMetrics(metricChan, i)
+		populateMetrics(metricChan, i, lookup)
 
 		marshalled, err := i.MarshalJSON()
 		if err != nil {
