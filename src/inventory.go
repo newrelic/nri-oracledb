@@ -11,7 +11,7 @@ import (
 
 // collectInventory queries the database for the inventory items, then populates
 // the integration with the results
-func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration) {
+func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration, instanceLookUp map[string]string) {
 	defer wg.Done()
 
 	const sqlQuery = `
@@ -53,7 +53,16 @@ func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration
 		}
 
 		// Retrieve or create the instance entity
-		e, err := i.Entity(strconv.Itoa(inventoryResultRow.instID), "instance")
+		instanceID := strconv.Itoa(inventoryResultRow.instID)
+		instanceName := func() string {
+			if name, ok := instanceLookUp[instanceID]; ok {
+				return name
+			}
+
+			return instanceID
+		}()
+
+		e, err := i.Entity(instanceName, "instance")
 		if err != nil {
 			log.Error("Failed to get instance entity %d", inventoryResultRow.instID)
 			continue

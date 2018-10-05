@@ -12,7 +12,7 @@ import (
 
 // collectMetrics spins off goroutines for each of the metric groups, which
 // send their metrics to the populateMetrics goroutine
-func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Integration) {
+func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Integration, instanceLookUp map[string]string) {
 	defer populaterWg.Done()
 
 	var collectorWg sync.WaitGroup
@@ -34,12 +34,12 @@ func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Inte
 	}()
 
 	// Create a goroutine to read from the metric channel and insert the metrics
-	populateMetrics(metricChan, i)
+	populateMetrics(metricChan, i, instanceLookUp)
 }
 
 // populateMetrics reads metrics from the metricChan, then populates the correct
 // metric set with the read metric
-func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Integration) {
+func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Integration, instanceLookUp map[string]string) {
 
 	// Create storage maps for tablespace and instance metric sets
 	tsMetricSets := make(map[string]*metric.Set)
@@ -59,7 +59,15 @@ func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Inte
 			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
 				log.Error("Failed to set metric %s", metric.name)
 			}
-		} else if instanceName, ok := metricSender.metadata["instanceID"]; ok {
+		} else if instanceID, ok := metricSender.metadata["instanceID"]; ok {
+			instanceName := func() string {
+				if name, ok := instanceLookUp[instanceID]; ok {
+					return name
+				}
+
+				return instanceID
+			}()
+
 			ms := getOrCreateMetricSet(instanceName, "instance", instanceMetricSets, i)
 			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
 				log.Error("Failed to set metric %s", metric.name)
@@ -82,7 +90,7 @@ func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[stri
 	e, _ := i.Entity(entityIdentifier, entityType) //can't error if both name and namespace are defined
 	var newSet *metric.Set
 	if entityType == "instance" {
-		newSet = e.NewMetricSet("OracleDatabaseSample", metric.Attr("entityName", "instance:instance"+entityIdentifier), metric.Attr("displayName", "instance"+entityIdentifier))
+		newSet = e.NewMetricSet("OracleDatabaseSample", metric.Attr("entityName", "instance:"+entityIdentifier), metric.Attr("displayName", entityIdentifier))
 	} else if entityType == "tablespace" {
 		newSet = e.NewMetricSet("OracleTablespaceSample", metric.Attr("entityName", "tablespace:"+entityIdentifier), metric.Attr("displayName", entityIdentifier))
 	} else {

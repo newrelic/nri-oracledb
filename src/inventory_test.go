@@ -24,13 +24,17 @@ func TestPopulateInventory(t *testing.T) {
 	var wg sync.WaitGroup
 	i, _ := integration.New("oracletest", "0.0.1")
 
+	lookup := map[string]string{
+		"1": "MyInstance",
+	}
+
 	wg.Add(1)
-	go collectInventory(db, &wg, i)
+	go collectInventory(db, &wg, i, lookup)
 	wg.Wait()
 
 	marshalled, err := i.MarshalJSON()
 
-	expectedMarshalled := `{"name":"oracletest","protocol_version":"2","integration_version":"0.0.1","data":[{"entity":{"name":"1","type":"instance"},"metrics":[],"inventory":{"testname":{"description":"this is a test","value":"testvalue"}},"events":[]}]}`
+	expectedMarshalled := `{"name":"oracletest","protocol_version":"2","integration_version":"0.0.1","data":[{"entity":{"name":"MyInstance","type":"instance"},"metrics":[],"inventory":{"testname":{"description":"this is a test","value":"testvalue"}},"events":[]}]}`
 	if string(marshalled) != expectedMarshalled {
 		t.Errorf("Expected %s, got %s", expectedMarshalled, marshalled)
 	}
