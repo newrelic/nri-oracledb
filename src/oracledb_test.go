@@ -72,7 +72,7 @@ func Test_createInstanceIDLookup_QueryFail(t *testing.T) {
 	}
 
 	mock.
-		ExpectQuery(`select instance_name, inst_id from gv\$instance;`).
+		ExpectQuery(`SELECT INSTANCE_NAME, INST_ID FROM gv\$instance`).
 		WillReturnError(errors.New("error"))
 
 	_, err = createInstanceIDLookup(db)
@@ -89,7 +89,7 @@ func Test_createInstanceIDLookup(t *testing.T) {
 	}
 
 	mock.
-		ExpectQuery(`select instance_name, inst_id from gv\$instance;`).
+		ExpectQuery(`SELECT INSTANCE_NAME, INST_ID FROM gv\$instance`).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"INSTANCE_NAME", "INST_ID"}).
 				AddRow("one", 1).
