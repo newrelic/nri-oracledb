@@ -1,8 +1,11 @@
 package main
 
 import (
+	"errors"
 	"reflect"
 	"testing"
+
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
 )
 
 func TestGetCollectionString(t *testing.T) {
@@ -58,5 +61,55 @@ func Test_parseTablespaceWhitelist(t *testing.T) {
 		if !reflect.DeepEqual(tablespaceWhiteList, tc.want) {
 			t.Errorf("Test Case %s Failed: Expected '%+v', got '%+v'", tc.name, tc.want, tablespaceWhiteList)
 		}
+	}
+}
+
+func Test_createInstanceIDLookup_QueryFail(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	mock.
+		ExpectQuery(`select instance_name, inst_id from gv\$instance;`).
+		WillReturnError(errors.New("error"))
+
+	_, err = createInstanceIDLookup(db)
+	if err == nil {
+		t.Error("Did not return expected error")
+	}
+}
+
+func Test_createInstanceIDLookup(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Error(err)
+		t.FailNow()
+	}
+
+	mock.
+		ExpectQuery(`select instance_name, inst_id from gv\$instance;`).
+		WillReturnRows(
+			sqlmock.NewRows([]string{"INSTANCE_NAME", "INST_ID"}).
+				AddRow("one", 1).
+				AddRow("two", 2).
+				AddRow("three", 3),
+		)
+
+	expected := map[string]string{
+		"1": "one",
+		"2": "two",
+		"3": "three",
+	}
+
+	out, err := createInstanceIDLookup(db)
+	if err != nil {
+		t.Errorf("Unexpected Error %s", err.Error())
+		t.FailNow()
+	}
+
+	if !reflect.DeepEqual(out, expected) {
+		t.Errorf("Expected %+v got %+v", expected, out)
 	}
 }

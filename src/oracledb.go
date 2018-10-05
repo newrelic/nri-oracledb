@@ -110,7 +110,7 @@ func parseTablespaceWhitelist() error {
 }
 
 func createInstanceIDLookup(db *sql.DB) (map[string]string, error) {
-	const instanceQuery = "select instance_name, instance_number, inst_id from gv$instance;"
+	const instanceQuery = "select instance_name, inst_id from gv$instance;"
 
 	rows, err := db.Query(instanceQuery)
 	if err != nil {
@@ -120,7 +120,7 @@ func createInstanceIDLookup(db *sql.DB) (map[string]string, error) {
 
 	var instance struct {
 		Name string
-		ID   interface{}
+		ID   int
 	}
 
 	lookup := make(map[string]string)
