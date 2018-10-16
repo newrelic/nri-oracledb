@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.1.4 - 2018-10-16
+### Fixed
+- Removed a leftover misleading comment in the definition file
+
 ## 0.1.3 - 2018-10-05
 ### Fixed
 - Instances using IDs rather than names
