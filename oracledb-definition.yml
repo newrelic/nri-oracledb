@@ -4,14 +4,7 @@ protocol_version: 1
 os: linux
 
 commands:
-  metrics:
+  all_data:
     command:
       - ./bin/nr-oracledb
-      - --metrics
-    interval: 15
-  inventory:
-    command:
-      - ./bin/nr-oracledb
-      - --inventory
-    prefix: config/oracledb
     interval: 15
