@@ -2,8 +2,7 @@ integration_name: com.newrelic.oracledb
 
 instances:
   - name: oracle-metrics
-    # Command can be one of "metrics" or "inventory"
-    command: metrics
+    command: all_data
     arguments:
       # The service name for the Oracle instance
       service_name: ORCL
