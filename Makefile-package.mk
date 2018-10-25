@@ -48,4 +48,9 @@ rpm: prep-pkg-env
 	@mkdir -p $(PACKAGES_DIR)/rpm
 	@fpm $(FPM_COMMON_OPTIONS) $(FPM_RPM_OPTIONS) .
 
+docker-rpm: prep-pkg-env
+	@echo "=== Main === [ rpm ]: building RPM package..."
+	@mkdir -p $(PACKAGES_DIR)/rpm
+	@docker run -it --rm -v $(PWD):/fpm -w /fpm cyberious/fpm make rpm
+
 .PHONY: package create-bins prep-pkg-env $(PACKAGE_TYPES)
