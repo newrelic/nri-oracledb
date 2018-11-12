@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 0.2.0 - 2018-11-12
+### Added
+- Configuration prefix for consistency
+
 ## 0.1.5 - 2018-10-23
 ### Changed
 - Changed operating command from `inventory` or `metrics` to `all_data`

@@ -8,3 +8,4 @@ commands:
     command:
       - ./bin/nr-oracledb
     interval: 15
+    prefix: config/kafka
