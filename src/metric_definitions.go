@@ -185,6 +185,234 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 	},
 }
 
+var globalNameInstanceMetric = oracleMetricGroup{
+	sqlQuery: func() string {
+		query := `SELECT
+		t1.INST_ID,
+		t2.GLOBAL_NAME
+		FROM (SELECT INST_ID FROM gv$instance) t1,
+		(SELECT GLOBAL_NAME FROM global_name) t2`
+		return query
+	},
+
+	metrics: []*oracleMetric{
+		{
+			name:          "globalName",
+			identifier:    "GLOBAL_NAME",
+			metricType:    metric.ATTRIBUTE,
+			defaultMetric: true,
+		},
+	},
+
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+
+		type pgaRow struct {
+			instID int
+			value  string
+		}
+		for rows.Next() {
+
+			// Scan the row into a struct
+			var tempPgaRow pgaRow
+			err := rows.Scan(&tempPgaRow.instID, &tempPgaRow.value)
+			if err != nil {
+				return err
+			}
+
+			// Match the metric to one of the metrics we want to collect
+			for _, metric := range metrics {
+				if metric.defaultMetric || args.ExtendedMetrics {
+					newMetric := &newrelicMetric{
+						name:       metric.name,
+						value:      tempPgaRow.value,
+						metricType: metric.metricType,
+					}
+
+					metadata := map[string]string{"instanceID": strconv.Itoa(tempPgaRow.instID)}
+
+					// Send the new metric down the channel
+					metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
+					break
+
+				}
+			}
+		}
+
+		return nil
+	},
+}
+
+var globalNameTablespaceMetric = oracleMetricGroup{
+	sqlQuery: func() string {
+		query := `SELECT
+		t1.TABLESPACE_NAME,
+		t2.GLOBAL_NAME
+		FROM (SELECT TABLESPACE_NAME FROM DBA_TABLESPACES) t1,
+		(SELECT GLOBAL_NAME FROM global_name) t2`
+		return query
+	},
+
+	metrics: []*oracleMetric{
+		{
+			name:          "globalName",
+			identifier:    "GLOBAL_NAME",
+			metricType:    metric.ATTRIBUTE,
+			defaultMetric: true,
+		},
+	},
+
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+
+		type pgaRow struct {
+			tableName string
+			value     string
+		}
+		for rows.Next() {
+
+			// Scan the row into a struct
+			var tempPgaRow pgaRow
+			err := rows.Scan(&tempPgaRow.tableName, &tempPgaRow.value)
+			if err != nil {
+				return err
+			}
+
+			// Match the metric to one of the metrics we want to collect
+			for _, metric := range metrics {
+				if metric.defaultMetric || args.ExtendedMetrics {
+					newMetric := &newrelicMetric{
+						name:       metric.name,
+						value:      tempPgaRow.value,
+						metricType: metric.metricType,
+					}
+
+					metadata := map[string]string{"tablespace": tempPgaRow.tableName}
+
+					// Send the new metric down the channel
+					metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
+					break
+
+				}
+			}
+		}
+
+		return nil
+	},
+}
+
+var dbIDInstanceMetric = oracleMetricGroup{
+	sqlQuery: func() string {
+		query := `SELECT
+		t1.INST_ID,
+		t2.DBID
+		FROM (SELECT INST_ID FROM gv$instance) t1,
+		(SELECT DBID FROM v$database) t2`
+		return query
+	},
+
+	metrics: []*oracleMetric{
+		{
+			name:          "dbID",
+			identifier:    "DBID",
+			metricType:    metric.ATTRIBUTE,
+			defaultMetric: true,
+		},
+	},
+
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+
+		type pgaRow struct {
+			instID int
+			value  string
+		}
+		for rows.Next() {
+
+			// Scan the row into a struct
+			var tempPgaRow pgaRow
+			err := rows.Scan(&tempPgaRow.instID, &tempPgaRow.value)
+			if err != nil {
+				return err
+			}
+
+			// Match the metric to one of the metrics we want to collect
+			for _, metric := range metrics {
+				if metric.defaultMetric || args.ExtendedMetrics {
+					newMetric := &newrelicMetric{
+						name:       metric.name,
+						value:      tempPgaRow.value,
+						metricType: metric.metricType,
+					}
+
+					metadata := map[string]string{"instanceID": strconv.Itoa(tempPgaRow.instID)}
+
+					// Send the new metric down the channel
+					metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
+					break
+
+				}
+			}
+		}
+
+		return nil
+	},
+}
+
+var dbIDTablespaceMetric = oracleMetricGroup{
+	sqlQuery: func() string {
+		query := `SELECT
+		t1.TABLESPACE_NAME,
+		t2.DBID
+		FROM (SELECT TABLESPACE_NAME FROM DBA_TABLESPACES) t1,
+		(SELECT DBID FROM v$database) t2`
+		return query
+	},
+
+	metrics: []*oracleMetric{
+		{
+			name:          "dbID",
+			identifier:    "DBID",
+			metricType:    metric.ATTRIBUTE,
+			defaultMetric: true,
+		},
+	},
+
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+
+		type pgaRow struct {
+			tableName string
+			value     string
+		}
+		for rows.Next() {
+
+			// Scan the row into a struct
+			var tempPgaRow pgaRow
+			err := rows.Scan(&tempPgaRow.tableName, &tempPgaRow.value)
+			if err != nil {
+				return err
+			}
+
+			// Match the metric to one of the metrics we want to collect
+			for _, metric := range metrics {
+				if metric.defaultMetric || args.ExtendedMetrics {
+					newMetric := &newrelicMetric{
+						name:       metric.name,
+						value:      tempPgaRow.value,
+						metricType: metric.metricType,
+					}
+
+					metadata := map[string]string{"tablespace": tempPgaRow.tableName}
+
+					// Send the new metric down the channel
+					metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
+					break
+
+				}
+			}
+		}
+
+		return nil
+	},
+}
+
 var oracleReadWriteMetrics = oracleMetricGroup{
 	sqlQuery: func() string {
 		return `

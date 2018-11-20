@@ -19,10 +19,12 @@ func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Inte
 	metricChan := make(chan newrelicMetricSender, 100) // large buffer for speed
 
 	// Create a goroutine for each of the metric groups to collect
-	collectorWg.Add(3)
+	collectorWg.Add(5)
 	go oracleReadWriteMetrics.Collect(db, &collectorWg, metricChan)
 	go oraclePgaMetrics.Collect(db, &collectorWg, metricChan)
 	go oracleSysMetrics.Collect(db, &collectorWg, metricChan)
+	go globalNameInstanceMetric.Collect(db, &collectorWg, metricChan)
+	go dbIDInstanceMetric.Collect(db, &collectorWg, metricChan)
 
 	// Separate logic is needed to see if we should even collect tablespaces
 	collectTableSpaces(db, &collectorWg, metricChan)
@@ -131,8 +133,11 @@ func collectTableSpaces(db *sql.DB, wg *sync.WaitGroup, metricChan chan<- newrel
 		return
 	}
 
-	wg.Add(1)
+	wg.Add(3)
 	go oracleTablespaceMetrics.Collect(db, wg, metricChan)
+	go globalNameTablespaceMetric.Collect(db, wg, metricChan)
+	go dbIDTablespaceMetric.Collect(db, wg, metricChan)
+
 }
 
 func queryNumTablespaces(db *sql.DB) (int, error) {
