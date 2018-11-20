@@ -17,7 +17,7 @@ func TestOracleTablespaceMetrics(t *testing.T) {
 		t.Error(err)
 	}
 
-	mock.ExpectQuery(".*").WillReturnRows(
+	mock.ExpectQuery(`SELECT TABLESPACE_NAME, SUM\(bytes\) AS "USED",.*`).WillReturnRows(
 		sqlmock.NewRows([]string{"TABLESPACE_NAME", "USED", "OFFLINE", "SIZE", "USED_PERCENT"}).
 			AddRow("testtablespace", 1234, 0, 4321, 12),
 	)
@@ -56,6 +56,239 @@ func TestOracleTablespaceMetrics(t *testing.T) {
 				name:       "tablespace.isOffline",
 				value:      int64(0),
 				metricType: metric.GAUGE,
+			},
+			metadata: map[string]string{
+				"tablespace": "testtablespace",
+			},
+		},
+	}
+
+	if !reflect.DeepEqual(expectedMetrics, generatedMetrics) {
+		t.Errorf("failed to get expected metric: %s", pretty.Diff(expectedMetrics, generatedMetrics))
+	}
+}
+
+func Test_dbIDTablespaceMetric(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Error(err)
+	}
+
+	mock.ExpectQuery(`SELECT t1.TABLESPACE_NAME, t2.DBID.*`).WillReturnRows(
+		sqlmock.NewRows([]string{"TABLESPACE_NAME", "DBID"}).
+			AddRow("testtablespace", 12345),
+	)
+
+	var wg sync.WaitGroup
+	metricChan := make(chan newrelicMetricSender, 10)
+
+	wg.Add(1)
+	go dbIDTablespaceMetric.Collect(db, &wg, metricChan)
+	go func() {
+		wg.Wait()
+		close(metricChan)
+	}()
+	var generatedMetrics []newrelicMetricSender
+	for {
+		newMetric, ok := <-metricChan
+		if !ok {
+			break
+		}
+		generatedMetrics = append(generatedMetrics, newMetric)
+	}
+
+	expectedMetrics := []newrelicMetricSender{
+		{
+			metric: &newrelicMetric{
+				name:       "dbID",
+				value:      "12345",
+				metricType: metric.ATTRIBUTE,
+			},
+			metadata: map[string]string{
+				"tablespace": "testtablespace",
+			},
+		},
+	}
+
+	if !reflect.DeepEqual(expectedMetrics, generatedMetrics) {
+		t.Errorf("failed to get expected metric: %s", pretty.Diff(expectedMetrics, generatedMetrics))
+	}
+}
+
+func Test_globalNameTablespaceMetric(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Error(err)
+	}
+	mock.ExpectQuery(`SELECT t1.TABLESPACE_NAME, t2.GLOBAL_NAME.*`).WillReturnRows(
+		sqlmock.NewRows([]string{"TABLESPACE_NAME", "GLOBAL_NAME"}).
+			AddRow("testtablespace", "global_name"),
+	)
+
+	var wg sync.WaitGroup
+	metricChan := make(chan newrelicMetricSender, 10)
+
+	wg.Add(1)
+	go globalNameTablespaceMetric.Collect(db, &wg, metricChan)
+	go func() {
+		wg.Wait()
+		close(metricChan)
+	}()
+	var generatedMetrics []newrelicMetricSender
+	for {
+		newMetric, ok := <-metricChan
+		if !ok {
+			break
+		}
+		generatedMetrics = append(generatedMetrics, newMetric)
+	}
+
+	expectedMetrics := []newrelicMetricSender{
+		{
+			metric: &newrelicMetric{
+				name:       "globalName",
+				value:      "global_name",
+				metricType: metric.ATTRIBUTE,
+			},
+			metadata: map[string]string{
+				"tablespace": "testtablespace",
+			},
+		},
+	}
+
+	if !reflect.DeepEqual(expectedMetrics, generatedMetrics) {
+		t.Errorf("failed to get expected metric: %s", pretty.Diff(expectedMetrics, generatedMetrics))
+	}
+}
+
+func Test_dbIDInstanceMetric(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Error(err)
+	}
+
+	mock.ExpectQuery(`SELECT t1.INST_ID, t2.DBID.*`).WillReturnRows(
+		sqlmock.NewRows([]string{"INST_ID", "DBID"}).
+			AddRow(1, 12345),
+	)
+
+	var wg sync.WaitGroup
+	metricChan := make(chan newrelicMetricSender, 10)
+
+	wg.Add(1)
+	go dbIDInstanceMetric.Collect(db, &wg, metricChan)
+	go func() {
+		wg.Wait()
+		close(metricChan)
+	}()
+	var generatedMetrics []newrelicMetricSender
+	for {
+		newMetric, ok := <-metricChan
+		if !ok {
+			break
+		}
+		generatedMetrics = append(generatedMetrics, newMetric)
+	}
+
+	expectedMetrics := []newrelicMetricSender{
+		{
+			metric: &newrelicMetric{
+				name:       "dbID",
+				value:      "12345",
+				metricType: metric.ATTRIBUTE,
+			},
+			metadata: map[string]string{
+				"instanceID": "1",
+			},
+		},
+	}
+
+	if !reflect.DeepEqual(expectedMetrics, generatedMetrics) {
+		t.Errorf("failed to get expected metric: %s", pretty.Diff(expectedMetrics, generatedMetrics))
+	}
+}
+
+func Test_globalNameInstanceMetric(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Error(err)
+	}
+
+	mock.ExpectQuery(`SELECT t1.INST_ID, t2.GLOBAL_NAME.*`).WillReturnRows(
+		sqlmock.NewRows([]string{"INST_ID", "GLOBAL_NAME"}).
+			AddRow(1, "global_name"),
+	)
+
+	var wg sync.WaitGroup
+	metricChan := make(chan newrelicMetricSender, 10)
+
+	wg.Add(1)
+	go globalNameInstanceMetric.Collect(db, &wg, metricChan)
+	go func() {
+		wg.Wait()
+		close(metricChan)
+	}()
+	var generatedMetrics []newrelicMetricSender
+	for {
+		newMetric, ok := <-metricChan
+		if !ok {
+			break
+		}
+		generatedMetrics = append(generatedMetrics, newMetric)
+	}
+
+	expectedMetrics := []newrelicMetricSender{
+		{
+			metric: &newrelicMetric{
+				name:       "globalName",
+				value:      "global_name",
+				metricType: metric.ATTRIBUTE,
+			},
+			metadata: map[string]string{
+				"instanceID": "1",
+			},
+		},
+	}
+
+	if !reflect.DeepEqual(expectedMetrics, generatedMetrics) {
+		t.Errorf("failed to get expected metric: %s", pretty.Diff(expectedMetrics, generatedMetrics))
+	}
+}
+
+func TestOracleTablespaceGlobalNameMetrics(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Error(err)
+	}
+	mock.ExpectQuery(`SELECT t1.TABLESPACE_NAME, t2.GLOBAL_NAME.*`).WillReturnRows(
+		sqlmock.NewRows([]string{"TABLESPACE_NAME", "GLOBAL_NAME"}).
+			AddRow("testtablespace", "global_name"),
+	)
+
+	var wg sync.WaitGroup
+	metricChan := make(chan newrelicMetricSender, 10)
+
+	wg.Add(1)
+	go globalNameTablespaceMetric.Collect(db, &wg, metricChan)
+	go func() {
+		wg.Wait()
+		close(metricChan)
+	}()
+	var generatedMetrics []newrelicMetricSender
+	for {
+		newMetric, ok := <-metricChan
+		if !ok {
+			break
+		}
+		generatedMetrics = append(generatedMetrics, newMetric)
+	}
+
+	expectedMetrics := []newrelicMetricSender{
+		{
+			metric: &newrelicMetric{
+				name:       "globalName",
+				value:      "global_name",
+				metricType: metric.ATTRIBUTE,
 			},
 			metadata: map[string]string{
 				"tablespace": "testtablespace",
