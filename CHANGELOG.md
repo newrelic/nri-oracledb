@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.1.1 - 2018-12-11
+### Fixed
+- Properly specified inventory prefix
+
 ## 1.1.0 - 2018-11-20
 ### Added
 - DBID and Global Name to all entities
