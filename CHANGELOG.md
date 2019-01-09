@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 1.1.2 - 2019-01-09
+### Fixed
+- Divide by zero error in query
+
 ## 1.1.1 - 2018-12-11
 ### Fixed
 - Properly specified inventory prefix
