@@ -14,12 +14,12 @@ import (
 // send their metrics to the populateMetrics goroutine
 func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Integration, instanceLookUp map[string]string) {
 	defer populaterWg.Done()
-
 	var collectorWg sync.WaitGroup
-	metricChan := make(chan newrelicMetricSender, 100) // large buffer for speed
+	metricChan := make(chan newrelicMetricSender, 200) // large buffer for speed
 
 	// Create a goroutine for each of the metric groups to collect
-	collectorWg.Add(5)
+	collectorWg.Add(6)
+	go oracleQueryMetrics.Collect(db, &collectorWg, metricChan)
 	go oracleReadWriteMetrics.Collect(db, &collectorWg, metricChan)
 	go oraclePgaMetrics.Collect(db, &collectorWg, metricChan)
 	go oracleSysMetrics.Collect(db, &collectorWg, metricChan)
@@ -55,11 +55,18 @@ func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Inte
 
 		metric := metricSender.metric
 
-		// If the metric belongs to a tablespace, otherwise it belongs to an instance
+		// If the metric belongs to a tablespace
 		if tsName, ok := metricSender.metadata["tablespace"]; ok {
+			// If there is just one instance then we know who the tablespaces belong to
+			// TODO how to deal with RAC? Multiple instances?
+			if len(instanceLookUp) == 1 {
+				for _, v := range instanceLookUp {
+					tsName = v + ":" + tsName
+				}
+			}
 			ms := getOrCreateMetricSet(tsName, "tablespace", tsMetricSets, i)
 			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
-				log.Error("Failed to set metric %s", metric.name)
+				log.Error("Failed to set metric: err: %s name: %s value: %s type: %s", err, metric.name, metric.value, metric.metricType)
 			}
 		} else if instanceID, ok := metricSender.metadata["instanceID"]; ok {
 			instanceName := func() string {
@@ -72,7 +79,19 @@ func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Inte
 
 			ms := getOrCreateMetricSet(instanceName, "instance", instanceMetricSets, i)
 			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
-				log.Error("Failed to set metric %s", metric.name)
+				log.Error("Failed to set metric: err: %s name: %s value: %s type: %s", err, metric.name, metric.value, metric.metricType)
+			}
+		} else if instanceID, ok := metricSender.metadata["longRunningQuery"]; ok {
+			instanceName := func() string {
+				if name, ok := instanceLookUp[instanceID]; ok {
+					return name
+				}
+				return instanceID
+			}()
+
+			ms := getOrCreateMetricSet(instanceName, "longRunningQuery", instanceMetricSets, i)
+			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
+				log.Error("Failed to set metric: err: %s name: %s value: %s type: %s", err, metric.name, metric.value, metric.metricType)
 			}
 		}
 	}
@@ -95,6 +114,8 @@ func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[stri
 		newSet = e.NewMetricSet("OracleDatabaseSample", metric.Attr("entityName", "instance:"+entityIdentifier), metric.Attr("displayName", entityIdentifier))
 	} else if entityType == "tablespace" {
 		newSet = e.NewMetricSet("OracleTablespaceSample", metric.Attr("entityName", "tablespace:"+entityIdentifier), metric.Attr("displayName", entityIdentifier))
+	} else if entityType == "longRunningQuery" {
+		newSet = e.NewMetricSet("OracleQuerySample", metric.Attr("entityName", "query:"+entityIdentifier), metric.Attr("displayName", entityIdentifier))
 	} else {
 		log.Error("Unreachable code")
 		os.Exit(1)
@@ -143,6 +164,7 @@ func collectTableSpaces(db *sql.DB, wg *sync.WaitGroup, metricChan chan<- newrel
 func queryNumTablespaces(db *sql.DB) (int, error) {
 	rows, err := db.Query(tablespaceCountQuery)
 	if err != nil {
+		log.Error("queryNumTablespaces: err: %s query: %s", err, tablespaceCountQuery)
 		return 0, err
 	}
 

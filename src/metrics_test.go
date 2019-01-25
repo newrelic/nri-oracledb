@@ -117,7 +117,7 @@ func TestPopulateMetrics(t *testing.T) {
 					"tablespace": "testtbname",
 				},
 			},
-			expectedJSON: `{"name":"oracletest","protocol_version":"2","integration_version":"0.0.1","data":[{"entity":{"name":"testtbname","type":"tablespace"},"metrics":[{"displayName":"testtbname","entityName":"tablespace:testtbname","event_type":"OracleTablespaceSample","testmetric":123}],"inventory":{},"events":[]}]}`,
+			expectedJSON: `{"name":"oracletest","protocol_version":"2","integration_version":"0.0.1","data":[{"entity":{"name":"MyInstance:testtbname","type":"tablespace"},"metrics":[{"displayName":"MyInstance:testtbname","entityName":"tablespace:MyInstance:testtbname","event_type":"OracleTablespaceSample","testmetric":123}],"inventory":{},"events":[]}]}`,
 		},
 		{
 			inputMetric: newrelicMetricSender{

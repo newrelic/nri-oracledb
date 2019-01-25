@@ -100,11 +100,11 @@ func Test_createInstanceIDLookup(t *testing.T) {
 				AddRow("two", 2).
 				AddRow("three", 3),
 		)
-
+		// Expected map[1:one 2:two 3:three] got map[1:testhost:/one 2:testhost:/two 3:testhost:/three]
 	expected := map[string]string{
-		"1": "one",
-		"2": "two",
-		"3": "three",
+		"1": "testhost:/one",
+		"2": "testhost:/two",
+		"3": "testhost:/three",
 	}
 
 	out, err := createInstanceIDLookup(db)

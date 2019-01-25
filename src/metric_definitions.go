@@ -8,7 +8,7 @@ import (
 
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/log"
-	goracle "gopkg.in/goracle.v2"
+	"gopkg.in/goracle.v2"
 )
 
 // oracleMetric is a storage struct for the information needed to parse
@@ -53,12 +53,12 @@ func (mg *oracleMetricGroup) Collect(db *sql.DB, wg *sync.WaitGroup, metricChan 
 
 	rows, err := db.Query(mg.sqlQuery())
 	if err != nil {
-		log.Error("Failed to execute query %s: %s", mg.sqlQuery, err)
+		log.Error("Failed to execute query: %s \nerr: %s", mg.sqlQuery(), err)
 		return
 	}
 
 	if err = mg.metricsGenerator(rows, mg.metrics, metricChan); err != nil {
-		log.Error("Failed to generate metrics from db response for query %s: %s", mg.sqlQuery, err)
+		log.Error("Failed to generate metrics from db response for query: %s \nerr: %s", mg.sqlQuery(), err)
 		return
 	}
 }
@@ -517,6 +517,146 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 	},
 }
 
+var oracleQueryMetrics = oracleMetricGroup{
+	sqlQuery: func() string {
+		return `
+SELECT i.instance_name,
+       i.inst_id,
+       s.username,
+       s.machine,
+       s.process,
+       s.program,
+       s.osuser,
+       s.service_name,
+       s.last_call_et / 60 mins_running,
+       q.sql_text
+FROM   gv$session s
+       join gv$instance i
+         ON i.inst_id = s.inst_id
+       join gv$sqltext_with_newlines q
+         ON s.sql_address = q.address
+WHERE  s.status = 'ACTIVE'
+       AND TYPE <> 'BACKGROUND'
+       AND last_call_et > 60`
+	},
+
+	metrics: []*oracleMetric{
+		{
+			identifier:    "INSTANCE_NAME",
+			name:          "slowQuery.instanceName",
+			metricType:    metric.ATTRIBUTE,
+			defaultMetric: true,
+		},
+		{
+			identifier:    "INST_ID",
+			name:          "slowQuery.instanceId",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			identifier:    "USERNAME",
+			name:          "slowQuery.username",
+			metricType:    metric.ATTRIBUTE,
+			defaultMetric: true,
+		},
+		{
+			identifier:    "MACHINE",
+			name:          "slowQuery.host",
+			metricType:    metric.ATTRIBUTE,
+			defaultMetric: true,
+		},
+		{
+			identifier:    "PROCESS",
+			name:          "slowQuery.process",
+			metricType:    metric.ATTRIBUTE,
+			defaultMetric: true,
+		},
+		{
+			identifier:    "PROGRAM",
+			name:          "slowQuery.program",
+			metricType:    metric.ATTRIBUTE,
+			defaultMetric: true,
+		},
+		{
+			identifier:    "OSUSER",
+			name:          "slowQuery.osUser",
+			metricType:    metric.ATTRIBUTE,
+			defaultMetric: true,
+		},
+		{
+			identifier:    "SERVICE_NAME",
+			name:          "slowQuery.serviceName",
+			metricType:    metric.ATTRIBUTE,
+			defaultMetric: true,
+		},
+		{
+			identifier:    "MINS_RUNNING",
+			name:          "slowQuery.minutesRunning",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			identifier:    "SQL_TEXT",
+			name:          "slowQuery.sqlText",
+			metricType:    metric.ATTRIBUTE,
+			defaultMetric: true,
+		},
+	},
+
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+		columnNames, err := rows.Columns()
+		if err != nil {
+			return fmt.Errorf("failed to get column names from rows")
+		}
+
+		if rows == nil {
+			return fmt.Errorf("no rows to process")
+		}
+		err = rows.Err()
+		if err != nil {
+			return fmt.Errorf("rows: Err: %s", err)
+		}
+
+		for rows.Next() {
+			err = rows.Err()
+			if err != nil {
+				return fmt.Errorf("rows: Err: %s", err)
+			}
+			// Create an array of columns and an array of pointers to the elements of the columns
+			columns := make([]interface{}, len(columnNames))
+			pointers := make([]interface{}, len(columnNames))
+			for i := 0; i < len(columnNames); i++ {
+				pointers[i] = &columns[i]
+			}
+
+			// Scan the row into the array of columns
+			err := rows.Scan(pointers...)
+			if err != nil {
+				return fmt.Errorf("failed to parse row: %s", err)
+			}
+
+			// Put the values into a map indexed by column name
+			rowMap := make(map[string]interface{})
+			for i, column := range columnNames {
+				rowMap[column] = columns[i]
+			}
+			// Create each new metric
+			for _, metric := range metrics {
+				if metric.defaultMetric || args.ExtendedMetrics {
+					newMetric := &newrelicMetric{
+						name:       metric.name,
+						metricType: metric.metricType,
+						value:      rowMap[metric.identifier],
+					}
+					idString := getInstanceIDString(rowMap["MACHINE"]) + ":" + getInstanceIDString(rowMap["INSTANCE_NAME"]) + ":" + getInstanceIDString(rowMap["PROCESS"])
+					metadata := map[string]string{"longRunningQuery": idString}
+					metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
+				}
+			}
+		}
+		return nil
+	},
+}
 var oraclePgaMetrics = oracleMetricGroup{
 	sqlQuery: func() string {
 		return `SELECT INST_ID, NAME, VALUE FROM gv$pgastat`

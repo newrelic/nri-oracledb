@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
-	goracle "gopkg.in/goracle.v2"
+	"gopkg.in/goracle.v2"
 )
 
 type argumentList struct {
@@ -46,6 +47,10 @@ func main() {
 	exitOnErr(err)
 
 	db, err := sql.Open("goracle", getConnectionString())
+	// Without this Collect will segv on the db.conn when the # of metric goroutines goes above 5 :-(
+	// FIXME Need a better way to determine the connection configuration
+	db.SetMaxIdleConns(10)
+	db.SetConnMaxLifetime(time.Minute * 1)
 	exitOnErr(err)
 
 	defer func() {
@@ -111,7 +116,7 @@ func parseTablespaceWhitelist() error {
 
 func createInstanceIDLookup(db *sql.DB) (map[string]string, error) {
 	const instanceQuery = `SELECT 
-		INSTANCE_NAME, INST_ID 
+		INSTANCE_NAME, INST_ID
 		FROM gv$instance`
 
 	rows, err := db.Query(instanceQuery)
@@ -134,7 +139,7 @@ func createInstanceIDLookup(db *sql.DB) (map[string]string, error) {
 		}
 
 		stringID := getInstanceIDString(instance.ID)
-		lookup[stringID] = instance.Name
+		lookup[stringID] = args.Hostname + ":" + args.Port + "/" + instance.Name
 	}
 
 	return lookup, nil

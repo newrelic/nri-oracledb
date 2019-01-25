@@ -19,6 +19,13 @@ GRANT SELECT ON gv_$instance TO <username>;
 GRANT SELECT ON gv_$filestat TO <username>;
 GRANT SELECT ON gv_$parameter TO <username>;
 GRANT SELECT ON sys.dba_data_files TO <username>;
+-- For tablespaces
+GRANT SELECT ON v_$database TO <username>;
+GRANT SELECT ON DBA_TABLESPACES TO <username>;
+-- For long running queries
+GRANT SELECT ON gv_$session TO <username>;
+GRANT SELECT ON v_$sqltext_with_newlines TO <username>;
+
 ```
 
 ## Installation
@@ -36,7 +43,7 @@ GRANT SELECT ON sys.dba_data_files TO <username>;
 
 To configure the plugin, edit `oracledb-config.yml` to add the OracleDB connection information. If extended metrics are required, set `extended_metrics: true`. Once configuration is complete, restart the Infrastructure agent. 
 
-You can view your data in Insights by creating your own custom NRQL queries. To do so, use **OracleDatabaseSample** and **OracleTablespaceSample** event types.
+You can view your data in Insights by creating your own custom NRQL queries. To do so, use **OracleDatabaseSample**, **OracleTablespaceSample**, and **OracleQuerySample** event types.
 
 ## Compatibility
 

@@ -1,3 +1,5 @@
+# Don't assume PATH settings
+export PATH := $(PATH):$(GOPATH)/bin
 WORKDIR     := $(shell pwd)
 TARGET      := target
 TARGET_DIR   = $(WORKDIR)/$(TARGET)

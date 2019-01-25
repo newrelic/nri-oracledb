@@ -7,7 +7,7 @@ import (
 
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 
-	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/kr/pretty"
 )
 
@@ -444,6 +444,140 @@ func TestOracleReadWriteMetrics(t *testing.T) {
 			},
 			metadata: map[string]string{
 				"instanceID": "1",
+			},
+		},
+	}
+
+	if !reflect.DeepEqual(expectedMetrics, generatedMetrics) {
+		t.Errorf("failed to get expected metric: %s", pretty.Diff(expectedMetrics, generatedMetrics))
+	}
+
+}
+
+func TestOracleQueryMetrics(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Error(err)
+	}
+
+	mock.ExpectQuery(".*").WillReturnRows(
+		sqlmock.NewRows([]string{"INSTANCE_NAME", "INST_ID", "USERNAME", "MACHINE", "PROCESS", "PROGRAM", "OSUSER", "SERVICE_NAME", "MINS_RUNNING", "SQL_TEXT"}).
+			AddRow("orcl", "1", "SYS", "ip-172-31-31-118", "19786", "sqlplus@ip-172-31-31-118 (TNS V1-V3)", "oracle", "orcl.us-west-1.compute.internal", 0.25, "select table_name, make_me_slow(1) from user_tables"),
+	)
+
+	var wg sync.WaitGroup
+	metricChan := make(chan newrelicMetricSender, 100)
+
+	wg.Add(1)
+	go oracleQueryMetrics.Collect(db, &wg, metricChan)
+	go func() {
+		wg.Wait()
+		close(metricChan)
+	}()
+	var generatedMetrics []newrelicMetricSender
+	for i := 0; i < 10; i++ {
+		generatedMetrics = append(generatedMetrics, <-metricChan)
+	}
+
+	expectedMetrics := []newrelicMetricSender{
+		{
+			metric: &newrelicMetric{
+				name:       "slowQuery.instanceName",
+				value:      "orcl",
+				metricType: metric.ATTRIBUTE,
+			},
+			metadata: map[string]string{
+				"longRunningQuery": "ip-172-31-31-118:orcl:19786",
+			},
+		},
+		{
+			metric: &newrelicMetric{
+				name:       "slowQuery.instanceId",
+				value:      "1",
+				metricType: metric.GAUGE,
+			},
+			metadata: map[string]string{
+				"longRunningQuery": "ip-172-31-31-118:orcl:19786",
+			},
+		},
+		{
+			metric: &newrelicMetric{
+				name:       "slowQuery.username",
+				value:      "SYS",
+				metricType: metric.ATTRIBUTE,
+			},
+			metadata: map[string]string{
+				"longRunningQuery": "ip-172-31-31-118:orcl:19786",
+			},
+		},
+		{
+			metric: &newrelicMetric{
+				name:       "slowQuery.host",
+				value:      "ip-172-31-31-118",
+				metricType: metric.ATTRIBUTE,
+			},
+			metadata: map[string]string{
+				"longRunningQuery": "ip-172-31-31-118:orcl:19786",
+			},
+		},
+		{
+			metric: &newrelicMetric{
+				name:       "slowQuery.process",
+				value:      "19786",
+				metricType: metric.ATTRIBUTE,
+			},
+			metadata: map[string]string{
+				"longRunningQuery": "ip-172-31-31-118:orcl:19786",
+			},
+		},
+		{
+			metric: &newrelicMetric{
+				name:       "slowQuery.program",
+				value:      "sqlplus@ip-172-31-31-118 (TNS V1-V3)",
+				metricType: metric.ATTRIBUTE,
+			},
+			metadata: map[string]string{
+				"longRunningQuery": "ip-172-31-31-118:orcl:19786",
+			},
+		},
+		{
+			metric: &newrelicMetric{
+				name:       "slowQuery.osUser",
+				value:      "oracle",
+				metricType: metric.ATTRIBUTE,
+			},
+			metadata: map[string]string{
+				"longRunningQuery": "ip-172-31-31-118:orcl:19786",
+			},
+		},
+		{
+			metric: &newrelicMetric{
+				name:       "slowQuery.serviceName",
+				value:      "orcl.us-west-1.compute.internal",
+				metricType: metric.ATTRIBUTE,
+			},
+			metadata: map[string]string{
+				"longRunningQuery": "ip-172-31-31-118:orcl:19786",
+			},
+		},
+		{
+			metric: &newrelicMetric{
+				name:       "slowQuery.minutesRunning",
+				value:      0.25,
+				metricType: metric.GAUGE,
+			},
+			metadata: map[string]string{
+				"longRunningQuery": "ip-172-31-31-118:orcl:19786",
+			},
+		},
+		{
+			metric: &newrelicMetric{
+				name:       "slowQuery.sqlText",
+				value:      "select table_name, make_me_slow(1) from user_tables",
+				metricType: metric.ATTRIBUTE,
+			},
+			metadata: map[string]string{
+				"longRunningQuery": "ip-172-31-31-118:orcl:19786",
 			},
 		},
 	}

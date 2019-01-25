@@ -33,46 +33,46 @@
 			"revisionTime": "2018-05-06T08:24:08Z"
 		},
 		{
-			"checksumSHA1": "XdtijzwGRz6BNBgsd/J+d/fvN9k=",
+			"checksumSHA1": "ZfId5ZYn7jmL0xTxooHcxrLlXoA=",
 			"path": "github.com/newrelic/infra-integrations-sdk/args",
-			"revision": "be1a6cdadeabe7879263dae229a75525051bbb31",
-			"revisionTime": "2018-08-13T11:54:35Z"
+			"revision": "ce08c4300889b6b1707cc049455729d85c9c4bc3",
+			"revisionTime": "2019-01-10T10:00:09Z"
 		},
 		{
 			"checksumSHA1": "KaZLSd/JUZz/mqfW3jFd1j2QdWA=",
 			"path": "github.com/newrelic/infra-integrations-sdk/data/event",
-			"revision": "be1a6cdadeabe7879263dae229a75525051bbb31",
-			"revisionTime": "2018-08-13T11:54:35Z"
+			"revision": "ce08c4300889b6b1707cc049455729d85c9c4bc3",
+			"revisionTime": "2019-01-10T10:00:09Z"
 		},
 		{
 			"checksumSHA1": "EOoxXGqFDPkCvj7wec2S5kCXY2I=",
 			"path": "github.com/newrelic/infra-integrations-sdk/data/inventory",
-			"revision": "be1a6cdadeabe7879263dae229a75525051bbb31",
-			"revisionTime": "2018-08-13T11:54:35Z"
+			"revision": "ce08c4300889b6b1707cc049455729d85c9c4bc3",
+			"revisionTime": "2019-01-10T10:00:09Z"
 		},
 		{
-			"checksumSHA1": "bsQrXQwKK7ZK3HgWQzkMu2zt4jA=",
+			"checksumSHA1": "39SDqHpLpE9J1nrIwYI+8ukzXJs=",
 			"path": "github.com/newrelic/infra-integrations-sdk/data/metric",
-			"revision": "be1a6cdadeabe7879263dae229a75525051bbb31",
-			"revisionTime": "2018-08-13T11:54:35Z"
+			"revision": "ce08c4300889b6b1707cc049455729d85c9c4bc3",
+			"revisionTime": "2019-01-10T10:00:09Z"
 		},
 		{
-			"checksumSHA1": "iYqZm+K1690zh7ihc+yDbKftd9g=",
+			"checksumSHA1": "Q23NjXVh6j31N6ZChLG/FNv7fwU=",
 			"path": "github.com/newrelic/infra-integrations-sdk/integration",
-			"revision": "be1a6cdadeabe7879263dae229a75525051bbb31",
-			"revisionTime": "2018-08-13T11:54:35Z"
+			"revision": "ce08c4300889b6b1707cc049455729d85c9c4bc3",
+			"revisionTime": "2019-01-10T10:00:09Z"
 		},
 		{
 			"checksumSHA1": "6/DhD+/LhC/k3NaLgkpd6iE8b5E=",
 			"path": "github.com/newrelic/infra-integrations-sdk/log",
-			"revision": "be1a6cdadeabe7879263dae229a75525051bbb31",
-			"revisionTime": "2018-08-13T11:54:35Z"
+			"revision": "ce08c4300889b6b1707cc049455729d85c9c4bc3",
+			"revisionTime": "2019-01-10T10:00:09Z"
 		},
 		{
-			"checksumSHA1": "Bmaab3vN4SGpT+/8L7Ouj365z6o=",
+			"checksumSHA1": "BsHp62Etporko0d+4GpVxrP2qtw=",
 			"path": "github.com/newrelic/infra-integrations-sdk/persist",
-			"revision": "be1a6cdadeabe7879263dae229a75525051bbb31",
-			"revisionTime": "2018-08-13T11:54:35Z"
+			"revision": "ce08c4300889b6b1707cc049455729d85c9c4bc3",
+			"revisionTime": "2019-01-10T10:00:09Z"
 		},
 		{
 			"checksumSHA1": "ljd3FhYRJ91cLZz3wsH9BQQ2JbA=",
