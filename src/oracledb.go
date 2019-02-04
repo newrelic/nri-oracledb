@@ -28,7 +28,7 @@ type argumentList struct {
 
 const (
 	integrationName    = "com.newrelic.oracledb"
-	integrationVersion = "1.1.2"
+	integrationVersion = "1.1.3"
 )
 
 var (
