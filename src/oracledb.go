@@ -41,10 +41,10 @@ func main() {
 	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
 	exitOnErr(err)
 
-  if oracleHome := os.Getenv("ORACLE_HOME"); oracleHome == "" {
-    log.Error("Required argument oracle_home is unset")
-    os.Exit(1)
-  }
+	if oracleHome := os.Getenv("ORACLE_HOME"); oracleHome == "" {
+		log.Error("Required argument oracle_home is unset")
+		os.Exit(1)
+	}
 
 	// parse tablespace whitelist
 	err = parseTablespaceWhitelist()
