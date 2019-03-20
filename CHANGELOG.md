@@ -6,8 +6,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## 1.1.4 - 2019-03-19
-### Fixed
-- Use correct protocol version
+### Added
+- Log error message if ORACLE_HOME is unset
 
 ## 1.1.3 - 2019-02-04
 ### Fixed
