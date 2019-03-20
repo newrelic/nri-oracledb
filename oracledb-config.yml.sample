@@ -16,6 +16,8 @@ instances:
       password: password
       # True if the monitoring user is a SysDBA. If omitted, defaults to false.
       is_sys_dba: true
+      # The location of ORACLE_HOME
+      oracle_home: /u01/app/oracle/product/version/database
       # True if the monitoring user is a SysOper. If omitted, defaults to false.
       is_sys_oper: false
       # A JSON array of tablespaces to collect. If omitted, collects all tablespaces.
