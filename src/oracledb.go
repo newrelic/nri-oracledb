@@ -28,7 +28,7 @@ type argumentList struct {
 
 const (
 	integrationName    = "com.newrelic.oracledb"
-	integrationVersion = "1.1.3"
+	integrationVersion = "1.1.4"
 )
 
 var (
@@ -40,6 +40,11 @@ func main() {
 	// Create Integration
 	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
 	exitOnErr(err)
+
+	if oracleHome := os.Getenv("ORACLE_HOME"); oracleHome == "" {
+		log.Error("Required argument oracle_home is unset")
+		os.Exit(1)
+	}
 
 	// parse tablespace whitelist
 	err = parseTablespaceWhitelist()
