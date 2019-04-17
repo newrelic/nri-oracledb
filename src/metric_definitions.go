@@ -53,7 +53,7 @@ func (mg *oracleMetricGroup) Collect(db *sql.DB, wg *sync.WaitGroup, metricChan 
 
 	rows, err := db.Query(mg.sqlQuery())
 	if err != nil {
-		log.Error("Failed to execute query %s: %s", mg.sqlQuery, err)
+		log.Error("Failed to execute query %s: %s", mg.sqlQuery(), err)
 		return
 	}
 

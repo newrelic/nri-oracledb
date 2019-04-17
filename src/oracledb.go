@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+  "time"
 
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/integration"
@@ -51,6 +52,8 @@ func main() {
 
 	db, err := sql.Open("goracle", getConnectionString())
 	exitOnErr(err)
+  db.SetMaxIdleConns(10)
+  db.SetConnMaxLifetime(time.Minute * 1)
 
 	defer func() {
 		if err := db.Close(); err != nil {
@@ -91,7 +94,9 @@ func getConnectionString() string {
 		SID:         fmt.Sprintf("%s:%s/%s", args.Hostname, args.Port, args.ServiceName),
 		IsSysDBA:    args.IsSysDBA,
 		IsSysOper:   args.IsSysOper,
-		MaxSessions: 8,
+		MinSessions: 10,
+		MaxSessions: 10,
+		PoolIncrement: 0,
 	}
 
 	return cp.StringWithPassword()
