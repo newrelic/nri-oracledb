@@ -92,7 +92,14 @@ func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[stri
 	// If the metric set doesn't exist, get the entity for it and create a new metric set
 	endpointIDAttr := integration.IDAttribute{Key: "endpoint", Value: fmt.Sprintf("%s:%s", args.Hostname, args.Port)}
 	serviceIDAttr := integration.IDAttribute{Key: "serviceName", Value: args.ServiceName}
-	e, _ := i.Entity(entityIdentifier, fmt.Sprintf("ora-%s", entityType), endpointIDAttr, serviceIDAttr) //can't error if both name and namespace are defined
+  e, _ := i.EntityReportedVia( //can't error if both name and namespace are defined
+    fmt.Sprintf("%s:%s", args.Hostname, args.Port), 
+    entityIdentifier, 
+    fmt.Sprintf("ora-%s", entityType), 
+    endpointIDAttr, 
+    serviceIDAttr,
+  ) 
+
 	var newSet *metric.Set
 	if entityType == "instance" {
 		newSet = e.NewMetricSet("OracleDatabaseSample", metric.Attr("entityName", "ora-instance:"+entityIdentifier), metric.Attr("displayName", entityIdentifier))
