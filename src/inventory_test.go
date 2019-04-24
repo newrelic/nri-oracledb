@@ -16,6 +16,13 @@ func TestPopulateInventory(t *testing.T) {
 		t.Error(err)
 	}
 
+	args = argumentList{
+		Hostname:    "testhost",
+		Port:        "1234",
+		ServiceName: "testServiceName",
+	}
+	defer func() { args = argumentList{} }()
+
 	columns := []string{"INST_ID", "NAME", "VALUE", "DESCRIPTION"}
 	mock.ExpectQuery(`.*`).WillReturnRows(
 		sqlmock.NewRows(columns).AddRow(1, "testname", "testvalue", "this is a test"),
@@ -34,7 +41,7 @@ func TestPopulateInventory(t *testing.T) {
 
 	marshalled, err := i.MarshalJSON()
 
-	expectedMarshalled := `{"name":"oracletest","protocol_version":"2","integration_version":"0.0.1","data":[{"entity":{"name":"MyInstance","type":"instance"},"metrics":[],"inventory":{"testname":{"description":"this is a test","value":"testvalue"}},"events":[]}]}`
+	expectedMarshalled := `{"name":"oracletest","protocol_version":"3","integration_version":"0.0.1","data":[{"entity":{"name":"MyInstance","type":"ora-instance","id_attributes":[{"Key":"endpoint","Value":"testhost:1234"},{"Key":"serviceName","Value":"testServiceName"}]},"metrics":[],"inventory":{"testname":{"description":"this is a test","value":"testvalue"}},"events":[]}]}`
 	if string(marshalled) != expectedMarshalled {
 		t.Errorf("Expected %s, got %s", expectedMarshalled, marshalled)
 	}

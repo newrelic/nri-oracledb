@@ -77,13 +77,13 @@ func TestGetOrCreateMetricSet(t *testing.T) {
 			inputEntityID:     "MyInstance",
 			inputEntityType:   "instance",
 			inputMap:          map[string]*metric.Set{},
-			expectedMetricSet: `{"displayName":"MyInstance","entityName":"instance:MyInstance","event_type":"OracleDatabaseSample"}`,
+			expectedMetricSet: `{"displayName":"MyInstance","entityName":"ora-instance:MyInstance","event_type":"OracleDatabaseSample"}`,
 		},
 		{
 			inputEntityID:     "testtablespace",
 			inputEntityType:   "tablespace",
 			inputMap:          map[string]*metric.Set{},
-			expectedMetricSet: `{"displayName":"testtablespace","entityName":"tablespace:testtablespace","event_type":"OracleTablespaceSample"}`,
+			expectedMetricSet: `{"displayName":"testtablespace","entityName":"ora-tablespace:testtablespace","event_type":"OracleTablespaceSample"}`,
 		},
 	}
 
@@ -102,6 +102,14 @@ func TestGetOrCreateMetricSet(t *testing.T) {
 }
 
 func TestPopulateMetrics(t *testing.T) {
+
+	args = argumentList{
+		Hostname:    "testhost",
+		Port:        "1234",
+		ServiceName: "testServiceName",
+	}
+	defer func() { args = argumentList{} }()
+
 	testCases := []struct {
 		inputMetric  newrelicMetricSender
 		expectedJSON string
@@ -117,7 +125,7 @@ func TestPopulateMetrics(t *testing.T) {
 					"tablespace": "testtbname",
 				},
 			},
-			expectedJSON: `{"name":"oracletest","protocol_version":"2","integration_version":"0.0.1","data":[{"entity":{"name":"testtbname","type":"tablespace"},"metrics":[{"displayName":"testtbname","entityName":"tablespace:testtbname","event_type":"OracleTablespaceSample","testmetric":123}],"inventory":{},"events":[]}]}`,
+			expectedJSON: `{"name":"oracletest","protocol_version":"3","integration_version":"0.0.1","data":[{"entity":{"name":"testtbname","type":"ora-tablespace","id_attributes":[{"Key":"endpoint","Value":"testhost:1234"},{"Key":"serviceName","Value":"testServiceName"}]},"metrics":[{"displayName":"testtbname","entityName":"ora-tablespace:testtbname","event_type":"OracleTablespaceSample","testmetric":123}],"inventory":{},"events":[]}]}`,
 		},
 		{
 			inputMetric: newrelicMetricSender{
@@ -130,7 +138,7 @@ func TestPopulateMetrics(t *testing.T) {
 					"instanceID": "1",
 				},
 			},
-			expectedJSON: `{"name":"oracletest","protocol_version":"2","integration_version":"0.0.1","data":[{"entity":{"name":"MyInstance","type":"instance"},"metrics":[{"displayName":"MyInstance","entityName":"instance:MyInstance","event_type":"OracleDatabaseSample","testmetric":"testattr"}],"inventory":{},"events":[]}]}`,
+			expectedJSON: `{"name":"oracletest","protocol_version":"3","integration_version":"0.0.1","data":[{"entity":{"name":"MyInstance","type":"ora-instance","id_attributes":[{"Key":"endpoint","Value":"testhost:1234"},{"Key":"serviceName","Value":"testServiceName"}]},"metrics":[{"displayName":"MyInstance","entityName":"ora-instance:MyInstance","event_type":"OracleDatabaseSample","testmetric":"testattr"}],"inventory":{},"events":[]}]}`,
 		},
 	}
 
@@ -162,6 +170,13 @@ func TestPopulateMetrics(t *testing.T) {
 }
 
 func Test_collectTableSpaces_NoWhitelist_Ok(t *testing.T) {
+	args = argumentList{
+		Hostname:    "testhost",
+		Port:        "1234",
+		ServiceName: "testServiceName",
+	}
+	defer func() { args = argumentList{} }()
+
 	tablespaceWhiteList = nil
 	db, mock, err := sqlmock.New()
 	if err != nil {

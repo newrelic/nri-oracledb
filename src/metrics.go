@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"sync"
 
@@ -89,12 +90,14 @@ func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[stri
 	}
 
 	// If the metric set doesn't exist, get the entity for it and create a new metric set
-	e, _ := i.Entity(entityIdentifier, entityType) //can't error if both name and namespace are defined
+	endpointIDAttr := integration.IDAttribute{Key: "endpoint", Value: fmt.Sprintf("%s:%s", args.Hostname, args.Port)}
+	serviceIDAttr := integration.IDAttribute{Key: "serviceName", Value: args.ServiceName}
+	e, _ := i.Entity(entityIdentifier, fmt.Sprintf("ora-%s", entityType), endpointIDAttr, serviceIDAttr) //can't error if both name and namespace are defined
 	var newSet *metric.Set
 	if entityType == "instance" {
-		newSet = e.NewMetricSet("OracleDatabaseSample", metric.Attr("entityName", "instance:"+entityIdentifier), metric.Attr("displayName", entityIdentifier))
+		newSet = e.NewMetricSet("OracleDatabaseSample", metric.Attr("entityName", "ora-instance:"+entityIdentifier), metric.Attr("displayName", entityIdentifier))
 	} else if entityType == "tablespace" {
-		newSet = e.NewMetricSet("OracleTablespaceSample", metric.Attr("entityName", "tablespace:"+entityIdentifier), metric.Attr("displayName", entityIdentifier))
+		newSet = e.NewMetricSet("OracleTablespaceSample", metric.Attr("entityName", "ora-tablespace:"+entityIdentifier), metric.Attr("displayName", entityIdentifier))
 	} else {
 		log.Error("Unreachable code")
 		os.Exit(1)

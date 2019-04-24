@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"strconv"
 	"sync"
 
@@ -62,7 +63,9 @@ func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration
 			return instanceID
 		}()
 
-		e, err := i.Entity(instanceName, "instance")
+		endpointIDAttr := integration.IDAttribute{Key: "endpoint", Value: fmt.Sprintf("%s:%s", args.Hostname, args.Port)}
+		serviceIDAttr := integration.IDAttribute{Key: "serviceName", Value: args.ServiceName}
+		e, err := i.Entity(instanceName, "ora-instance", endpointIDAttr, serviceIDAttr)
 		if err != nil {
 			log.Error("Failed to get instance entity %d", inventoryResultRow.instID)
 			continue
