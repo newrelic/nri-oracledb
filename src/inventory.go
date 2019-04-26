@@ -66,12 +66,12 @@ func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration
 		endpointIDAttr := integration.IDAttribute{Key: "endpoint", Value: fmt.Sprintf("%s:%s", args.Hostname, args.Port)}
 		serviceIDAttr := integration.IDAttribute{Key: "serviceName", Value: args.ServiceName}
 		e, err := i.EntityReportedVia(
-      fmt.Sprintf("%s:%s", args.Hostname, args.Port),
-      instanceName, 
-      "ora-instance", 
-      endpointIDAttr, 
-      serviceIDAttr,
-    )
+			fmt.Sprintf("%s:%s", args.Hostname, args.Port),
+			instanceName,
+			"ora-instance",
+			endpointIDAttr,
+			serviceIDAttr,
+		)
 
 		if err != nil {
 			log.Error("Failed to get instance entity %d", inventoryResultRow.instID)
