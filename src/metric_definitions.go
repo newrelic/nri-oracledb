@@ -79,6 +79,296 @@ func getInstanceIDString(originalID interface{}) string {
 	}
 }
 
+var oraclePDBDatafilesOffline = oracleMetricGroup{
+	sqlQuery: func() string {
+		query := `
+    SELECT 
+      sum(CASE WHEN ONLINE_STATUS IN ('ONLINE','SYSTEM','RECOVER') THEN 0 ELSE 1 END) 
+        AS "PDB_DATAFILES_OFFLINE", 
+      a.TABLESPACE_NAME
+    FROM cdb_data_files a, cdb_pdbs b 
+    WHERE a.con_id = b.con_id 
+    GROUP BY a.TABLESPACE_NAME
+		`
+
+		return query
+	},
+
+	metrics: []*oracleMetric{
+		{
+			name:          "tablespace.offlinePDBDatafiles",
+			identifier:    "PDB_DATAFILES_OFFLINE",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+	},
+
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+
+		columnNames, err := rows.Columns()
+		if err != nil {
+			return fmt.Errorf("failed to retrieve columns from rows")
+		}
+
+		for rows.Next() {
+			// Make an array of columns and an array of pointers to each element of the array
+			columns := make([]interface{}, len(columnNames))
+			pointers := make([]interface{}, len(columnNames))
+			for i := 0; i < len(columnNames); i++ {
+				pointers[i] = &columns[i]
+			}
+
+			// Scan the row into the array of pointers
+			err := rows.Scan(pointers...)
+			if err != nil {
+				return err
+			}
+
+			// Put the values of the row into a column with the column name as the key
+			rowMap := make(map[string]interface{})
+			for i, column := range columnNames {
+				rowMap[column] = columns[i]
+			}
+
+			// Create each metric in the list of metrics we want to collect
+			for _, metric := range metrics {
+				if metric.defaultMetric || args.ExtendedMetrics {
+					newMetric := &newrelicMetric{
+						name:       metric.name,
+						metricType: metric.metricType,
+						value:      rowMap[metric.identifier],
+					}
+
+					metadata := map[string]string{"tablespace": rowMap["TABLESPACE_NAME"].(string)}
+
+					// Send the new metric down the channel
+					metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
+				}
+			}
+		}
+
+		return nil
+	},
+}
+
+var oracleCDBDatafilesOffline = oracleMetricGroup{
+	sqlQuery: func() string {
+		query := `
+    SELECT 
+      sum(CASE WHEN ONLINE_STATUS IN ('ONLINE', 'SYSTEM','RECOVER') THEN 0 ELSE 1 END) 
+        AS "CDB_DATAFILES_OFFLINE" , 
+      TABLESPACE_NAME
+    FROM dba_data_files 
+    GROUP BY TABLESPACE_NAME
+		`
+
+		return query
+	},
+
+	metrics: []*oracleMetric{
+		{
+			name:          "tablespace.offlineCDBDatafiles",
+			identifier:    "CDB_DATAFILES_OFFLINE",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+	},
+
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+
+		columnNames, err := rows.Columns()
+		if err != nil {
+			return fmt.Errorf("failed to retrieve columns from rows")
+		}
+
+		for rows.Next() {
+			// Make an array of columns and an array of pointers to each element of the array
+			columns := make([]interface{}, len(columnNames))
+			pointers := make([]interface{}, len(columnNames))
+			for i := 0; i < len(columnNames); i++ {
+				pointers[i] = &columns[i]
+			}
+
+			// Scan the row into the array of pointers
+			err := rows.Scan(pointers...)
+			if err != nil {
+				return err
+			}
+
+			// Put the values of the row into a column with the column name as the key
+			rowMap := make(map[string]interface{})
+			for i, column := range columnNames {
+				rowMap[column] = columns[i]
+			}
+
+			// Create each metric in the list of metrics we want to collect
+			for _, metric := range metrics {
+				if metric.defaultMetric || args.ExtendedMetrics {
+					newMetric := &newrelicMetric{
+						name:       metric.name,
+						metricType: metric.metricType,
+						value:      rowMap[metric.identifier],
+					}
+
+					metadata := map[string]string{"tablespace": rowMap["TABLESPACE_NAME"].(string)}
+
+					// Send the new metric down the channel
+					metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
+				}
+			}
+		}
+
+		return nil
+	},
+}
+
+var oracleLockedAccounts = oracleMetricGroup{
+	sqlQuery: func() string {
+		query := `
+    SELECT 
+      INST_ID, LOCKED_ACCOUNTS
+    FROM
+    (	SELECT count(1) AS "LOCKED_ACCOUNTS" 
+      FROM 
+        cdb_users a, 
+        cdb_pdbs b
+      WHERE a.con_id = b.con_id 
+        AND username IN ('SYS', 'SYSTEM', 'DBSNMP') 
+        AND a.account_status != 'OPEN'
+    ) l,
+    gv$instance i
+		`
+
+		return query
+	},
+
+	metrics: []*oracleMetric{
+		{
+			name:          "lockedAccounts",
+			identifier:    "LOCKED_ACCOUNTS",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+	},
+
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+
+		columnNames, err := rows.Columns()
+		if err != nil {
+			return fmt.Errorf("failed to retrieve columns from rows")
+		}
+
+		for rows.Next() {
+			// Make an array of columns and an array of pointers to each element of the array
+			columns := make([]interface{}, len(columnNames))
+			pointers := make([]interface{}, len(columnNames))
+			for i := 0; i < len(columnNames); i++ {
+				pointers[i] = &columns[i]
+			}
+
+			// Scan the row into the array of pointers
+			err := rows.Scan(pointers...)
+			if err != nil {
+				return err
+			}
+
+			// Put the values of the row into a column with the column name as the key
+			rowMap := make(map[string]interface{})
+			for i, column := range columnNames {
+				rowMap[column] = columns[i]
+			}
+
+			// Create each metric in the list of metrics we want to collect
+			for _, metric := range metrics {
+				if metric.defaultMetric || args.ExtendedMetrics {
+					newMetric := &newrelicMetric{
+						name:       metric.name,
+						metricType: metric.metricType,
+						value:      rowMap[metric.identifier],
+					}
+
+					metadata := map[string]string{"instanceID": getInstanceIDString(rowMap["INST_ID"])}
+
+					// Send the new metric down the channel
+					metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
+				}
+			}
+		}
+
+		return nil
+	},
+}
+
+var oraclePDBNonWrite = oracleMetricGroup{
+	sqlQuery: func() string {
+		query := `
+		SELECT TABLESPACE_NAME, count(1) AS "PDB_NON_WRITE_MODE"
+    FROM cdb_data_files a, cdb_pdbs b 
+    WHERE a.con_id = b.con_id 
+      AND a.online_status NOT IN ('ONLINE' , 'SYSTEM', 'RECOVER')
+    GROUP BY TABLESPACE_NAME
+    `
+
+		return query
+	},
+
+	metrics: []*oracleMetric{
+		{
+			name:          "tablespace.pdbDatafilesNonWrite",
+			identifier:    "PDB_NON_WRITE_MODE",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+	},
+
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+
+		columnNames, err := rows.Columns()
+		if err != nil {
+			return fmt.Errorf("failed to retrieve columns from rows")
+		}
+
+		for rows.Next() {
+			// Make an array of columns and an array of pointers to each element of the array
+			columns := make([]interface{}, len(columnNames))
+			pointers := make([]interface{}, len(columnNames))
+			for i := 0; i < len(columnNames); i++ {
+				pointers[i] = &columns[i]
+			}
+
+			// Scan the row into the array of pointers
+			err := rows.Scan(pointers...)
+			if err != nil {
+				return err
+			}
+
+			// Put the values of the row into a column with the column name as the key
+			rowMap := make(map[string]interface{})
+			for i, column := range columnNames {
+				rowMap[column] = columns[i]
+			}
+
+			// Create each metric in the list of metrics we want to collect
+			for _, metric := range metrics {
+				if metric.defaultMetric || args.ExtendedMetrics {
+					newMetric := &newrelicMetric{
+						name:       metric.name,
+						metricType: metric.metricType,
+						value:      rowMap[metric.identifier],
+					}
+
+					metadata := map[string]string{"tablespace": rowMap["TABLESPACE_NAME"].(string)}
+
+					// Send the new metric down the channel
+					metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
+				}
+			}
+		}
+
+		return nil
+	},
+}
+
 var oracleTablespaceMetrics = oracleMetricGroup{
 	sqlQuery: func() string {
 		query := `
@@ -187,11 +477,15 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 
 var globalNameInstanceMetric = oracleMetricGroup{
 	sqlQuery: func() string {
-		query := `SELECT
-		t1.INST_ID,
-		t2.GLOBAL_NAME
-		FROM (SELECT INST_ID FROM gv$instance) t1,
-		(SELECT GLOBAL_NAME FROM global_name) t2`
+		query := `
+    SELECT
+      t1.INST_ID,
+      t2.GLOBAL_NAME
+		FROM 
+      (SELECT INST_ID FROM gv$instance) t1,
+      (SELECT GLOBAL_NAME FROM global_name) t2
+    `
+
 		return query
 	},
 
@@ -696,8 +990,6 @@ var oracleSysMetrics = oracleMetricGroup{
 			defaultMetric: false,
 		},
 		{
-			name:          "db.logonsPerSecond",
-			identifier:    "Logons Per Sec",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
 		},

@@ -20,7 +20,11 @@ func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Inte
 	metricChan := make(chan newrelicMetricSender, 100) // large buffer for speed
 
 	// Create a goroutine for each of the metric groups to collect
-	collectorWg.Add(5)
+	collectorWg.Add(9)
+	go oracleCDBDatafilesOffline.Collect(db, &collectorWg, metricChan)
+	go oraclePDBDatafilesOffline.Collect(db, &collectorWg, metricChan)
+	go oraclePDBNonWrite.Collect(db, &collectorWg, metricChan)
+	go oracleLockedAccounts.Collect(db, &collectorWg, metricChan)
 	go oracleReadWriteMetrics.Collect(db, &collectorWg, metricChan)
 	go oraclePgaMetrics.Collect(db, &collectorWg, metricChan)
 	go oracleSysMetrics.Collect(db, &collectorWg, metricChan)
@@ -60,7 +64,7 @@ func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Inte
 		if tsName, ok := metricSender.metadata["tablespace"]; ok {
 			ms := getOrCreateMetricSet(tsName, "tablespace", tsMetricSets, i)
 			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
-				log.Error("Failed to set metric %s", metric.name)
+				log.Error("Failed to set metric %s: %s", metric.name, err)
 			}
 		} else if instanceID, ok := metricSender.metadata["instanceID"]; ok {
 			instanceName := func() string {
@@ -73,7 +77,7 @@ func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Inte
 
 			ms := getOrCreateMetricSet(instanceName, "instance", instanceMetricSets, i)
 			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
-				log.Error("Failed to set metric %s", metric.name)
+				log.Error("Failed to set metric %s: %s", metric.name, err)
 			}
 		}
 	}
