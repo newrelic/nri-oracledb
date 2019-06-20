@@ -302,10 +302,9 @@ var oracleLockedAccounts = oracleMetricGroup{
 var oraclePDBNonWrite = oracleMetricGroup{
 	sqlQuery: func() string {
 		query := `
-		SELECT TABLESPACE_NAME, count(1) AS "PDB_NON_WRITE_MODE"
+    SELECT TABLESPACE_NAME, sum(CASE WHEN ONLINE_STATUS IN ('ONLINE','SYSTEM','RECOVER') THEN 0 ELSE 1 END) AS "PDB_NON_WRITE_MODE"
     FROM cdb_data_files a, cdb_pdbs b 
     WHERE a.con_id = b.con_id 
-      AND a.online_status NOT IN ('ONLINE' , 'SYSTEM', 'RECOVER')
     GROUP BY TABLESPACE_NAME
     `
 
