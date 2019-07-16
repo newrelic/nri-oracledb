@@ -376,7 +376,7 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 			SUM(bytes) AS "USED", 
 			MAX( CASE WHEN status = 'OFFLINE' THEN 1 ELSE 0 END) AS "OFFLINE", 
 			SUM(maxbytes) AS "SIZE", 
-			SUM( bytes ) / NULLIF( SUM(maxbytes), 0 ) * 100 AS "USED_PERCENT" 
+			SUM( bytes ) / SUM(DECODE(maxbytes, 0, 2147483648, maxbytes)) * 100 AS "USED_PERCENT" 
 		FROM dba_data_files`
 
 		if len(tablespaceWhiteList) > 0 {
