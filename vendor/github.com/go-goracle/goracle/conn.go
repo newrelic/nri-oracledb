@@ -1,4 +1,4 @@
-// Copyright 2017 Tamás Gulácsi
+// Copyright 2019 Tamás Gulácsi
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,6 +25,7 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"io"
 	"strings"
 	"sync"
 	"time"
@@ -34,6 +35,7 @@ import (
 )
 
 const getConnection = "--GET_CONNECTION--"
+const wrapResultset = "--WRAP_RESULTSET--"
 
 // The maximum capacity is limited to (2^32 / sizeof(dpiData))-1 to remain compatible
 // with 32-bit platforms. The size of a `C.dpiData` is 32 Byte on a 64-bit system, `C.dpiSubscrMessageTable` is 40 bytes.
@@ -47,12 +49,18 @@ var _ = driver.ConnPrepareContext((*conn)(nil))
 var _ = driver.Pinger((*conn)(nil))
 
 type conn struct {
+	connParams     ConnectionParams
+	currentTT      TraceTag
+	Client, Server VersionInfo
+	tranParams     tranParams
 	sync.RWMutex
-	dpiConn       *C.dpiConn
-	connParams    ConnectionParams
-	inTransaction bool
-	serverVersion VersionInfo
+	currentUser string
 	*drv
+	dpiConn       *C.dpiConn
+	inTransaction bool
+	newSession    bool
+	timeZone      *time.Location
+	tzOffSecs     int
 }
 
 func (c *conn) getError() error {
@@ -69,7 +77,7 @@ func (c *conn) Break() error {
 		Log("msg", "Break", "dpiConn", c.dpiConn)
 	}
 	if C.dpiConn_breakExecution(c.dpiConn) == C.DPI_FAILURE {
-		return errors.Wrap(c.getError(), "Break")
+		return maybeBadConn(errors.Wrap(c.getError(), "Break"))
 	}
 	return nil
 }
@@ -82,6 +90,9 @@ func (c *conn) Break() error {
 // database/sql.Ping may return way after the Context.Deadline!
 func (c *conn) Ping(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if err := c.ensureContextUser(ctx); err != nil {
 		return err
 	}
 	c.RLock()
@@ -150,7 +161,7 @@ func (c *conn) Close() error {
 	close(done)
 	var err error
 	if rc == C.DPI_FAILURE {
-		err = errors.Wrap(c.getError(), "Close")
+		err = maybeBadConn(errors.Wrap(c.getError(), "Close"))
 	}
 	return err
 }
@@ -179,33 +190,49 @@ func (c *conn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, e
 		return nil, err
 	}
 
-	var todo []string
+	const (
+		trRO = "READ ONLY"
+		trRW = "READ WRITE"
+		trLC = "ISOLATION LEVEL READ COMMIT" + "TED" // against misspell check
+		trLS = "ISOLATION LEVEL SERIALIZABLE"
+	)
+
+	var todo tranParams
 	if opts.ReadOnly {
-		todo = append(todo, "READ ONLY")
+		todo.RW = trRO
 	} else {
-		todo = append(todo, "READ WRITE")
+		todo.RW = trRW
 	}
 	switch level := sql.IsolationLevel(opts.Isolation); level {
 	case sql.LevelDefault:
 	case sql.LevelReadCommitted:
-		todo = append(todo, "ISOLATION LEVEL READ COMMITTED")
+		todo.Level = trLC
 	case sql.LevelSerializable:
-		todo = append(todo, "ISOLATION LEVEL SERIALIZABLE")
+		todo.Level = trLS
 	default:
 		return nil, errors.Errorf("%v isolation level is not supported", sql.IsolationLevel(opts.Isolation))
 	}
 
-	for _, qry := range todo {
-		qry = "SET TRANSACTION " + qry
-		stmt, err := c.PrepareContext(ctx, qry)
-		if err == nil {
-			//fmt.Println(qry)
-			_, err = stmt.Exec(nil) //nolint:typecheck,megacheck
-			stmt.Close()
+	if todo != c.tranParams {
+		for _, qry := range []string{todo.RW, todo.Level} {
+			if qry == "" {
+				continue
+			}
+			qry = "SET TRANSACTION " + qry
+			stmt, err := c.PrepareContext(ctx, qry)
+			if err == nil {
+				if stc, ok := stmt.(driver.StmtExecContext); ok {
+					_, err = stc.ExecContext(ctx, nil)
+				} else {
+					_, err = stmt.Exec(nil) //lint:ignore SA1019 as that comment is not relevant here
+				}
+				stmt.Close()
+			}
+			if err != nil {
+				return nil, maybeBadConn(errors.Wrap(err, qry))
+			}
 		}
-		if err != nil {
-			return nil, errors.Wrap(err, qry)
-		}
+		c.tranParams = todo
 	}
 
 	c.RLock()
@@ -225,11 +252,18 @@ func (c *conn) BeginTx(ctx context.Context, opts driver.TxOptions) (driver.Tx, e
 	return c, nil
 }
 
+type tranParams struct {
+	RW, Level string
+}
+
 // PrepareContext returns a prepared statement, bound to this connection.
 // context is for the preparation of the statement,
 // it must not store the context within the statement itself.
 func (c *conn) PrepareContext(ctx context.Context, query string) (driver.Stmt, error) {
 	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if err := c.ensureContextUser(ctx); err != nil {
 		return nil, err
 	}
 	if tt, ok := ctx.Value(traceTagCtxKey).(TraceTag); ok {
@@ -267,17 +301,18 @@ func (c *conn) Rollback() error {
 func (c *conn) endTran(isCommit bool) error {
 	c.Lock()
 	c.inTransaction = false
+	c.tranParams = tranParams{}
 
 	var err error
 	//msg := "Commit"
 	if isCommit {
 		if C.dpiConn_commit(c.dpiConn) == C.DPI_FAILURE {
-			err = errors.Wrap(c.getError(), "Commit")
+			err = maybeBadConn(errors.Wrap(c.getError(), "Commit"))
 		}
 	} else {
 		//msg = "Rollback"
 		if C.dpiConn_rollback(c.dpiConn) == C.DPI_FAILURE {
-			err = errors.Wrap(c.getError(), "Rollback")
+			err = maybeBadConn(errors.Wrap(c.getError(), "Rollback"))
 		}
 	}
 	c.Unlock()
@@ -286,11 +321,11 @@ func (c *conn) endTran(isCommit bool) error {
 }
 
 type varInfo struct {
-	IsPLSArray        bool
-	Typ               C.dpiOracleTypeNum
-	NatTyp            C.dpiNativeTypeNum
 	SliceLen, BufSize int
 	ObjectType        *C.dpiObjectType
+	NatTyp            C.dpiNativeTypeNum
+	Typ               C.dpiOracleTypeNum
+	IsPLSArray        bool
 }
 
 func (c *conn) newVar(vi varInfo) (*C.dpiVar, []C.dpiData, error) {
@@ -330,31 +365,100 @@ func (c *conn) newVar(vi varInfo) (*C.dpiVar, []C.dpiData, error) {
 var _ = driver.Tx((*conn)(nil))
 
 func (c *conn) ServerVersion() (VersionInfo, error) {
-	c.RLock()
-	sv := c.serverVersion
-	c.RUnlock()
-	if sv.Version != 0 {
-		return sv, nil
+	return c.Server, nil
+}
+
+func (c *conn) init() error {
+	if c.Client.Version == 0 {
+		var err error
+		if c.Client, err = c.drv.ClientVersion(); err != nil {
+			return err
+		}
 	}
-	var v C.dpiVersionInfo
-	var release *C.char
-	var releaseLen C.uint32_t
-	if C.dpiConn_getServerVersion(c.dpiConn, &release, &releaseLen, &v) == C.DPI_FAILURE {
-		return sv, errors.Wrap(c.getError(), "getServerVersion")
+	if c.Server.Version == 0 {
+		var v C.dpiVersionInfo
+		var release *C.char
+		var releaseLen C.uint32_t
+		if C.dpiConn_getServerVersion(c.dpiConn, &release, &releaseLen, &v) == C.DPI_FAILURE {
+			return errors.Wrap(c.getError(), "getServerVersion")
+		}
+		c.Server.set(&v)
+		c.Server.ServerRelease = C.GoStringN(release, C.int(releaseLen))
 	}
-	c.Lock()
-	c.serverVersion.set(&v)
-	c.serverVersion.ServerRelease = C.GoStringN(release, C.int(releaseLen))
-	sv = c.serverVersion
-	c.Unlock()
-	return sv, nil
+
+	if c.timeZone != nil {
+		return nil
+	}
+	c.timeZone = time.Local
+	_, c.tzOffSecs = (time.Time{}).In(c.timeZone).Zone()
+
+	const qry = "SELECT DBTIMEZONE FROM DUAL"
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	st, err := c.PrepareContext(ctx, qry)
+	if err != nil {
+		return errors.Wrap(err, qry)
+	}
+	defer st.Close()
+	rows, err := st.Query([]driver.Value{}) //nolint:staticcheck
+	if err != nil {
+		if Log != nil {
+			Log("qry", qry, "error", err)
+		}
+		return nil
+	}
+	defer rows.Close()
+	var timezone string
+	vals := []driver.Value{timezone}
+	for {
+		if err = rows.Next(vals); err != nil {
+			if err == io.EOF {
+				break
+			}
+			return errors.Wrap(err, qry)
+		}
+		timezone = strings.TrimSpace(vals[0].(string))
+		if timezone != "" {
+			break
+		}
+	}
+	if timezone == "" {
+		return errors.New("empty DBTIMEZONE")
+	}
+	if off, err := parseTZ(timezone); err != nil {
+		return errors.Wrap(err, timezone)
+	} else {
+		// This is dangerous, but I just cannot get whether the DB time zone
+		// setting has DST or not - DBTIMEZONE returns just a fixed offset.
+		if _, localOff := time.Now().Local().Zone(); localOff != off {
+			c.tzOffSecs = off
+			c.timeZone = time.FixedZone(timezone, c.tzOffSecs)
+		}
+	}
+	return nil
+}
+
+func (c *conn) setCallTimeout(ctx context.Context) {
+	if c.Client.Version < 18 {
+		return
+	}
+	var ms C.uint32_t
+	if dl, ok := ctx.Deadline(); ok {
+		ms = C.uint32_t(time.Until(dl) / time.Millisecond)
+	}
+	// force it to be 0 (disabled)
+	C.dpiConn_setCallTimeout(c.dpiConn, ms)
 }
 
 func maybeBadConn(err error) error {
 	if err == nil {
 		return nil
 	}
-	if cd, ok := errors.Cause(err).(interface {
+	root := errors.Cause(err)
+	if root == driver.ErrBadConn {
+		return root
+	}
+	if cd, ok := root.(interface {
 		Code() int
 	}); ok {
 		// Yes, this is copied from rana/ora, but I've put it there, so it's mine. @tgulacsi
@@ -372,57 +476,33 @@ func maybeBadConn(err error) error {
 		case 12170, 12528, 12545, 24315, 28547:
 
 			//cases from https://github.com/oracle/odpi/blob/master/src/dpiError.c#L61-L94
-		case 22: // invalid session ID; access denied
-			fallthrough
-		case 28: // your session has been killed
-			fallthrough
-		case 31: // your session has been marked for kill
-			fallthrough
-		case 45: // your session has been terminated with no replay
-			fallthrough
-		case 378: // buffer pools cannot be created as specified
-			fallthrough
-		case 602: // internal programming exception
-			fallthrough
-		case 603: // ORACLE server session terminated by fatal error
-			fallthrough
-		case 609: // could not attach to incoming connection
-			fallthrough
-		case 1012: // not logged on
-			fallthrough
-		case 1041: // internal error. hostdef extension doesn't exist
-			fallthrough
-		case 1043: // user side memory corruption
-			fallthrough
-		case 1089: // immediate shutdown or close in progress
-			fallthrough
-		case 1092: // ORACLE instance terminated. Disconnection forced
-			fallthrough
-		case 2396: // exceeded maximum idle time, please connect again
-			fallthrough
-		case 3113: // end-of-file on communication channel
-			fallthrough
-		case 3114: // not connected to ORACLE
-			fallthrough
-		case 3122: // attempt to close ORACLE-side window on user side
-			fallthrough
-		case 3135: // connection lost contact
-			fallthrough
-		case 12153: // TNS:not connected
-			fallthrough
-		case 12537: // TNS:connection closed
-			fallthrough
-		case 12547: // TNS:lost contact
-			fallthrough
-		case 12570: // TNS:packet reader failure
-			fallthrough
-		case 12583: // TNS:no reader
-			fallthrough
-		case 27146: // post/wait initialization failed
-			fallthrough
-		case 28511: // lost RPC connection
-			fallthrough
-		case 56600: // an illegal OCI function call was issued
+		case 22, // invalid session ID; access denied
+			28,    // your session has been killed
+			31,    // your session has been marked for kill
+			45,    // your session has been terminated with no replay
+			378,   // buffer pools cannot be created as specified
+			602,   // internal programming exception
+			603,   // ORACLE server session terminated by fatal error
+			609,   // could not attach to incoming connection
+			1012,  // not logged on
+			1041,  // internal error. hostdef extension doesn't exist
+			1043,  // user side memory corruption
+			1089,  // immediate shutdown or close in progress
+			1092,  // ORACLE instance terminated. Disconnection forced
+			2396,  // exceeded maximum idle time, please connect again
+			3113,  // end-of-file on communication channel
+			3114,  // not connected to ORACLE
+			3122,  // attempt to close ORACLE-side window on user side
+			3135,  // connection lost contact
+			3136,  // inbound connection timed out
+			12153, // TNS:not connected
+			12537, // TNS:connection closed
+			12547, // TNS:lost contact
+			12570, // TNS:packet reader failure
+			12583, // TNS:no reader
+			27146, // post/wait initialization failed
+			28511, // lost RPC connection
+			56600: // an illegal OCI function call was issued
 			return driver.ErrBadConn
 		}
 	}
@@ -430,43 +510,46 @@ func maybeBadConn(err error) error {
 }
 
 func (c *conn) setTraceTag(tt TraceTag) error {
-	if c.dpiConn == nil {
+	if c == nil || c.dpiConn == nil {
 		return nil
 	}
-	//fmt.Fprintf(os.Stderr, "setTraceTag %s\n", tt)
-	var err error
-	for nm, v := range map[string]*string{
-		"action":     &tt.Action,
-		"module":     &tt.Module,
-		"info":       &tt.ClientInfo,
-		"identifier": &tt.ClientIdentifier,
-		"op":         &tt.DbOp,
+	for nm, vv := range map[string][2]string{
+		"action":     {c.currentTT.Action, tt.Action},
+		"module":     {c.currentTT.Module, tt.Module},
+		"info":       {c.currentTT.ClientInfo, tt.ClientInfo},
+		"identifier": {c.currentTT.ClientIdentifier, tt.ClientIdentifier},
+		"op":         {c.currentTT.DbOp, tt.DbOp},
 	} {
+		if vv[0] == vv[1] {
+			continue
+		}
+		v := vv[1]
 		var s *C.char
-		if *v != "" {
-			s = C.CString(*v)
+		if v != "" {
+			s = C.CString(v)
 		}
 		var rc C.int
 		switch nm {
 		case "action":
-			rc = C.dpiConn_setAction(c.dpiConn, s, C.uint32_t(len(*v)))
+			rc = C.dpiConn_setAction(c.dpiConn, s, C.uint32_t(len(v)))
 		case "module":
-			rc = C.dpiConn_setModule(c.dpiConn, s, C.uint32_t(len(*v)))
+			rc = C.dpiConn_setModule(c.dpiConn, s, C.uint32_t(len(v)))
 		case "info":
-			rc = C.dpiConn_setClientInfo(c.dpiConn, s, C.uint32_t(len(*v)))
+			rc = C.dpiConn_setClientInfo(c.dpiConn, s, C.uint32_t(len(v)))
 		case "identifier":
-			rc = C.dpiConn_setClientIdentifier(c.dpiConn, s, C.uint32_t(len(*v)))
+			rc = C.dpiConn_setClientIdentifier(c.dpiConn, s, C.uint32_t(len(v)))
 		case "op":
-			rc = C.dpiConn_setDbOp(c.dpiConn, s, C.uint32_t(len(*v)))
-		}
-		if rc == C.DPI_FAILURE && err == nil {
-			err = errors.Wrap(c.getError(), nm)
+			rc = C.dpiConn_setDbOp(c.dpiConn, s, C.uint32_t(len(v)))
 		}
 		if s != nil {
 			C.free(unsafe.Pointer(s))
 		}
+		if rc == C.DPI_FAILURE {
+			return errors.Wrap(c.getError(), nm)
+		}
 	}
-	return err
+	c.currentTT = tt
+	return nil
 }
 
 const traceTagCtxKey = ctxKey("tracetag")
@@ -490,4 +573,91 @@ type TraceTag struct {
 	Module string
 	// Action - specifies an action, such as an INSERT or UPDATE operation, in a module
 	Action string
+}
+
+const userpwCtxKey = ctxKey("userPw")
+
+// ContextWithUserPassw returns a context with the specified user and password,
+// to be used with heterogeneous pools.
+func ContextWithUserPassw(ctx context.Context, user, password string) context.Context {
+	return context.WithValue(ctx, userpwCtxKey, [2]string{user, password})
+}
+
+func (c *conn) ensureContextUser(ctx context.Context) error {
+	if !c.connParams.HeterogeneousPool {
+		return nil
+	}
+
+	var up [2]string
+	var ok bool
+	if up, ok = ctx.Value(userpwCtxKey).([2]string); !ok || up[0] == c.currentUser {
+		return nil
+	}
+
+	if c.dpiConn != nil {
+		if err := c.Close(); err != nil {
+			return driver.ErrBadConn
+		}
+	}
+
+	c.Lock()
+	defer c.Unlock()
+
+	if err := c.acquireConn(up[0], up[1]); err != nil {
+		return err
+	}
+
+	return c.init()
+}
+
+// StartupMode for the database.
+type StartupMode C.dpiStartupMode
+
+const (
+	// StartupDefault is the default mode for startup which permits database access to all users.
+	StartupDefault = StartupMode(C.DPI_MODE_STARTUP_DEFAULT)
+	// StartupForce shuts down a running instance (using ABORT) before starting a new one. This mode should only be used in unusual circumstances.
+	StartupForce = StartupMode(C.DPI_MODE_STARTUP_FORCE)
+	// StartupRestrict only allows database access to users with both the CREATE SESSION and RESTRICTED SESSION privileges (normally the DBA).
+	StartupRestrict = StartupMode(C.DPI_MODE_STARTUP_RESTRICT)
+)
+
+// Startup the database, equivalent to "startup nomount" in SQL*Plus.
+// This should be called on PRELIM_AUTH (prelim=1) connection!
+//
+// See https://docs.oracle.com/en/database/oracle/oracle-database/18/lnoci/database-startup-and-shutdown.html#GUID-44B24F65-8C24-4DF3-8FBF-B896A4D6F3F3
+func (c *conn) Startup(mode StartupMode) error {
+	if C.dpiConn_startupDatabase(c.dpiConn, C.dpiStartupMode(mode)) == C.DPI_FAILURE {
+		return errors.Wrapf(c.getError(), "startup(%v)", mode)
+	}
+	return nil
+}
+
+// ShutdownMode for the database.
+type ShutdownMode C.dpiShutdownMode
+
+const (
+	// ShutdownDefault - further connections to the database are prohibited. Wait for users to disconnect from the database.
+	ShutdownDefault = ShutdownMode(C.DPI_MODE_SHUTDOWN_DEFAULT)
+	// ShutdownTransactional - further connections to the database are prohibited and no new transactions are allowed to be started. Wait for active transactions to complete.
+	ShutdownTransactional = ShutdownMode(C.DPI_MODE_SHUTDOWN_TRANSACTIONAL)
+	// ShutdownTransactionalLocal - behaves the same way as ShutdownTransactional but only waits for local transactions to complete.
+	ShutdownTransactionalLocal = ShutdownMode(C.DPI_MODE_SHUTDOWN_TRANSACTIONAL_LOCAL)
+	// ShutdownImmediate - all uncommitted transactions are terminated and rolled back and all connections to the database are closed immediately.
+	ShutdownImmediate = ShutdownMode(C.DPI_MODE_SHUTDOWN_IMMEDIATE)
+	// ShutdownAbort - all uncommitted transactions are terminated and are not rolled back. This is the fastest way to shut down the database but the next database startup may require instance recovery.
+	ShutdownAbort = ShutdownMode(C.DPI_MODE_SHUTDOWN_ABORT)
+	// ShutdownFinal shuts down the database. This mode should only be used in the second call to dpiConn_shutdownDatabase().
+	ShutdownFinal = ShutdownMode(C.DPI_MODE_SHUTDOWN_FINAL)
+)
+
+// Shutdown shuts down the database.
+// Note that this must be done in two phases except in the situation where the instance is aborted.
+//
+// See https://docs.oracle.com/en/database/oracle/oracle-database/18/lnoci/database-startup-and-shutdown.html#GUID-44B24F65-8C24-4DF3-8FBF-B896A4D6F3F3
+func (c *conn) Shutdown(mode ShutdownMode) error {
+	if C.dpiConn_shutdownDatabase(c.dpiConn, C.dpiShutdownMode(mode)) == C.DPI_FAILURE {
+		return errors.Wrapf(c.getError(), "shutdown(%v)", mode)
+	}
+	return nil
 }

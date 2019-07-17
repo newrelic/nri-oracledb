@@ -27,6 +27,7 @@ import "C"
 
 import (
 	"log"
+	"strings"
 	"unsafe"
 
 	"github.com/pkg/errors"
@@ -101,31 +102,31 @@ func CallbackSubscr(ctx unsafe.Pointer, message *C.dpiSubscrMessage) {
 
 // Event for a subscription.
 type Event struct {
-	Err     error
-	Type    EventType
-	DB      string
 	Tables  []TableEvent
 	Queries []QueryEvent
+	DB      string
+	Err     error
+	Type    EventType
 }
 
 // QueryEvent is an event of a Query.
 type QueryEvent struct {
-	Operation
-	ID     uint64
 	Tables []TableEvent
+	ID     uint64
+	Operation
 }
 
 // TableEvent is for a Table-related event.
 type TableEvent struct {
-	Operation
-	Name string
 	Rows []RowEvent
+	Name string
+	Operation
 }
 
 // RowEvent is for row-related event.
 type RowEvent struct {
-	Operation
 	Rowid string
+	Operation
 }
 
 // Subscription for events in the DB.
@@ -140,7 +141,12 @@ func (s *Subscription) getError() error { return s.conn.getError() }
 // NewSubscription creates a new Subscription in the DB.
 //
 // Make sure your user has CHANGE NOTIFICATION privilege!
+//
+// This code is EXPERIMENTAL yet!
 func (c *conn) NewSubscription(name string, cb func(Event)) (*Subscription, error) {
+	if !c.connParams.EnableEvents {
+		return nil, errors.New("subscription must be allowed by specifying \"enableEvents=1\" in the connection parameters")
+	}
 	subscr := Subscription{conn: c, callback: cb}
 	params := (*C.dpiSubscrCreateParams)(C.malloc(C.sizeof_dpiSubscrCreateParams))
 	//defer func() { C.free(unsafe.Pointer(params)) }()
@@ -165,13 +171,19 @@ func (c *conn) NewSubscription(name string, cb func(Event)) (*Subscription, erro
 	) == C.DPI_FAILURE {
 		C.free(unsafe.Pointer(params))
 		C.free(unsafe.Pointer(dpiSubscr))
-		return nil, errors.Wrap(c.getError(), "newSubscription")
+		err := errors.Wrap(c.getError(), "newSubscription")
+		if strings.Contains(errors.Cause(err).Error(), "DPI-1065:") {
+			err = errors.WithMessage(err, "specify \"enableEvents=1\" connection parameter on connection to be able to use subscriptions")
+		}
+		return nil, err
 	}
 	subscr.dpiSubscr = dpiSubscr
 	return &subscr, nil
 }
 
 // Register a query for Change Notification.
+//
+// This code is EXPERIMENTAL yet!
 func (s *Subscription) Register(qry string, params ...interface{}) error {
 	cQry := C.CString(qry)
 	defer func() { C.free(unsafe.Pointer(cQry)) }()
@@ -199,6 +211,8 @@ func (s *Subscription) Register(qry string, params ...interface{}) error {
 }
 
 // Close the subscription.
+//
+// This code is EXPERIMENTAL yet!
 func (s *Subscription) Close() error {
 	dpiSubscr := s.dpiSubscr
 	conn := s.conn
@@ -222,10 +236,10 @@ const (
 	EvtStartup     = EventType(C.DPI_EVENT_STARTUP)
 	EvtShutdown    = EventType(C.DPI_EVENT_SHUTDOWN)
 	EvtShutdownAny = EventType(C.DPI_EVENT_SHUTDOWN_ANY)
-	EvtDropDB      = EventType(C.DPI_EVENT_DROP_DB)
 	EvtDereg       = EventType(C.DPI_EVENT_DEREG)
 	EvtObjChange   = EventType(C.DPI_EVENT_OBJCHANGE)
 	EvtQueryChange = EventType(C.DPI_EVENT_QUERYCHANGE)
+	EvtAQ          = EventType(C.DPI_EVENT_AQ)
 )
 
 // Operation in the DB.

@@ -1,8 +1,6 @@
 package goracle
 
-//go:generate bash -c "set -x; { curl -L https://github.com/oracle/odpi/archive/v2.4.2.tar.gz || wget -O - https://github.com/oracle/odpi/archive/v2.4.2.zip; } | tar xzvf - odpi-2.4.2/{embed,include,src,CONTRIBUTING.md,LICENSE.md,README.md}"
-//go:generate rm -rf odpi
-//go:generate mv odpi-2.4.2 odpi
+//go:generate bash -c "echo 3.2.0>odpi-version; set -x; curl -L https://github.com/oracle/odpi/archive/v$(cat odpi-version).tar.gz | tar xzvf - odpi-$(cat odpi-version)/{embed,include,src,CONTRIBUTING.md,LICENSE.md,README.md} && rm -rf odpi && mv odpi-$(cat odpi-version) odpi; rm -f odpi-version"
 
 // Version of this driver
-const Version = "v2.5.9"
+const Version = "v2.18.0"

@@ -1,4 +1,4 @@
-// Copyright 2017 Tamás Gulácsi
+// Copyright 2019 Tamás Gulácsi
 //
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,13 @@
 //     poolMaxSessions=1000& \
 //     poolIncrement=1& \
 //     connectionClass=POOLED& \
-//     standaloneConnection=0
+//     standaloneConnection=0& \
+//     enableEvents=0& \
+//     heterogeneousPool=0& \
+//     prelim=0& \
+//     poolWaitTimeout=300& \
+//     poolSessionMaxLifetime=3600& \
+//     poolSessionTimeout=3000
 //
 // These are the defaults. Many advocate that a static session pool (min=max, incr=0)
 // is better, with 1-10 sessions per CPU thread.
@@ -37,7 +43,7 @@
 //
 // If you specify connectionClass, that'll reuse the same session pool
 // without the connectionClass, but will specify it on each session acquire.
-// Thus you can cluster the session pool with classes, or ose POOLED for DRCP.
+// Thus you can cluster the session pool with classes, or use POOLED for DRCP.
 package goracle
 
 /*
@@ -53,10 +59,12 @@ import (
 	"context"
 	"database/sql"
 	"database/sql/driver"
+	"encoding/base64"
 	"fmt"
+	"hash/fnv"
+	"io"
 	"math"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -94,6 +102,12 @@ const (
 	// NoConnectionPoolingConnectionClass is a special connection class name to indicate no connection pooling.
 	// It is the same as setting standaloneConnection=1
 	NoConnectionPoolingConnectionClass = "NO-CONNECTION-POOLING"
+	// DefaultSessionTimeout is the seconds before idle pool sessions get evicted
+	DefaultSessionTimeout = 300
+	// DefaultWaitTimeout is the milliseconds to wait for a session to become available
+	DefaultWaitTimeout = 3000
+	// DefaultMaxLifeTime is the maximum time in seconds till a pooled session may exist
+	DefaultMaxLifeTime = 3600
 )
 
 // Number as string
@@ -272,7 +286,14 @@ func (n *Number) UnmarshalText(p []byte) error {
 }
 
 // MarshalJSON marshals a Number into a JSON string.
-func (n Number) MarshalJSON() ([]byte, error) { return n.MarshalText() }
+func (n Number) MarshalJSON() ([]byte, error) {
+	b, err := n.MarshalText()
+	b2 := make([]byte, 1, 1+len(b)+1)
+	b2[0] = '"'
+	b2 = append(b2, b...)
+	b2 = append(b2, '"')
+	return b2, err
+}
 
 // UnmarshalJSON parses a JSON string into the Number.
 func (n *Number) UnmarshalJSON(p []byte) error {
@@ -291,27 +312,31 @@ func (n *Number) UnmarshalJSON(p []byte) error {
 // or analog to be race-free.
 var Log func(...interface{}) error
 
+var defaultDrv *drv
+
 func init() {
-	d, err := newDrv()
-	if err != nil {
-		panic(err)
-	}
-	sql.Register("goracle", d)
+	defaultDrv = newDrv()
+	sql.Register("goracle", defaultDrv)
+}
+
+func newDrv() *drv {
+	return &drv{pools: make(map[string]*connPool)}
 }
 
 var _ = driver.Driver((*drv)(nil))
 
 type drv struct {
+	clientVersion VersionInfo
 	mu            sync.Mutex
 	dpiContext    *C.dpiContext
-	clientVersion VersionInfo
-	pools         map[string]*C.dpiPool
+	pools         map[string]*connPool
 }
 
-func newDrv() (*drv, error) {
-	var d drv
-	d.pools = make(map[string]*C.dpiPool)
-	return &d, nil
+type connPool struct {
+	dpiPool       *C.dpiPool
+	serverVersion VersionInfo
+	timeZone      *time.Location
+	tzOffSecs     int
 }
 
 func (d *drv) init() error {
@@ -328,6 +353,12 @@ func (d *drv) init() error {
 		return fromErrorInfo(errInfo)
 	}
 	d.dpiContext = dpiCtx
+
+	var v C.dpiVersionInfo
+	if C.dpiContext_getClientVersion(d.dpiContext, &v) == C.DPI_FAILURE {
+		return errors.Wrap(d.getError(), "getClientVersion")
+	}
+	d.clientVersion.set(&v)
 	return nil
 }
 
@@ -344,21 +375,6 @@ func (d *drv) Open(connString string) (driver.Conn, error) {
 }
 
 func (d *drv) ClientVersion() (VersionInfo, error) {
-	d.mu.Lock()
-	if d.clientVersion.Version != 0 {
-		d.mu.Unlock()
-		return d.clientVersion, nil
-	}
-	d.mu.Unlock()
-	if err := d.init(); err != nil {
-		return d.clientVersion, err
-	}
-
-	var v C.dpiVersionInfo
-	if C.dpiContext_getClientVersion(d.dpiContext, &v) == C.DPI_FAILURE {
-		return d.clientVersion, errors.Wrap(d.getError(), "getClientVersion")
-	}
-	d.clientVersion.set(&v)
 	return d.clientVersion, nil
 }
 
@@ -368,7 +384,7 @@ func (d *drv) openConn(P ConnectionParams) (*conn, error) {
 	}
 
 	c := conn{drv: d, connParams: P}
-	connString := P.StringNoClass()
+	connString := P.String()
 
 	defer func() {
 		d.mu.Lock()
@@ -377,11 +393,25 @@ func (d *drv) openConn(P ConnectionParams) (*conn, error) {
 		}
 		d.mu.Unlock()
 	}()
+
 	authMode := C.dpiAuthMode(C.DPI_MODE_AUTH_DEFAULT)
-	if P.IsSysDBA {
-		authMode |= C.DPI_MODE_AUTH_SYSDBA
-	} else if P.IsSysOper {
-		authMode |= C.DPI_MODE_AUTH_SYSOPER
+	// OR all the modes together
+	for _, elt := range []struct {
+		Is   bool
+		Mode C.dpiAuthMode
+	}{
+		{P.IsSysDBA, C.DPI_MODE_AUTH_SYSDBA},
+		{P.IsSysOper, C.DPI_MODE_AUTH_SYSOPER},
+		{P.IsSysASM, C.DPI_MODE_AUTH_SYSASM},
+		{P.IsPrelim, C.DPI_MODE_AUTH_PRELIM},
+	} {
+		if elt.Is {
+			authMode |= elt.Mode
+		}
+	}
+	if P.IsPrelim {
+		// The shared memory may not exist when Oracle is shut down.
+		P.ConnClass = ""
 	}
 
 	extAuth := C.int(b2i(P.Username == "" && P.Password == ""))
@@ -397,25 +427,27 @@ func (d *drv) openConn(P ConnectionParams) (*conn, error) {
 		connCreateParams.connectionClass = cConnClass
 		connCreateParams.connectionClassLength = C.uint32_t(len(P.ConnClass))
 	}
-	if !(P.IsSysDBA || P.IsSysOper || P.StandaloneConnection) {
+	if !(P.IsSysDBA || P.IsSysOper || P.IsSysASM || P.IsPrelim || P.StandaloneConnection) {
 		d.mu.Lock()
 		dp := d.pools[connString]
 		d.mu.Unlock()
 		if dp != nil {
-			dc := C.malloc(C.sizeof_void)
-			if Log != nil {
-				Log("C", "dpiPool_acquireConnection", "conn", connCreateParams)
+			//Proxy authenticated connections to database will be provided by methods with context
+			c.mu.Lock()
+			c.Client, c.Server = d.clientVersion, dp.serverVersion
+			c.timeZone, c.tzOffSecs = dp.timeZone, dp.tzOffSecs
+			c.mu.Unlock()
+			if err := c.acquireConn("", ""); err != nil {
+				return nil, err
 			}
-			if C.dpiPool_acquireConnection(
-				dp,
-				nil, 0, nil, 0, &connCreateParams,
-				(**C.dpiConn)(unsafe.Pointer(&dc)),
-			) == C.DPI_FAILURE {
-				C.free(unsafe.Pointer(dc))
-				return nil, errors.Wrapf(d.getError(), "acquireConnection[%s]", P)
+			err := c.init()
+			if err == nil {
+				c.mu.Lock()
+				dp.serverVersion = c.Server
+				dp.timeZone, dp.tzOffSecs = c.timeZone, c.tzOffSecs
+				c.mu.Unlock()
 			}
-			c.dpiConn = (*C.dpiConn)(dc)
-			return &c, nil
+			return &c, err
 		}
 	}
 
@@ -423,7 +455,10 @@ func (d *drv) openConn(P ConnectionParams) (*conn, error) {
 	if !(P.Username == "" && P.Password == "") {
 		cUserName, cPassword = C.CString(P.Username), C.CString(P.Password)
 	}
-	cSid := C.CString(P.SID)
+	var cSid *C.char
+	if P.SID != "" {
+		cSid = C.CString(P.SID)
+	}
 	cUTF8, cConnClass := C.CString("AL32UTF8"), C.CString(P.ConnClass)
 	cDriverName := C.CString(DriverName)
 	defer func() {
@@ -431,7 +466,9 @@ func (d *drv) openConn(P ConnectionParams) (*conn, error) {
 			C.free(unsafe.Pointer(cUserName))
 			C.free(unsafe.Pointer(cPassword))
 		}
-		C.free(unsafe.Pointer(cSid))
+		if cSid != nil {
+			C.free(unsafe.Pointer(cSid))
+		}
 		C.free(unsafe.Pointer(cUTF8))
 		C.free(unsafe.Pointer(cConnClass))
 		C.free(unsafe.Pointer(cDriverName))
@@ -440,16 +477,19 @@ func (d *drv) openConn(P ConnectionParams) (*conn, error) {
 	if C.dpiContext_initCommonCreateParams(d.dpiContext, &commonCreateParams) == C.DPI_FAILURE {
 		return nil, errors.Wrap(d.getError(), "initCommonCreateParams")
 	}
-	commonCreateParams.createMode = C.DPI_MODE_CREATE_DEFAULT | C.DPI_MODE_CREATE_THREADED | C.DPI_MODE_CREATE_EVENTS
+	commonCreateParams.createMode = C.DPI_MODE_CREATE_DEFAULT | C.DPI_MODE_CREATE_THREADED
+	if P.EnableEvents {
+		commonCreateParams.createMode |= C.DPI_MODE_CREATE_EVENTS
+	}
 	commonCreateParams.encoding = cUTF8
 	commonCreateParams.nencoding = cUTF8
 	commonCreateParams.driverName = cDriverName
 	commonCreateParams.driverNameLength = C.uint32_t(len(DriverName))
 
-	if P.IsSysDBA || P.IsSysOper || P.StandaloneConnection {
+	if P.IsSysDBA || P.IsSysOper || P.IsSysASM || P.IsPrelim || P.StandaloneConnection {
 		dc := C.malloc(C.sizeof_void)
 		if Log != nil {
-			Log("C", "dpiConn_create", "username", P.Username, "sid", P.SID, "common", commonCreateParams, "conn", connCreateParams)
+			Log("C", "dpiConn_create", "params", P.String(), "common", commonCreateParams, "conn", connCreateParams)
 		}
 		if C.dpiConn_create(
 			d.dpiContext,
@@ -464,27 +504,48 @@ func (d *drv) openConn(P ConnectionParams) (*conn, error) {
 			return nil, errors.Wrapf(d.getError(), "username=%q sid=%q params=%+v", P.Username, P.SID, connCreateParams)
 		}
 		c.dpiConn = (*C.dpiConn)(dc)
-		return &c, nil
+		c.currentUser = P.Username
+		c.newSession = true
+		err := c.init()
+		return &c, err
 	}
 	var poolCreateParams C.dpiPoolCreateParams
 	if C.dpiContext_initPoolCreateParams(d.dpiContext, &poolCreateParams) == C.DPI_FAILURE {
 		return nil, errors.Wrap(d.getError(), "initPoolCreateParams")
 	}
-	poolCreateParams.minSessions = C.uint32_t(P.MinSessions)
-	poolCreateParams.maxSessions = C.uint32_t(P.MaxSessions)
-	poolCreateParams.sessionIncrement = C.uint32_t(P.PoolIncrement)
-	if extAuth == 1 {
+	poolCreateParams.minSessions = DefaultPoolMinSessions
+	if P.MinSessions >= 0 {
+		poolCreateParams.minSessions = C.uint32_t(P.MinSessions)
+	}
+	poolCreateParams.maxSessions = DefaultPoolMaxSessions
+	if P.MaxSessions > 0 {
+		poolCreateParams.maxSessions = C.uint32_t(P.MaxSessions)
+	}
+	poolCreateParams.sessionIncrement = DefaultPoolIncrement
+	if P.PoolIncrement > 0 {
+		poolCreateParams.sessionIncrement = C.uint32_t(P.PoolIncrement)
+	}
+	if extAuth == 1 || P.HeterogeneousPool {
 		poolCreateParams.homogeneous = 0
 	}
 	poolCreateParams.externalAuth = extAuth
 	poolCreateParams.getMode = C.DPI_MODE_POOL_GET_TIMEDWAIT
-	poolCreateParams.timeout = 300             // seconds before idle pool sessions got evicted
-	poolCreateParams.waitTimeout = 1000        // milliseconds to wait for a session become available
-	poolCreateParams.maxLifetimeSession = 3600 // maximum time in seconds till a pooled session may exist
+	poolCreateParams.timeout = DefaultSessionTimeout
+	if P.SessionTimeout > 0 {
+		poolCreateParams.timeout = C.uint32_t(P.SessionTimeout) // seconds before idle pool sessions get evicted
+	}
+	poolCreateParams.waitTimeout = DefaultWaitTimeout
+	if P.WaitTimeout > 0 {
+		poolCreateParams.waitTimeout = C.uint32_t(P.WaitTimeout) // milliseconds to wait for a session to become available
+	}
+	poolCreateParams.maxLifetimeSession = DefaultMaxLifeTime
+	if P.MaxLifeTime > 0 {
+		poolCreateParams.maxLifetimeSession = C.uint32_t(P.MaxLifeTime) // maximum time in seconds till a pooled session may exist
+	}
 
 	var dp *C.dpiPool
 	if Log != nil {
-		Log("C", "dpiPool_create", "username", P.Username, "sid", P.SID, "common", commonCreateParams, "pool", poolCreateParams)
+		Log("C", "dpiPool_create", "username", P.Username, "conn", connString, "sid", P.SID, "common", commonCreateParams, "pool", fmt.Sprintf("%#v", poolCreateParams))
 	}
 	if C.dpiPool_create(
 		d.dpiContext,
@@ -495,38 +556,105 @@ func (d *drv) openConn(P ConnectionParams) (*conn, error) {
 		&poolCreateParams,
 		(**C.dpiPool)(unsafe.Pointer(&dp)),
 	) == C.DPI_FAILURE {
-		return nil, errors.Wrapf(d.getError(), "username=%q SID=%q minSessions=%d maxSessions=%d poolIncrement=%d extAuth=%d ",
-			P.Username, P.SID,
-			P.MinSessions, P.MaxSessions, P.PoolIncrement, extAuth)
+		return nil, errors.Wrapf(d.getError(), "params=%s extAuth=%v", P.String(), extAuth)
 	}
-	C.dpiPool_setTimeout(dp, 300)
-	C.dpiPool_setMaxLifetimeSession(dp, 3600)
 	C.dpiPool_setStmtCacheSize(dp, 40)
 	d.mu.Lock()
-	d.pools[connString] = dp
+	d.pools[connString] = &connPool{dpiPool: dp}
 	d.mu.Unlock()
 
 	return d.openConn(P)
 }
 
+func (c *conn) acquireConn(user, pass string) error {
+	var connCreateParams C.dpiConnCreateParams
+	if C.dpiContext_initConnCreateParams(c.dpiContext, &connCreateParams) == C.DPI_FAILURE {
+		return errors.Wrap(c.getError(), "initConnCreateParams")
+	}
+
+	dc := C.malloc(C.sizeof_void)
+	if Log != nil {
+		Log("C", "dpiPool_acquirePoolConnection", "conn", connCreateParams)
+	}
+	var cUserName, cPassword *C.char
+	defer func() {
+		if cUserName != nil {
+			C.free(unsafe.Pointer(cUserName))
+		}
+		if cPassword != nil {
+			C.free(unsafe.Pointer(cPassword))
+		}
+	}()
+	if user != "" {
+		cUserName = C.CString(user)
+	}
+	if pass != "" {
+		cPassword = C.CString(pass)
+	}
+
+	c.drv.mu.Lock()
+	pool := c.pools[c.connParams.String()]
+	c.drv.mu.Unlock()
+	if C.dpiPool_acquireConnection(
+		pool.dpiPool,
+		cUserName, C.uint32_t(len(user)), cPassword, C.uint32_t(len(pass)),
+		&connCreateParams,
+		(**C.dpiConn)(unsafe.Pointer(&dc)),
+	) == C.DPI_FAILURE {
+		C.free(unsafe.Pointer(dc))
+		return errors.Wrapf(c.getError(), "acquirePoolConnection")
+	}
+
+	c.mu.Lock()
+	c.dpiConn = (*C.dpiConn)(dc)
+	c.currentUser = user
+	c.newSession = connCreateParams.outNewSession == 1
+	c.Client, c.Server = c.drv.clientVersion, pool.serverVersion
+	c.timeZone, c.tzOffSecs = pool.timeZone, pool.tzOffSecs
+	c.mu.Unlock()
+	err := c.init()
+	if err == nil {
+		c.mu.Lock()
+		pool.serverVersion = c.Server
+		pool.timeZone, pool.tzOffSecs = c.timeZone, c.tzOffSecs
+		c.mu.Unlock()
+	}
+
+	return err
+}
+
 // ConnectionParams holds the params for a connection (pool).
-// You can use ConnectionParams{...}.String() as a connection string
-// in sql.Open.
+// You can use ConnectionParams{...}.StringWithPassword()
+// as a connection string in sql.Open.
 type ConnectionParams struct {
-	Username, Password, SID, ConnClass        string
-	IsSysDBA, IsSysOper, StandaloneConnection bool
-	MinSessions, MaxSessions, PoolIncrement   int
+	Username, Password, SID, ConnClass       string
+	MinSessions, MaxSessions, PoolIncrement  int
+	WaitTimeout, MaxLifeTime, SessionTimeout int
+	IsSysDBA, IsSysOper, IsSysASM, IsPrelim  bool
+	HeterogeneousPool                        bool
+	StandaloneConnection                     bool
+	EnableEvents                             bool
+}
+
+// String returns the string representation of ConnectionParams.
+// The password is replaced with a "SECRET" string!
+func (P ConnectionParams) String() string {
+	return P.string(true, false)
 }
 
 // StringNoClass returns the string representation of ConnectionParams, without class info.
+// The password is replaced with a "SECRET" string!
 func (P ConnectionParams) StringNoClass() string {
-	return P.string(false)
-}
-func (P ConnectionParams) String() string {
-	return P.string(true)
+	return P.string(false, false)
 }
 
-func (P ConnectionParams) string(class bool) string {
+// StringWithPassword returns the string representation of ConnectionParams (as String() does),
+// but does NOT obfuscate the password, just prints it as is.
+func (P ConnectionParams) StringWithPassword() string {
+	return P.string(true, true)
+}
+
+func (P ConnectionParams) string(class, withPassword bool) string {
 	host, path := P.SID, ""
 	if i := strings.IndexByte(host, '/'); i >= 0 {
 		host, path = host[:i], host[i:]
@@ -536,16 +664,28 @@ func (P ConnectionParams) string(class bool) string {
 		cc = fmt.Sprintf("connectionClass=%s&", url.QueryEscape(P.ConnClass))
 	}
 	// params should be sorted lexicographically
+	password := P.Password
+	if !withPassword {
+		hsh := fnv.New64()
+		io.WriteString(hsh, P.Password)
+		password = "SECRET-" + base64.URLEncoding.EncodeToString(hsh.Sum(nil))
+	}
 	return (&url.URL{
 		Scheme: "oracle",
-		User:   url.UserPassword(P.Username, "SECRET"),
+		User:   url.UserPassword(P.Username, password),
 		Host:   host,
 		Path:   path,
 		RawQuery: cc +
 			fmt.Sprintf("poolIncrement=%d&poolMaxSessions=%d&poolMinSessions=%d&"+
-				"sysdba=%d&sysoper=%d&standaloneConnection=%d",
+				"sysdba=%d&sysoper=%d&sysasm=%d&"+
+				"standaloneConnection=%d&enableEvents=%d&"+
+				"heterogeneousPool=%d&prelim=%d&"+
+				"poolWaitTimeout=%d&poolSessionMaxLifetime=%d&poolSessionTimeout=%d",
 				P.PoolIncrement, P.MaxSessions, P.MinSessions,
-				b2i(P.IsSysDBA), b2i(P.IsSysOper), b2i(P.StandaloneConnection),
+				b2i(P.IsSysDBA), b2i(P.IsSysOper), b2i(P.IsSysASM),
+				b2i(P.StandaloneConnection), b2i(P.EnableEvents),
+				b2i(P.HeterogeneousPool), b2i(P.IsPrelim),
+				P.WaitTimeout, P.MaxLifeTime, P.SessionTimeout,
 			),
 	}).String()
 }
@@ -553,10 +693,13 @@ func (P ConnectionParams) string(class bool) string {
 // ParseConnString parses the given connection string into a struct.
 func ParseConnString(connString string) (ConnectionParams, error) {
 	P := ConnectionParams{
-		MinSessions:   DefaultPoolMinSessions,
-		MaxSessions:   DefaultPoolMaxSessions,
-		PoolIncrement: DefaultPoolIncrement,
-		ConnClass:     DefaultConnectionClass,
+		MinSessions:    DefaultPoolMinSessions,
+		MaxSessions:    DefaultPoolMaxSessions,
+		PoolIncrement:  DefaultPoolIncrement,
+		ConnClass:      DefaultConnectionClass,
+		MaxLifeTime:    DefaultMaxLifeTime,
+		WaitTimeout:    DefaultWaitTimeout,
+		SessionTimeout: DefaultSessionTimeout,
 	}
 	if !strings.HasPrefix(connString, "oracle://") {
 		i := strings.IndexByte(connString, '/')
@@ -564,23 +707,27 @@ func ParseConnString(connString string) (ConnectionParams, error) {
 			return P, errors.Errorf("no '/' in connection string")
 		}
 		P.Username, connString = connString[:i], connString[i+1:]
+
+		uSid := strings.ToUpper(connString)
+		//fmt.Printf("connString=%q SID=%q\n", connString, uSid)
+		if strings.Contains(uSid, " AS ") {
+			if P.IsSysDBA = strings.HasSuffix(uSid, " AS SYSDBA"); P.IsSysDBA {
+				connString = connString[:len(connString)-10]
+			} else if P.IsSysOper = strings.HasSuffix(uSid, " AS SYSOPER"); P.IsSysOper {
+				connString = connString[:len(connString)-11]
+			} else if P.IsSysASM = strings.HasSuffix(uSid, " AS SYSASM"); P.IsSysASM {
+				connString = connString[:len(connString)-10]
+			}
+		}
 		if i = strings.IndexByte(connString, '@'); i >= 0 {
 			P.Password, P.SID = connString[:i], connString[i+1:]
 		} else {
 			P.Password = connString
-			if P.SID = os.Getenv("ORACLE_SID"); P.SID == "" {
-				P.SID = os.Getenv("TWO_TASK")
-			}
-		}
-		uSid := strings.ToUpper(P.SID)
-		if P.IsSysDBA = strings.HasSuffix(uSid, " AS SYSDBA"); P.IsSysDBA {
-			P.SID = P.SID[:len(P.SID)-10]
-		} else if P.IsSysOper = strings.HasSuffix(uSid, " AS SYSOPER"); P.IsSysOper {
-			P.SID = P.SID[:len(P.SID)-11]
 		}
 		if strings.HasSuffix(P.SID, ":POOLED") {
 			P.ConnClass, P.SID = "POOLED", P.SID[:len(P.SID)-7]
 		}
+		//fmt.Printf("connString=%q params=%s\n", connString, P)
 		return P, nil
 	}
 	u, err := url.Parse(connString)
@@ -602,10 +749,25 @@ func ParseConnString(connString string) (ConnectionParams, error) {
 	if vv, ok := q["connectionClass"]; ok {
 		P.ConnClass = vv[0]
 	}
-	if P.IsSysDBA = q.Get("sysdba") == "1"; !P.IsSysDBA {
-		P.IsSysOper = q.Get("sysoper") == "1"
+	for _, task := range []struct {
+		Dest *bool
+		Key  string
+	}{
+		{&P.IsSysDBA, "sysdba"},
+		{&P.IsSysOper, "sysoper"},
+		{&P.IsSysASM, "sysasm"},
+		{&P.IsPrelim, "prelim"},
+
+		{&P.StandaloneConnection, "standaloneConnection"},
+		{&P.EnableEvents, "enableEvents"},
+		{&P.HeterogeneousPool, "heterogeneousPool"},
+	} {
+		*task.Dest = q.Get(task.Key) == "1"
 	}
-	P.StandaloneConnection = q.Get("standaloneConnection") == "1" || P.ConnClass == NoConnectionPoolingConnectionClass
+	P.StandaloneConnection = P.StandaloneConnection || P.ConnClass == NoConnectionPoolingConnectionClass
+	if P.IsPrelim {
+		P.ConnClass = ""
+	}
 
 	for _, task := range []struct {
 		Dest *int
@@ -614,6 +776,9 @@ func ParseConnString(connString string) (ConnectionParams, error) {
 		{&P.MinSessions, "poolMinSessions"},
 		{&P.MaxSessions, "poolMaxSessions"},
 		{&P.PoolIncrement, "poolIncrement"},
+		{&P.SessionTimeout, "poolSessionTimeout"},
+		{&P.WaitTimeout, "poolWaitTimeout"},
+		{&P.MaxLifeTime, "poolSessionMaxLifetime"},
 	} {
 		s := q.Get(task.Key)
 		if s == "" {
@@ -633,14 +798,13 @@ func ParseConnString(connString string) (ConnectionParams, error) {
 	} else if P.PoolIncrement < 1 {
 		P.PoolIncrement = 1
 	}
-
 	return P, nil
 }
 
 // OraErr is an error holding the ORA-01234 code and the message.
 type OraErr struct {
-	code    int
 	message string
+	code    int
 }
 
 var _ = error((*OraErr)(nil))
@@ -698,8 +862,8 @@ func b2i(b bool) uint8 {
 
 // VersionInfo holds version info returned by Oracle DB.
 type VersionInfo struct {
-	Version, Release, Update, PortRelease, PortUpdate, Full int
 	ServerRelease                                           string
+	Version, Release, Update, PortRelease, PortUpdate, Full int
 }
 
 func (V *VersionInfo) set(v *C.dpiVersionInfo) {
@@ -759,4 +923,45 @@ func ctxGetLog(ctx context.Context) logFunc {
 // ContextWithLog returns a context with the given log function.
 func ContextWithLog(ctx context.Context, logF func(...interface{}) error) context.Context {
 	return context.WithValue(ctx, logCtxKey, logF)
+}
+
+func parseTZ(s string) (int, error) {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return 0, io.EOF
+	}
+	if s == "Z" || s == "UTC" {
+		return 0, nil
+	}
+	var tz int
+	if i := strings.IndexByte(s, ':'); i >= 0 {
+		if i64, err := strconv.ParseInt(s[i+1:], 10, 6); err != nil {
+			return tz, errors.Wrap(err, s)
+		} else {
+			tz = int(i64)
+		}
+		s = s[:i]
+	}
+	if tz == 0 {
+		if i := strings.IndexByte(s, '/'); i >= 0 {
+			targetLoc, err := time.LoadLocation(s)
+			if err != nil {
+				return tz, errors.Wrap(err, s)
+			}
+
+			_, localOffset := time.Now().In(targetLoc).Zone()
+
+			tz = localOffset
+			return tz, nil
+		}
+	}
+	if i64, err := strconv.ParseInt(s, 10, 5); err != nil {
+		return tz, errors.Wrap(err, s)
+	} else {
+		if i64 < 0 {
+			tz = -tz
+		}
+		tz += int(i64 * 3600)
+	}
+	return tz, nil
 }

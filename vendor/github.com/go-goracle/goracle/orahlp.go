@@ -16,6 +16,7 @@
 package goracle
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"database/sql"
@@ -39,6 +40,11 @@ type QueryColumn struct {
 // Execer is the ExecContext of sql.Conn.
 type Execer interface {
 	ExecContext(context.Context, string, ...interface{}) (sql.Result, error)
+}
+
+// Querier is the QueryContext of sql.Conn.
+type Querier interface {
+	QueryContext(context.Context, string, ...interface{}) (*sql.Rows, error)
 }
 
 // DescribeQuery describes the columns in the qry.
@@ -212,32 +218,36 @@ func EnableDbmsOutput(ctx context.Context, conn Execer) error {
 
 // ReadDbmsOutput copies the DBMS_OUTPUT buffer into the given io.Writer.
 func ReadDbmsOutput(ctx context.Context, w io.Writer, conn preparer) error {
-	qry := `BEGIN DBMS_OUTPUT.get_lines(:1, :2); END;`
+	const maxNumLines = 128
+	bw := bufio.NewWriterSize(w, maxNumLines*(32<<10))
+
+	const qry = `BEGIN DBMS_OUTPUT.get_lines(:1, :2); END;`
 	stmt, err := conn.PrepareContext(ctx, qry)
 	if err != nil {
 		return errors.Wrap(err, qry)
 	}
 
-	lines := make([]string, 128)
+	lines := make([]string, maxNumLines)
 	var numLines int64
-	params := []interface{}{PlSQLArrays,
+	params := []interface{}{
+		PlSQLArrays,
 		sql.Out{Dest: &lines}, sql.Out{Dest: &numLines, In: true},
 	}
 	for {
 		numLines = int64(len(lines))
-		if _, err := stmt.ExecContext(ctx, params...); err != nil {
+		if _, err = stmt.ExecContext(ctx, params...); err != nil {
+			_ = bw.Flush()
 			return errors.Wrap(err, qry)
 		}
 		for i := 0; i < int(numLines); i++ {
-			if _, err := io.WriteString(w, lines[i]); err != nil {
-				return err
-			}
-			if _, err := w.Write([]byte{'\n'}); err != nil {
+			_, _ = bw.WriteString(lines[i])
+			if err = bw.WriteByte('\n'); err != nil {
+				_ = bw.Flush()
 				return err
 			}
 		}
 		if int(numLines) < len(lines) {
-			return nil
+			return bw.Flush()
 		}
 	}
 }
@@ -257,7 +267,7 @@ func ServerVersion(ex Execer) (VersionInfo, error) {
 	if err != nil {
 		return VersionInfo{}, err
 	}
-	return c.ServerVersion()
+	return c.Server, nil
 }
 
 // Conn is the interface for a connection, to be returned by DriverConn.
@@ -272,9 +282,12 @@ type Conn interface {
 	ServerVersion() (VersionInfo, error)
 	GetObjectType(name string) (ObjectType, error)
 	NewSubscription(string, func(Event)) (*Subscription, error)
+	Startup(StartupMode) error
+	Shutdown(ShutdownMode) error
+	NewData(baseType interface{}, SliceLen, BufSize int) ([]*Data, error)
 }
 
-// DriverConn returns the *goracle.conn of the databas/sql.Conn
+// DriverConn returns the *goracle.conn of the database/sql.Conn
 func DriverConn(ex Execer) (Conn, error) {
 	return getConn(ex)
 }
@@ -289,4 +302,9 @@ func getConn(ex Execer) (*conn, error) {
 		return nil, errors.Wrap(err, "getConnection")
 	}
 	return c.(*conn), nil
+}
+
+// WrapRows transforms a driver.Rows into an *sql.Rows.
+func WrapRows(ctx context.Context, q Querier, rset driver.Rows) (*sql.Rows, error) {
+	return q.QueryContext(ctx, wrapResultset, rset)
 }

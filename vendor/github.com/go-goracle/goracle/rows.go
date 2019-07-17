@@ -39,16 +39,20 @@ var _ = driver.RowsColumnTypeLength((*rows)(nil))
 var _ = driver.RowsColumnTypeNullable((*rows)(nil))
 var _ = driver.RowsColumnTypePrecisionScale((*rows)(nil))
 var _ = driver.RowsColumnTypeScanType((*rows)(nil))
+var _ = driver.RowsNextResultSet((*rows)(nil))
 
 type rows struct {
+	columns   []Column
+	vars      []*C.dpiVar
+	data      [][]C.dpiData
+	err       error
+	nextRsErr error
 	*statement
-	columns        []Column
+	origSt         *statement
+	nextRs         *C.dpiStmt
 	bufferRowIndex C.uint32_t
 	fetched        C.uint32_t
 	finished       bool
-	vars           []*C.dpiVar
-	data           [][]C.dpiData
-	err            error
 }
 
 // Columns returns the names of the columns. The number of
@@ -270,21 +274,21 @@ func (r *rows) Next(dest []driver.Value) error {
 		_ = r.Close()
 		return io.EOF
 	}
+	if len(dest) != len(r.columns) {
+		return errors.Errorf("column count mismatch: we have %d columns, but given %d destination", len(r.columns), len(dest))
+	}
 	if r.fetched == 0 {
 		var moreRows C.int
 		if C.dpiStmt_fetchRows(r.dpiStmt, C.uint32_t(r.statement.FetchRowCount()), &r.bufferRowIndex, &r.fetched, &moreRows) == C.DPI_FAILURE {
 			return errors.Wrap(r.getError(), "Next")
 		}
 		if Log != nil {
-			Log("msg", "fetched", "bri", r.bufferRowIndex, "fetched", r.fetched, "moreRows", moreRows)
+			Log("msg", "fetched", "bri", r.bufferRowIndex, "fetched", r.fetched, "moreRows", moreRows, "len(data)", len(r.data), "cols", len(r.columns))
 		}
 		if r.fetched == 0 {
 			r.finished = moreRows == 0
 			_ = r.Close()
 			return io.EOF
-		}
-		if Log != nil {
-			Log("data", r.data)
 		}
 		if r.data == nil {
 			r.data = make([][]C.dpiData, len(r.columns))
@@ -308,10 +312,10 @@ func (r *rows) Next(dest []driver.Value) error {
 	for i, col := range r.columns {
 		typ := col.OracleType
 		d := &r.data[i][r.bufferRowIndex]
-		if Log != nil {
-			Log("msg", "Next", "i", i, "row", r.bufferRowIndex) //, "data", fmt.Sprintf("%+v", d), "typ", typ)
-		}
 		isNull := d.isNull == 1
+		if false && Log != nil {
+			Log("msg", "Next", "i", i, "row", r.bufferRowIndex, "typ", typ, "null", isNull) //, "data", fmt.Sprintf("%+v", d), "typ", typ)
+		}
 
 		switch typ {
 		case C.DPI_ORACLE_TYPE_VARCHAR, C.DPI_ORACLE_TYPE_NVARCHAR,
@@ -348,7 +352,12 @@ func (r *rows) Next(dest []driver.Value) error {
 				dest[i] = printFloat(float64(C.dpiData_getDouble(d)))
 			default:
 				b := C.dpiData_getBytes(d)
-				dest[i] = Number(C.GoStringN(b.ptr, C.int(b.length)))
+				s := C.GoStringN(b.ptr, C.int(b.length))
+				if r.NumberAsString() {
+					dest[i] = s
+				} else {
+					dest[i] = Number(s)
+				}
 				if Log != nil {
 					Log("msg", "b", "i", i, "ptr", b.ptr, "length", b.length, "typ", col.NativeType, "int64", C.dpiData_getInt64(d), "dest", dest[i])
 				}
@@ -402,14 +411,14 @@ func (r *rows) Next(dest []driver.Value) error {
 				continue
 			}
 			ts := C.dpiData_getTimestamp(d)
-			tz := time.Local
+			tz := r.conn.timeZone
 			if col.OracleType != C.DPI_ORACLE_TYPE_TIMESTAMP && col.OracleType != C.DPI_ORACLE_TYPE_DATE {
 				tz = timeZoneFor(ts.tzHourOffset, ts.tzMinuteOffset)
 			}
 			dest[i] = time.Date(int(ts.year), time.Month(ts.month), int(ts.day), int(ts.hour), int(ts.minute), int(ts.second), int(ts.fsecond), tz)
 		case C.DPI_ORACLE_TYPE_INTERVAL_DS, C.DPI_NATIVE_TYPE_INTERVAL_DS:
 			if isNull {
-				dest[i] = time.Time{}
+				dest[i] = nil
 				continue
 			}
 			ds := C.dpiData_getIntervalDS(d)
@@ -425,6 +434,7 @@ func (r *rows) Next(dest []driver.Value) error {
 			}
 			ym := C.dpiData_getIntervalYM(d)
 			dest[i] = fmt.Sprintf("%dy%dm", ym.years, ym.months)
+
 		case C.DPI_ORACLE_TYPE_CLOB, C.DPI_ORACLE_TYPE_NCLOB,
 			C.DPI_ORACLE_TYPE_BLOB,
 			C.DPI_ORACLE_TYPE_BFILE,
@@ -456,7 +466,9 @@ func (r *rows) Next(dest []driver.Value) error {
 				dest[i] = nil
 				continue
 			}
-			st := &statement{conn: r.conn, dpiStmt: C.dpiData_getStmt(d)}
+			st := &statement{conn: r.conn, dpiStmt: C.dpiData_getStmt(d),
+				stmtOptions: r.statement.stmtOptions, // inherit parent statement's options
+			}
 			var colCount C.uint32_t
 			if C.dpiStmt_getNumQueryColumns(st.dpiStmt, &colCount) == C.DPI_FAILURE {
 				return errors.Wrap(r.getError(), "getNumQueryColumns")
@@ -468,13 +480,25 @@ func (r *rows) Next(dest []driver.Value) error {
 				return err
 			}
 			dest[i] = r2
+
 		case C.DPI_ORACLE_TYPE_BOOLEAN, C.DPI_NATIVE_TYPE_BOOLEAN:
 			if isNull {
 				dest[i] = nil
 				continue
 			}
 			dest[i] = C.dpiData_getBool(d) == 1
-			//case C.DPI_ORACLE_TYPE_OBJECT: //Default type used for named type columns in the database. Data is transferred to/from Oracle in Oracle's internal format.
+
+		case C.DPI_ORACLE_TYPE_OBJECT: //Default type used for named type columns in the database. Data is transferred to/from Oracle in Oracle's internal format.
+			if isNull {
+				dest[i] = nil
+				continue
+			}
+			o, err := wrapObject(r.drv, col.ObjectType, C.dpiData_getObject(d))
+			if err != nil {
+				return err
+			}
+			dest[i] = o
+
 		default:
 			return errors.Errorf("unsupported column type %d", typ)
 		}
@@ -484,16 +508,20 @@ func (r *rows) Next(dest []driver.Value) error {
 	r.bufferRowIndex++
 	r.fetched--
 
+	if Log != nil {
+		Log("msg", "scanned", "row", r.bufferRowIndex, "dest", dest)
+	}
+
 	return nil
 }
 
 var _ = driver.Rows((*directRow)(nil))
 
 type directRow struct {
-	conn   *conn
-	query  string
 	args   []string
 	result []interface{}
+	query  string
+	conn   *conn
 }
 
 func (dr *directRow) Columns() []string {
@@ -529,6 +557,63 @@ func (dr *directRow) Next(dest []driver.Value) error {
 	case getConnection:
 		*(dest[0].(*interface{})) = dr.result[0]
 	}
+	return nil
+}
+
+func (r *rows) getImplicitResult() {
+	if r == nil || r.nextRsErr != nil {
+		return
+	}
+	// use the original statement for the NextResultSet call.
+	st := r.origSt
+	if st == nil {
+		st = r.statement
+		r.origSt = st
+	}
+	if C.dpiStmt_getImplicitResult(st.dpiStmt, &r.nextRs) == C.DPI_FAILURE {
+		r.nextRsErr = errors.Wrap(r.getError(), "getImplicitResult")
+	}
+}
+func (r *rows) HasNextResultSet() bool {
+	if r == nil || r.statement == nil || r.conn == nil {
+		return false
+	}
+	if r.nextRs != nil {
+		return true
+	}
+	if !((r.conn.Client.Version > 12 || r.conn.Client.Version == 12 && r.conn.Client.Release >= 1) &&
+		(r.conn.Server.Version > 12 || r.conn.Server.Version == 12 && r.conn.Server.Release >= 1)) {
+		return false
+	}
+	r.getImplicitResult()
+	return r.nextRs != nil
+}
+func (r *rows) NextResultSet() error {
+	if r.nextRs == nil {
+		r.getImplicitResult()
+		if r.nextRsErr != nil {
+			return r.nextRsErr
+		}
+		if r.nextRs == nil {
+			return errors.Wrap(io.EOF, "getImplicitResult")
+		}
+	}
+	st := &statement{conn: r.conn, dpiStmt: r.nextRs}
+
+	var n C.uint32_t
+	if C.dpiStmt_getNumQueryColumns(st.dpiStmt, &n) == C.DPI_FAILURE {
+		return errors.Wrapf(io.EOF, "getNumQueryColumns: %v", r.getError())
+	}
+	// keep the originam statement for the succeeding NextResultSet calls.
+	nr, err := st.openRows(int(n))
+	if err != nil {
+		return err
+	}
+	nr.origSt = r.origSt
+	if nr.origSt == nil {
+		nr.origSt = r.statement
+	}
+	*r = *nr
 	return nil
 }
 

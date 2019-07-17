@@ -15,10 +15,12 @@
 			"revisionTime": "2018-02-21T22:46:20Z"
 		},
 		{
-			"checksumSHA1": "h6KodYgdK0WIZRzcLhv4mBg0LgY=",
+			"checksumSHA1": "Reiy5+2pVfkyPqpP+y0SRpYI0Y0=",
 			"path": "github.com/go-goracle/goracle",
-			"revision": "c9fc2a8d164364dc34753e5ad83f218b88557de9",
-			"revisionTime": "2018-07-28T07:28:30Z"
+			"revision": "df8cb6f6369f5ac04dbf15ef19b18cb448abb27e",
+			"revisionTime": "2019-07-16T16:43:54Z",
+			"version": "v2.18.0",
+			"versionExact": "v2.18.0"
 		},
 		{
 			"checksumSHA1": "3ohk4dFYrERZ6WTdKkIwnTA0HSI=",
