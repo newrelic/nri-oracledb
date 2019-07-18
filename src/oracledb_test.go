@@ -11,14 +11,14 @@ import (
 func TestGetCollectionString(t *testing.T) {
 
 	args = argumentList{
-		ServiceName: "testservice",
-		Hostname:    "testhost",
-		Password:    "testpassword",
-		Username:    "testuser",
-		IsSysDBA:    true,
-    MaxSessions: 10,
-    MinSessions: 10,
-    PoolIncrement: 0,
+		ServiceName:   "testservice",
+		Hostname:      "testhost",
+		Password:      "testpassword",
+		Username:      "testuser",
+		IsSysDBA:      true,
+		MaxSessions:   10,
+		MinSessions:   10,
+		PoolIncrement: 0,
 	}
 
 	s := getConnectionString()
