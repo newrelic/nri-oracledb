@@ -25,9 +25,9 @@ type argumentList struct {
 	Tablespaces     string `default:"" help:"JSON Array of Tablespaces to collect. If empty will collect all tablespaces."`
 	Port            string `default:"1521" help:"The OracleDB connection port"`
 	ExtendedMetrics bool   `default:"false" help:"Enable extended metrics"`
-	MinSessions     int    `default:10 help:"Maximum number of sessions opened by the integration"`
-	MaxSessions     int    `default:10 help:"Minimum number of sessions opened by the integration"`
-	PoolIncrement   int    `default:0 help:"How much to increment the pool size when the number of needed connections is exceeded"`
+	MinSessions     int    `default:"10" help:"Maximum number of sessions opened by the integration"`
+	MaxSessions     int    `default:"10" help:"Minimum number of sessions opened by the integration"`
+	PoolIncrement   int    `default:"0" help:"How much to increment the pool size when the number of needed connections is exceeded"`
 }
 
 const (
@@ -53,7 +53,6 @@ func main() {
 	err = parseTablespaceWhitelist()
 	exitOnErr(err)
 
-	log.Error(getConnectionString())
 	db, err := sql.Open("goracle", getConnectionString())
 	exitOnErr(err)
 	db.SetMaxIdleConns(10)
