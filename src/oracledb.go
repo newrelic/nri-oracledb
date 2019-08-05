@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-  "strings"
+	"strings"
 	"sync"
 	"time"
 
@@ -97,7 +97,7 @@ func getConnectionString() string {
 	if args.ConnectionString == "" {
 		sid = fmt.Sprintf("%s:%s/%s", args.Hostname, args.Port, args.ServiceName)
 	} else {
-		sid = strings.ReplaceAll(args.ConnectionString, " ", "")
+		sid = strings.Replace(args.ConnectionString, " ", "", -1)
 	}
 
 	cp := goracle.ConnectionParams{
