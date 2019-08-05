@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+  "strings"
 	"sync"
 	"time"
 
@@ -16,18 +17,19 @@ import (
 
 type argumentList struct {
 	sdkArgs.DefaultArgumentList
-	ServiceName     string `default:"" help:"The Oracle service name"`
-	Username        string `default:"" help:"The OracleDB connection user name"`
-	Password        string `default:"" help:"The OracleDB connection password"`
-	IsSysDBA        bool   `default:"false" help:"Is the user a SysDBA"`
-	IsSysOper       bool   `default:"false" help:"Is the user a SysOper"`
-	Hostname        string `default:"127.0.0.1" help:"The OracleDB connection host name"`
-	Tablespaces     string `default:"" help:"JSON Array of Tablespaces to collect. If empty will collect all tablespaces."`
-	Port            string `default:"1521" help:"The OracleDB connection port"`
-	ExtendedMetrics bool   `default:"false" help:"Enable extended metrics"`
-	MinSessions     int    `default:"10" help:"Maximum number of sessions opened by the integration"`
-	MaxSessions     int    `default:"10" help:"Minimum number of sessions opened by the integration"`
-	PoolIncrement   int    `default:"0" help:"How much to increment the pool size when the number of needed connections is exceeded"`
+	ServiceName      string `default:"" help:"The Oracle service name"`
+	Username         string `default:"" help:"The OracleDB connection user name"`
+	Password         string `default:"" help:"The OracleDB connection password"`
+	IsSysDBA         bool   `default:"false" help:"Is the user a SysDBA"`
+	IsSysOper        bool   `default:"false" help:"Is the user a SysOper"`
+	Hostname         string `default:"127.0.0.1" help:"The OracleDB connection host name"`
+	Tablespaces      string `default:"" help:"JSON Array of Tablespaces to collect. If empty will collect all tablespaces."`
+	Port             string `default:"1521" help:"The OracleDB connection port"`
+	ExtendedMetrics  bool   `default:"false" help:"Enable extended metrics"`
+	MinSessions      int    `default:"10" help:"Maximum number of sessions opened by the integration"`
+	MaxSessions      int    `default:"10" help:"Minimum number of sessions opened by the integration"`
+	PoolIncrement    int    `default:"0" help:"How much to increment the pool size when the number of needed connections is exceeded"`
+	ConnectionString string `default:"" help:"An advanced connection string. Takes precedence over host, port, and service name"`
 }
 
 const (
@@ -91,10 +93,17 @@ func main() {
 
 func getConnectionString() string {
 
+	sid := ""
+	if args.ConnectionString == "" {
+		sid = fmt.Sprintf("%s:%s/%s", args.Hostname, args.Port, args.ServiceName)
+	} else {
+		sid = strings.ReplaceAll(args.ConnectionString, " ", "")
+	}
+
 	cp := goracle.ConnectionParams{
 		Username:      args.Username,
 		Password:      args.Password,
-		SID:           fmt.Sprintf("%s:%s/%s", args.Hostname, args.Port, args.ServiceName),
+		SID:           sid,
 		IsSysDBA:      args.IsSysDBA,
 		IsSysOper:     args.IsSysOper,
 		MinSessions:   args.MinSessions,

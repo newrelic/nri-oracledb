@@ -10,6 +10,8 @@ instances:
       hostname: oracle_host
       # The port on which Oracle is listening. If omitted, defaults to 1521
       port: 12345
+      # Alternatively, a full connection string can be used. This takes priority over host, port, and service_name.
+      # connection_string:   (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=oraclehost)(PORT=1521))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=orcl))) 
       # The username for the monitoring user.
       username: oracle_monitor
       # The password for the monitoring user.
