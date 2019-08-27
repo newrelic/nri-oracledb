@@ -79,6 +79,604 @@ func getInstanceIDString(originalID interface{}) string {
 	}
 }
 
+func columnMetricsGenerator(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+
+  columnNames, err := rows.Columns()
+  if err != nil {
+    return fmt.Errorf("failed to retrieve columns from rows")
+  }
+
+  for rows.Next() {
+    // Make an array of columns and an array of pointers to each element of the array
+    columns := make([]interface{}, len(columnNames))
+    pointers := make([]interface{}, len(columnNames))
+    for i := 0; i < len(columnNames); i++ {
+      pointers[i] = &columns[i]
+    }
+
+    // Scan the row into the array of pointers
+    err := rows.Scan(pointers...)
+    if err != nil {
+      return err
+    }
+
+    // Put the values of the row into a column with the column name as the key
+    rowMap := make(map[string]interface{})
+    for i, column := range columnNames {
+      rowMap[column] = columns[i]
+    }
+
+    // Create each metric in the list of metrics we want to collect
+    for _, metric := range metrics {
+      if metric.defaultMetric || args.ExtendedMetrics {
+        newMetric := &newrelicMetric{
+          name:       metric.name,
+          metricType: metric.metricType,
+          value:      rowMap[metric.identifier],
+        }
+
+          metadata := map[string]string{"instanceID": (rowMap["INST_ID"].(goracle.Number)).String()}
+
+        // Send the new metric down the channel
+        metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
+      }
+    }
+  }
+
+  return nil
+}
+
+var oracleLongRunningQueries = oracleMetricGroup{
+  sqlQuery: func() string{
+    query := `
+    SELECT inst_id, sum(num) AS total FROM (( 
+      SELECT i.inst_id, 1 AS num
+      FROM gv$session s, gv$instance i 
+      WHERE i.inst_id=s.inst_id 
+      AND s.status='ACTIVE' 
+      AND s.type <>'BACKGROUND' 
+      AND s.last_call_et > 60 
+      GROUP BY i.inst_id
+    ) UNION (
+      SELECT i.inst_id, 0 AS num
+      FROM gv$session s, gv$instance i 
+      WHERE i.inst_id=s.inst_id 
+    )) 
+    GROUP BY inst_id
+    `
+
+    return query
+  },
+  
+  metrics: []*oracleMetric{
+    {
+      name: "sga.ugaTotalMemoryInBytes",
+      identifier: "TOTAL",
+      metricType: metric.GAUGE,
+      defaultMetric: true,
+    },
+  },
+
+  metricsGenerator: columnMetricsGenerator,
+}
+
+var oracleSGAUGATotalMemory = oracleMetricGroup{
+  sqlQuery: func() string{
+    query := `
+    SELECT SUM(value) AS sum,inst.inst_id
+    FROM GV$sesstat, GV$statname, GV$INSTANCE inst 
+    WHERE name = 'session uga memory max' 
+    AND GV$sesstat.statistic#=GV$statname.statistic# 
+    AND GV$sesstat.inst_id=inst.inst_id 
+    AND GV$statname.inst_id=inst.inst_id 
+    GROUP BY inst.inst_id
+    `
+
+    return query
+  },
+  
+  metrics: []*oracleMetric{
+    {
+      name: "sga.ugaTotalMemoryInBytes",
+      identifier: "SUM",
+      metricType: metric.GAUGE,
+      defaultMetric: true,
+    },
+  },
+
+  metricsGenerator: columnMetricsGenerator,
+}
+
+var oracleSGASharedPoolLibraryCacheSharableStatement = oracleMetricGroup{
+  sqlQuery: func() string{
+    query := `
+    SELECT SUM(sqlarea.sharable_mem) AS sum,inst.inst_id
+    FROM GV$sqlarea sqlarea, GV$INSTANCE inst 
+    WHERE sqlarea.executions > 5 
+    AND inst.inst_id=sqlarea.inst_id 
+    GROUP BY inst.inst_id
+    `
+
+    return query
+  },
+  
+  metrics: []*oracleMetric{
+    {
+      name: "sga.sharedPoolLibraryCacheShareableMemoryPerStatementInBytes",
+      identifier: "SUM",
+      metricType: metric.GAUGE,
+      defaultMetric: true,
+    },
+  },
+
+  metricsGenerator: columnMetricsGenerator,
+}
+
+var oracleSGASharedPoolLibraryCacheShareableUser = oracleMetricGroup{
+  sqlQuery: func() string{
+    query := `
+    SELECT SUM(250 * sqlarea.users_opening) AS sum,inst.inst_id
+    FROM GV$sqlarea sqlarea, GV$INSTANCE inst 
+    WHERE inst.inst_id=sqlarea.inst_id 
+    GROUP BY inst.inst_id
+    `
+
+    return query
+  },
+  
+  metrics: []*oracleMetric{
+    {
+      name: "sga.sharedPoolLibraryCacheShareableMemoryPerUserInBytes",
+      identifier: "SUM",
+      metricType: metric.GAUGE,
+      defaultMetric: true,
+    },
+  },
+
+  metricsGenerator: columnMetricsGenerator,
+}
+
+var oracleSGASharedPoolLibraryCacheReloadRatio = oracleMetricGroup{
+  sqlQuery: func() string{
+    query := `
+    SELECT (sum(libcache.reloads)/sum(libcache.pins))  AS ratio,inst.inst_id
+    FROM GV$librarycache libcache, GV$INSTANCE inst 
+    WHERE inst.inst_id=libcache.inst_id 
+    GROUP BY inst.inst_id
+    `
+
+    return query
+  },
+  
+  metrics: []*oracleMetric{
+    {
+      name: "sga.sharedPoolLibraryCacheReloadRatio",
+      identifier: "RATIO",
+      metricType: metric.GAUGE,
+      defaultMetric: true,
+    },
+  },
+
+  metricsGenerator: columnMetricsGenerator,
+}
+
+var oracleSGASharedPoolLibraryCacheHitRatio = oracleMetricGroup{
+  sqlQuery: func() string{
+    query := `
+    SELECT libcache.gethitratio as ratio,inst.inst_id
+    FROM GV$librarycache libcache, GV$INSTANCE inst 
+    WHERE namespace='SQL AREA' 
+    AND inst.inst_id=libcache.inst_id
+    `
+
+    return query
+  },
+  
+  metrics: []*oracleMetric{
+    {
+      name: "sga.sharedPoolLibraryCacheHitRatio",
+      identifier: "RATIO",
+      metricType: metric.GAUGE,
+      defaultMetric: true,
+    },
+  },
+
+  metricsGenerator: columnMetricsGenerator,
+}
+
+var oracleSGASharedPoolDictCacheRatio = oracleMetricGroup{
+  sqlQuery: func() string{
+    query := `
+    SELECT (SUM(rcache.getmisses)/SUM(rcache.gets)) as ratio,inst.inst_id
+    FROM GV$rowcache rcache, GV$INSTANCE inst 
+    WHERE inst.inst_id=rcache.inst_id 
+    GROUP BY inst.inst_id
+    `
+
+    return query
+  },
+  
+  metrics: []*oracleMetric{
+    {
+      name: "sga.sharedPoolDictCacheMissRatio",
+      identifier: "RATIO",
+      metricType: metric.GAUGE,
+      defaultMetric: true,
+    },
+  },
+
+  metricsGenerator: columnMetricsGenerator,
+}
+
+var oracleSGALogBufferSpaceWaits = oracleMetricGroup{
+  sqlQuery: func() string{
+    query := `
+    SELECT count(wait.inst_id) as count,inst.inst_id 
+    FROM GV$SESSION_WAIT wait, GV$INSTANCE inst 
+    WHERE wait.event like 'log buffer space%' 
+    AND inst.inst_id=wait.inst_id 
+    GROUP BY inst.inst_id
+    `
+
+    return query
+  },
+  
+  metrics: []*oracleMetric{
+    {
+      name: "sga.logBufferSpaceWaits",
+      identifier: "COUNT",
+      metricType: metric.GAUGE,
+      defaultMetric: true,
+    },
+  },
+
+  metricsGenerator: columnMetricsGenerator,
+
+}
+
+
+var oracleSGALogAllocRetries = oracleMetricGroup{
+  sqlQuery: func() string{
+    query := `
+    SELECT (rbar.value/re.value) as ratio, inst.inst_id
+    FROM GV$SYSSTAT rbar, GV$SYSSTAT re, GV$INSTANCE inst 
+    WHERE rbar.name like 'redo buffer allocation retries' 
+    AND re.name like 'redo entries' 
+    AND re.inst_id=inst.inst_id AND rbar.inst_id=inst.inst_id
+    `
+
+    return query
+  },
+  
+  metrics: []*oracleMetric{
+    {
+      name: "sga.logBufferAllocationRetriesRatio",
+      identifier: "RATIO",
+      metricType: metric.GAUGE,
+      defaultMetric: true,
+    },
+  },
+
+  metricsGenerator: columnMetricsGenerator,
+
+}
+
+
+var oracleSGAHitRatio = oracleMetricGroup{
+  sqlQuery: func() string{
+    query := `
+    SELECT inst.inst_id,(1 - (phy.value - lob.value - dir.value)/ses.value) as ratio 
+    FROM GV$SYSSTAT ses, GV$SYSSTAT lob, GV$SYSSTAT dir, GV$SYSSTAT phy, GV$INSTANCE inst 
+    WHERE ses.name='session logical reads' 
+    AND dir.name='physical reads direct' 
+    AND lob.name='physical reads direct (lob)' 
+    AND phy.name='physical reads' 
+    AND ses.inst_id=inst.inst_id 
+    AND lob.inst_id=inst.inst_id 
+    AND dir.inst_id=inst.inst_id 
+    AND phy.inst_id=inst.inst_id
+    `
+
+    return query
+  },
+  
+  metrics: []*oracleMetric{
+    {
+      name: "sga.hitRatio",
+      identifier: "RATIO",
+      metricType: metric.GAUGE,
+      defaultMetric: true,
+    },
+  },
+
+  metricsGenerator: columnMetricsGenerator,
+
+}
+
+var oracleSysstat = oracleMetricGroup{
+  sqlQuery: func() string{
+    query := `
+		SELECT sysstat.value,inst.inst_id, sysstat.name
+		FROM GV$SYSSTAT sysstat, GV$INSTANCE inst 
+		WHERE sysstat.inst_id=inst.inst_id
+    `
+    
+    return query
+  },
+
+  metrics: []*oracleMetric{
+		{
+			name:          "sga.logBufferRedoAllocationRetries",
+			identifier:    "redo buffer allocation retries",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "sga.logBufferRedoEntries",
+			identifier:    "redo entries",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "sorts.memoryInBytes",
+			identifier:    "sorts (memory)",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "sorts.diskInBytes",
+			identifier:    "sorts (disk)",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+	},
+
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
+
+    var sysScanner struct {
+      value     int
+      instID    int
+      name      string
+    }
+
+		for rows.Next() {
+
+			// Scan the row into a struct
+			err := rows.Scan(&sysScanner.value, &sysScanner.instID, &sysScanner.name)
+			if err != nil {
+				return err
+			}
+
+			// Match the metric to one of the metrics we want to collect
+			for _, metric := range metrics {
+				if metric.defaultMetric || args.ExtendedMetrics {
+					if sysScanner.name == metric.identifier {
+						newMetric := &newrelicMetric{
+							name:       metric.name,
+							value:      sysScanner.value,
+							metricType: metric.metricType,
+						}
+
+						metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID)}
+
+						// Send the metric down the channel
+						metricsChan <- newrelicMetricSender{metadata: metadata, metric: newMetric}
+						break
+					}
+				}
+			}
+		}
+
+    return nil
+  },
+}
+
+var oracleSGA = oracleMetricGroup{
+  sqlQuery: func() string{
+    query := `
+    SELECT sga.name, sga.value,inst.inst_id  
+    FROM GV$SGA sga, GV$INSTANCE inst 
+    WHERE sga.inst_id=inst.inst_id
+    `
+    
+    return query
+  },
+
+  metrics: []*oracleMetric{
+		{
+			name:          "sga.fixedSizeInBytes",
+			identifier:    "Fixed Size",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "sga.redoBuffersInBytes",
+			identifier:    "Redo Buffers",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+  },
+  
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
+
+    var sysScanner struct {
+      value     int
+      instID    int 
+      name      string
+    }
+
+		for rows.Next() {
+
+			// Scan the row into a struct
+			err := rows.Scan(&sysScanner.name, &sysScanner.value, &sysScanner.instID)
+			if err != nil {
+				return err
+			}
+
+			// Match the metric to one of the metrics we want to collect
+			for _, metric := range metrics {
+				if metric.defaultMetric || args.ExtendedMetrics {
+					if sysScanner.name == metric.identifier {
+						newMetric := &newrelicMetric{
+							name:       metric.name,
+							value:      sysScanner.value,
+							metricType: metric.metricType,
+						}
+
+						metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID)}
+
+						// Send the metric down the channel
+						metricsChan <- newrelicMetricSender{metadata: metadata, metric: newMetric}
+						break
+					}
+				}
+			}
+		}
+
+    return nil
+  },
+}
+
+var oracleRollbackSegments = oracleMetricGroup{
+  sqlQuery: func() string {
+    query := `SELECT 
+      SUM(stat.gets) AS gets, 
+      sum(stat.waits) AS waits, 
+      sum(stat.waits)/sum(stat.gets) AS ratio,
+      inst.inst_id  
+    FROM GV$ROLLSTAT stat, GV$INSTANCE inst 
+    WHERE stat.inst_id=inst.inst_id 
+    GROUP BY inst.inst_id
+    `
+
+    return query
+  },
+
+  metrics: []*oracleMetric{
+		{
+			name:          "rollbackSegments.gets",
+			identifier:    "GETS",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "rollbackSegments.waits",
+			identifier:    "WAITS",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "rollbackSegments.ratioWait",
+			identifier:    "RATIO",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+  },
+
+  metricsGenerator: columnMetricsGenerator, 
+}
+
+var oracleRedoLogWaits = oracleMetricGroup{
+  sqlQuery: func() string {
+    query := `
+    SELECT 
+      sysevent.total_waits,
+      inst.inst_id, 
+      sysevent.event
+    FROM 
+      GV$SYSTEM_EVENT sysevent, 
+      GV$INSTANCE inst 
+    WHERE sysevent.inst_id=inst.inst_id 
+    `
+
+    return query
+  },
+
+  metrics: []*oracleMetric{
+		{
+			name:          "redoLog.waits",
+			identifier:    "log file parallel write",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "redoLog.logFileSwitch",
+			identifier:    "log file switch completion",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "redoLog.logFileSwitchCheckpointIncomplete",
+			identifier:    "log file switch (check",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "redoLog.logFileSwitchArchivingNeeded",
+			identifier:    "log file switch (arch",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "sga.bufferBusyWaits",
+			identifier:    "buffer busy waits",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "sga.freeBufferWaits",
+			identifier:    "freeBufferWaits",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "sga.freeBufferInspected",
+			identifier:    "free buffer inspected",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+  },
+
+	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
+
+    var sysScanner struct {
+      totalWaits     int
+      instID    int 
+      event      string
+    }
+
+		for rows.Next() {
+
+			// Scan the row into a struct
+			err := rows.Scan(&sysScanner.totalWaits, &sysScanner.instID, &sysScanner.event)
+			if err != nil {
+				return err
+			}
+
+			// Match the metric to one of the metrics we want to collect
+			for _, metric := range metrics {
+				if metric.defaultMetric || args.ExtendedMetrics {
+					if sysScanner.event == metric.identifier {
+						newMetric := &newrelicMetric{
+							name:       metric.name,
+							value:      sysScanner.totalWaits,
+							metricType: metric.metricType,
+						}
+
+						metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID)}
+
+						// Send the metric down the channel
+						metricsChan <- newrelicMetricSender{metadata: metadata, metric: newMetric}
+						break
+					}
+				}
+			}
+		}
+
+    return nil
+  },
+}
+
 var oraclePDBDatafilesOffline = oracleMetricGroup{
 	sqlQuery: func() string {
 		query := `
@@ -376,7 +974,7 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 			SUM(bytes) AS "USED", 
 			MAX( CASE WHEN status = 'OFFLINE' THEN 1 ELSE 0 END) AS "OFFLINE", 
 			SUM(maxbytes) AS "SIZE", 
-			SUM( bytes ) / SUM(DECODE(maxbytes, 0, 2147483648, maxbytes)) * 100 AS "USED_PERCENT" 
+      SUM( bytes ) / SUM(DECODE(maxbytes, 0, 2147483648, maxbytes)) * 100 AS "USED_PERCENT" 
 		FROM dba_data_files`
 
 		if len(tablespaceWhiteList) > 0 {

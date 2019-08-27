@@ -20,7 +20,7 @@ func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Inte
 	metricChan := make(chan newrelicMetricSender, 100) // large buffer for speed
 
 	// Create a goroutine for each of the metric groups to collect
-	collectorWg.Add(9)
+	collectorWg.Add(24)
 	go oracleCDBDatafilesOffline.Collect(db, &collectorWg, metricChan)
 	go oraclePDBDatafilesOffline.Collect(db, &collectorWg, metricChan)
 	go oraclePDBNonWrite.Collect(db, &collectorWg, metricChan)
@@ -30,6 +30,21 @@ func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Inte
 	go oracleSysMetrics.Collect(db, &collectorWg, metricChan)
 	go globalNameInstanceMetric.Collect(db, &collectorWg, metricChan)
 	go dbIDInstanceMetric.Collect(db, &collectorWg, metricChan)
+	go oracleLongRunningQueries.Collect(db, &collectorWg, metricChan)
+	go oracleSGAUGATotalMemory.Collect(db, &collectorWg, metricChan)
+	go oracleSGASharedPoolLibraryCacheSharableStatement.Collect(db, &collectorWg, metricChan)
+	go oracleSGASharedPoolLibraryCacheShareableUser.Collect(db, &collectorWg, metricChan)
+	go oracleSGASharedPoolLibraryCacheReloadRatio.Collect(db, &collectorWg, metricChan)
+	go oracleSGASharedPoolLibraryCacheHitRatio.Collect(db, &collectorWg, metricChan)
+	go oracleSGASharedPoolDictCacheRatio.Collect(db, &collectorWg, metricChan)
+	go oracleSGASharedPoolDictCacheRatio.Collect(db, &collectorWg, metricChan)
+	go oracleSGALogBufferSpaceWaits.Collect(db, &collectorWg, metricChan)
+	go oracleSGALogAllocRetries.Collect(db, &collectorWg, metricChan)
+	go oracleSGAHitRatio.Collect(db, &collectorWg, metricChan)
+	go oracleSysstat.Collect(db, &collectorWg, metricChan)
+	go oracleSGA.Collect(db, &collectorWg, metricChan)
+	go oracleRollbackSegments.Collect(db, &collectorWg, metricChan)
+	go oracleRedoLogWaits.Collect(db, &collectorWg, metricChan)
 
 	// Separate logic is needed to see if we should even collect tablespaces
 	collectTableSpaces(db, &collectorWg, metricChan)
