@@ -147,3 +147,30 @@ OracleDB,db.hostCpuUsagePerSecond,Gauge,true,Host CPU Usage Per Second
 OracleDB,db.sessionCount,Gauge,true,session count
 OracleDB,tablespace.spaceUsedPercentage,Gauge,true,Ratio of used to total tablespace
 OracleDB,tablespace.isOffline,Gauge,true,Boolean for Tablespace Offline status
+OracleDB,sga.ugaTotalMemoryInBytes,Gauge,true,Total memory in the User Global Area
+OracleDB,longRunningQueries,Gauge,true,The number of long running (> 60s) queries
+OracleDB,sga.sharedPoolLibraryCacheShareableMemoryPerStatementInBytes,Gauge,true,SGA cacheable memory per statement in bytes
+OracleDB,sga.sharedPoolLibraryCacheShareableMemoryPerUserInBytes,Gauge,true,SGA cacheable memory per user in bytes
+OracleDB,sga.sharedPoolLibraryCacheReloadRatio,Gauge,true,Reload ratio for the SGA shared pool library cache
+OracleDB,sga.sharedPoolLibraryCacheHitRatio,Gauge,true,Hit ratio for the SGA shared pool library cache
+OracleDB,sga.sharedPoolDictCacheMissRatio,Gauge,true,Miss ratio for the SGA shared pool dict cache
+OracleDB,sga.logBufferSpaceWaits,Gauge,true,Buffer space waits for the SGA log buffer
+OracleDB,sga.logBufferAllocationRetriesRatio,Gauge,true,Retry ratio of allocations for the SGA log buffer
+OracleDB,sga.hitRatio,Gauge,true,Hit ratio for the SGA
+OracleDB,sga.logBufferRedoAllocationRetries,Gauge,true,Redo allocation ratio for the SGA log buffer
+OracleDB,sga.logBufferRedoEntries,Gauge,true,Number of Redo entries in the SGA log buffer
+OracleDB,sorts.memoryInBytes,Gauge,true,Sorts memory usage
+OracleDB,sorts.diskInBytes,Gauge,true,Sorts disk usage
+OracleDB,sga.fixedSizeInBytes,Gauge,true,SGA fixed size
+OracleDB,sga.redoBuffersInBytes,Gauge,true,SGA Redo buffers
+OracleDB,rollbackSegments.gets,Gauge,true,Number of rollback segments gets
+OracleDB,rollbackSegments.waits,Gauge,true,Number of rollback segments waits
+OracleDB,rollbackSegments.ratioWait,Gauge,true,Ratio of waits for rollback segments
+OracleDB,redoLog.waits,Gauge,true,Number of redo log waits
+OracleDB,redoLog.logFileSwitch,Gauge,true,Number of redo log file switch
+OracleDB,redoLog.logFileSwitchCheckpointIncomplete,Gauge,true,Number of redo log file switch checkpoint incomplete
+OracleDB,redoLog.logFileSwitchArchivingNeeded,Gauge,true,Number of redo log file switch need archiving
+OracleDB,sga.bufferBusyWaits,Gauge,true,Number of SGA buffer busy waits
+OracleDB,sga.freeBufferWaits,Gauge,true,Number of SGA free buffer waits
+OracleDB,sga.freeBufferInspected,Gauge,true,Number of SGA free buffer inspected
+

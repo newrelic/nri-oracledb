@@ -150,7 +150,7 @@ var oracleLongRunningQueries = oracleMetricGroup{
   
   metrics: []*oracleMetric{
     {
-      name: "sga.ugaTotalMemoryInBytes",
+      name: "longRunningQueries",
       identifier: "TOTAL",
       metricType: metric.GAUGE,
       defaultMetric: true,
