@@ -2,6 +2,8 @@
 
 The New Relic Infrastructure Integration for Oracle Database monitors key performance metrics for Oracle Database.
 
+See our [documentation web site](https://docs.newrelic.com/docs/integrations/host-integrations/host-integrations-list/oracledb-monitoring-integration) for more details.
+
 ## Requirements
 
 Have a working installation of the Oracle Instant Client. Installation instructions [here](http://www.oracle.com/technetwork/database/database-technologies/instant-client/downloads/index.html)
