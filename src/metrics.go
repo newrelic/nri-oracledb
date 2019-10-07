@@ -174,6 +174,12 @@ func queryNumTablespaces(db *sql.DB) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Error("Failed to close rows: %s", err)
+		}
+	}()
 
 	var count int
 	if rows.Next() {

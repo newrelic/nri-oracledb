@@ -42,6 +42,12 @@ func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration
 	if err != nil {
 		log.Error("Failed to collect inventory: %s", err)
 	}
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Error("Failed to close rows: %s", err)
+		}
+	}()
 
 	for rows.Next() {
 
