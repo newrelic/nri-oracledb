@@ -104,7 +104,7 @@ func getConnectionString() string {
 		IsSysOper:     args.IsSysOper,
 		MinSessions:   1,
 		MaxSessions:   args.MaxOpenConnections,
-		PoolIncrement: 1,
+		PoolIncrement: 0,
 	}
 
 	return cp.StringWithPassword()
