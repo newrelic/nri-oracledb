@@ -1,3 +1,4 @@
+//go:generate goversioninfo
 package main
 
 import (
@@ -34,7 +35,7 @@ type argumentList struct {
 
 const (
 	integrationName    = "com.newrelic.oracledb"
-	integrationVersion = "2.1.2"
+	integrationVersion = "2.1.3"
 )
 
 var (
