@@ -25,7 +25,7 @@ type argumentList struct {
 	Tablespaces        string `default:"" help:"JSON Array of Tablespaces to collect. If empty will collect all tablespaces."`
 	Port               string `default:"1521" help:"The OracleDB connection port"`
 	ExtendedMetrics    bool   `default:"false" help:"Enable extended metrics"`
-	MaxOpenConnections int    `default:"1" help:"Maximum number of connections opened by the integration"`
+	MaxOpenConnections int    `default:"5" help:"Maximum number of connections opened by the integration"`
 	ConnectionString   string `default:"" help:"An advanced connection string. Takes precedence over host, port, and service name"`
 }
 
@@ -102,9 +102,9 @@ func getConnectionString() string {
 		SID:           sid,
 		IsSysDBA:      args.IsSysDBA,
 		IsSysOper:     args.IsSysOper,
-		MinSessions:   1,
+		MinSessions:   0,
 		MaxSessions:   args.MaxOpenConnections,
-		PoolIncrement: 0,
+		PoolIncrement: 1,
 	}
 
 	return cp.StringWithPassword()
