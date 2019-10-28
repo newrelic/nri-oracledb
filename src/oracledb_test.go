@@ -11,18 +11,15 @@ import (
 func TestGetCollectionString(t *testing.T) {
 
 	args = argumentList{
-		ServiceName:   "testservice",
-		Hostname:      "testhost",
-		Password:      "testpassword",
-		Username:      "testuser",
-		IsSysDBA:      true,
-		MaxSessions:   10,
-		MinSessions:   10,
-		PoolIncrement: 0,
+		ServiceName: "testservice",
+		Hostname:    "testhost",
+		Password:    "testpassword",
+		Username:    "testuser",
+		IsSysDBA:    true,
 	}
 
 	s := getConnectionString()
-	expectedConnectionString := `oracle://testuser:testpassword@testhost:/testservice?connectionClass=&poolIncrement=0&poolMaxSessions=10&poolMinSessions=10&sysdba=1&sysoper=0&standaloneConnection=0`
+	expectedConnectionString := `oracle://testuser:testpassword@testhost:/testservice?connectionClass=&poolIncrement=1&poolMaxSessions=0&poolMinSessions=1&sysdba=1&sysoper=0&standaloneConnection=0`
 
 	if s != expectedConnectionString {
 		t.Errorf("Incorrect connection string %s", s)

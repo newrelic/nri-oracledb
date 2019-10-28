@@ -54,9 +54,16 @@ func (mg *oracleMetricGroup) Collect(db *sql.DB, wg *sync.WaitGroup, metricChan 
 
 	rows, err := db.Query(mg.sqlQuery())
 	if err != nil {
-		log.Error("Failed to execute query %s: %s", mg.sqlQuery(), err)
+		log.Error("Failed to execute query %s: %s", mg.sqlQuery(), err, db.Stats())
+		log.Debug("Database stats: %#v", db.Stats())
 		return
 	}
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Error("Failed to close rows: %s", err)
+		}
+	}()
 
 	if err = mg.metricsGenerator(rows, mg.metrics, metricChan); err != nil {
 		log.Error("Failed to generate metrics from db response for query %s: %s", mg.sqlQuery, err)
