@@ -19,6 +19,10 @@ func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Inte
 	var collectorWg sync.WaitGroup
 	metricChan := make(chan newrelicMetricSender, 100) // large buffer for speed
 
+	// Separate logic is needed to see if we should even collect tablespaces
+  // Collect tablespaces first so the list query completes before other queries are run
+	collectTableSpaces(db, &collectorWg, metricChan)
+
 	// Create a goroutine for each of the metric groups to collect
 	collectorWg.Add(24)
 	go oracleCDBDatafilesOffline.Collect(db, &collectorWg, metricChan)
@@ -45,9 +49,6 @@ func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Inte
 	go oracleSGA.Collect(db, &collectorWg, metricChan)
 	go oracleRollbackSegments.Collect(db, &collectorWg, metricChan)
 	go oracleRedoLogWaits.Collect(db, &collectorWg, metricChan)
-
-	// Separate logic is needed to see if we should even collect tablespaces
-	collectTableSpaces(db, &collectorWg, metricChan)
 
 	// When the metric groups are finished collecting, close the channel
 	go func() {
@@ -187,7 +188,6 @@ func queryNumTablespaces(db *sql.DB) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-
 	}
 
 	return count, nil
