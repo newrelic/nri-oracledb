@@ -31,7 +31,7 @@ type argumentList struct {
 
 const (
 	integrationName    = "com.newrelic.oracledb"
-	integrationVersion = "2.1.4"
+	integrationVersion = "2.1.6"
 )
 
 var (
@@ -70,14 +70,12 @@ func main() {
 	instanceLookUp, err := createInstanceIDLookup(db)
 	exitOnErr(err)
 
-	if args.All() {
-		populaterWg.Add(2)
-		go collectMetrics(db, &populaterWg, i, instanceLookUp)
-		go collectInventory(db, &populaterWg, i, instanceLookUp)
-	} else if args.Metrics {
+	if args.HasMetrics() {
 		populaterWg.Add(1)
 		go collectMetrics(db, &populaterWg, i, instanceLookUp)
-	} else if args.Inventory {
+	}
+
+	if args.HasInventory() {
 		populaterWg.Add(1)
 		go collectInventory(db, &populaterWg, i, instanceLookUp)
 	}

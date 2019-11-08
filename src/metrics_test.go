@@ -203,7 +203,8 @@ func Test_collectTableSpaces_NoWhitelist_Ok(t *testing.T) {
 	metricChan := make(chan newrelicMetricSender, 10)
 	var collectorWg sync.WaitGroup
 
-	collectTableSpaces(db, &collectorWg, metricChan)
+	collectorWg.Add(1)
+	go collectTableSpaces(db, &collectorWg, metricChan)
 
 	collectorWg.Wait()
 

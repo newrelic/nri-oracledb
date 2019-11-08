@@ -19,8 +19,12 @@ func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Inte
 	var collectorWg sync.WaitGroup
 	metricChan := make(chan newrelicMetricSender, 100) // large buffer for speed
 
+	// Separate logic is needed to see if we should even collect tablespaces
+	// Collect tablespaces first so the list query completes before other queries are run
+	collectorWg.Add(25)
+	go collectTableSpaces(db, &collectorWg, metricChan)
+
 	// Create a goroutine for each of the metric groups to collect
-	collectorWg.Add(24)
 	go oracleCDBDatafilesOffline.Collect(db, &collectorWg, metricChan)
 	go oraclePDBDatafilesOffline.Collect(db, &collectorWg, metricChan)
 	go oraclePDBNonWrite.Collect(db, &collectorWg, metricChan)
@@ -45,9 +49,6 @@ func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Inte
 	go oracleSGA.Collect(db, &collectorWg, metricChan)
 	go oracleRollbackSegments.Collect(db, &collectorWg, metricChan)
 	go oracleRedoLogWaits.Collect(db, &collectorWg, metricChan)
-
-	// Separate logic is needed to see if we should even collect tablespaces
-	collectTableSpaces(db, &collectorWg, metricChan)
 
 	// When the metric groups are finished collecting, close the channel
 	go func() {
@@ -142,6 +143,8 @@ const maxTablespaces = 200
 const tablespaceCountQuery = `SELECT count(1) FROM DBA_TABLESPACES WHERE TABLESPACE_NAME <> 'TEMP'`
 
 func collectTableSpaces(db *sql.DB, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
+	defer wg.Done()
+
 	// Get count from database
 	if tablespaceWhiteList == nil {
 		tablespaceCount, err := queryNumTablespaces(db)
@@ -187,7 +190,6 @@ func queryNumTablespaces(db *sql.DB) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-
 	}
 
 	return count, nil
