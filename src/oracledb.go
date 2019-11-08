@@ -75,7 +75,7 @@ func main() {
 		go collectMetrics(db, &populaterWg, i, instanceLookUp)
 	}
 
-  if args.HasInventory() {
+	if args.HasInventory() {
 		populaterWg.Add(1)
 		go collectInventory(db, &populaterWg, i, instanceLookUp)
 	}
