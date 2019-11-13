@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.1.7 - 2019-11-13
+### Added
+- Windows MSI resources
+ 
 ## 2.1.6 - 2019-11-08
 ### Fixed
 - Run all DB queries concurrently to avoid deadlock
