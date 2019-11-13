@@ -8,7 +8,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"time"
 
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/integration"
@@ -18,24 +17,22 @@ import (
 
 type argumentList struct {
 	sdkArgs.DefaultArgumentList
-	ServiceName      string `default:"" help:"The Oracle service name"`
-	Username         string `default:"" help:"The OracleDB connection user name"`
-	Password         string `default:"" help:"The OracleDB connection password"`
-	IsSysDBA         bool   `default:"false" help:"Is the user a SysDBA"`
-	IsSysOper        bool   `default:"false" help:"Is the user a SysOper"`
-	Hostname         string `default:"127.0.0.1" help:"The OracleDB connection host name"`
-	Tablespaces      string `default:"" help:"JSON Array of Tablespaces to collect. If empty will collect all tablespaces."`
-	Port             string `default:"1521" help:"The OracleDB connection port"`
-	ExtendedMetrics  bool   `default:"false" help:"Enable extended metrics"`
-	MinSessions      int    `default:"10" help:"Maximum number of sessions opened by the integration"`
-	MaxSessions      int    `default:"10" help:"Minimum number of sessions opened by the integration"`
-	PoolIncrement    int    `default:"0" help:"How much to increment the pool size when the number of needed connections is exceeded"`
-	ConnectionString string `default:"" help:"An advanced connection string. Takes precedence over host, port, and service name"`
+	ServiceName        string `default:"" help:"The Oracle service name"`
+	Username           string `default:"" help:"The OracleDB connection user name"`
+	Password           string `default:"" help:"The OracleDB connection password"`
+	IsSysDBA           bool   `default:"false" help:"Is the user a SysDBA"`
+	IsSysOper          bool   `default:"false" help:"Is the user a SysOper"`
+	Hostname           string `default:"127.0.0.1" help:"The OracleDB connection host name"`
+	Tablespaces        string `default:"" help:"JSON Array of Tablespaces to collect. If empty will collect all tablespaces."`
+	Port               string `default:"1521" help:"The OracleDB connection port"`
+	ExtendedMetrics    bool   `default:"false" help:"Enable extended metrics"`
+	MaxOpenConnections int    `default:"5" help:"Maximum number of connections opened by the integration"`
+	ConnectionString   string `default:"" help:"An advanced connection string. Takes precedence over host, port, and service name"`
 }
 
 const (
 	integrationName    = "com.newrelic.oracledb"
-	integrationVersion = "2.1.3"
+	integrationVersion = "2.1.7"
 )
 
 var (
@@ -58,8 +55,7 @@ func main() {
 
 	db, err := sql.Open("goracle", getConnectionString())
 	exitOnErr(err)
-	db.SetMaxIdleConns(10)
-	db.SetConnMaxLifetime(time.Minute * 1)
+	db.SetMaxOpenConns(args.MaxOpenConnections)
 
 	defer func() {
 		if err := db.Close(); err != nil {
@@ -75,14 +71,12 @@ func main() {
 	instanceLookUp, err := createInstanceIDLookup(db)
 	exitOnErr(err)
 
-	if args.All() {
-		populaterWg.Add(2)
-		go collectMetrics(db, &populaterWg, i, instanceLookUp)
-		go collectInventory(db, &populaterWg, i, instanceLookUp)
-	} else if args.Metrics {
+	if args.HasMetrics() {
 		populaterWg.Add(1)
 		go collectMetrics(db, &populaterWg, i, instanceLookUp)
-	} else if args.Inventory {
+	}
+
+	if args.HasInventory() {
 		populaterWg.Add(1)
 		go collectInventory(db, &populaterWg, i, instanceLookUp)
 	}
@@ -107,9 +101,9 @@ func getConnectionString() string {
 		SID:           sid,
 		IsSysDBA:      args.IsSysDBA,
 		IsSysOper:     args.IsSysOper,
-		MinSessions:   args.MinSessions,
-		MaxSessions:   args.MaxSessions,
-		PoolIncrement: args.PoolIncrement,
+		MinSessions:   0,
+		MaxSessions:   args.MaxOpenConnections,
+		PoolIncrement: 1,
 	}
 
 	return cp.StringWithPassword()
