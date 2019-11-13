@@ -6,7 +6,7 @@ os: windows
 commands:
   all_data:
     command:
-      - ./bin/nr-oracledb.exe
+      - .\bin\nr-oracledb.exe
     interval: 15
     prefix: config/oracledb
 
