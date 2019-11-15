@@ -61,14 +61,14 @@ The integration can also be run locally. If run locally, you must have a working
 $ make
 ```
 
-* The command above will execute tests for the OracleDB integration and build an executable file called `nr-oracledb` in the `bin/` directory.
+* The command above will execute tests for the OracleDB integration and build an executable file called `nri-oracledb` in the `bin/` directory.
 ```bash
-$ ./bin/nr-oracledb
+$ ./bin/nri-oracledb
 ```
 
-* If you want to know more about the usage of `./nr-oracledb`, check
+* If you want to know more about the usage of `./nri-oracledb`, check
 ```bash
-$ ./bin/nr-oracledb --help
+$ ./bin/nri-oracledb --help
 ```
 
 For managing external dependencies [govendor tool](https://github.com/kardianos/govendor) is used. It is required to lock all external dependencies to specific version (if possible) into vendor directory.
