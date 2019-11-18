@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.2.0 (2019-11-18)
+### Changed
+- Renamed the integration executable from nr-oracledb to nri-oracledb in order to be consistent with the package naming. **Important Note:** if you have any security module rules (eg. SELinux), alerts or automation that depends on the name of this binary, these will have to be updated.
 ## 2.1.7 - 2019-11-13
 ### Added
 - Windows MSI resources
