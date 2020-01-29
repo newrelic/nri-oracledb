@@ -14,7 +14,7 @@
         env:
           # The service name for the Oracle instance
           SERVICE_NAME: ORCL
-          # The host on which Oracle is listening. If omitted, defaults to 127.0.0.1
+          # The host on which Oracle is listening. Using the discovered IP as the host address.
           HOSTNAME: ${discovery.ip}
           # The port on which Oracle is listening. If omitted, defaults to 1521
           PORT: 12345
