@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/jmoiron/sqlx"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	_ "gopkg.in/goracle.v2"
 )
@@ -35,8 +36,9 @@ func TestPopulateInventory(t *testing.T) {
 		"1": "MyInstance",
 	}
 
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
 	wg.Add(1)
-	go collectInventory(db, &wg, i, lookup)
+	go collectInventory(sqlxDb, &wg, i, lookup)
 	wg.Wait()
 
 	marshalled, err := i.MarshalJSON()

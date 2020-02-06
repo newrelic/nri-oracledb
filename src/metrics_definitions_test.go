@@ -5,6 +5,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
@@ -25,8 +26,9 @@ func TestOracleTablespaceMetrics(t *testing.T) {
 	var wg sync.WaitGroup
 	metricChan := make(chan newrelicMetricSender, 10)
 
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
 	wg.Add(1)
-	go oracleTablespaceMetrics.Collect(db, &wg, metricChan)
+	go oracleTablespaceMetrics.Collect(sqlxDb, &wg, metricChan)
 	go func() {
 		wg.Wait()
 		close(metricChan)
@@ -82,8 +84,9 @@ func Test_dbIDTablespaceMetric(t *testing.T) {
 	var wg sync.WaitGroup
 	metricChan := make(chan newrelicMetricSender, 10)
 
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
 	wg.Add(1)
-	go dbIDTablespaceMetric.Collect(db, &wg, metricChan)
+	go dbIDTablespaceMetric.Collect(sqlxDb, &wg, metricChan)
 	go func() {
 		wg.Wait()
 		close(metricChan)
@@ -128,8 +131,9 @@ func Test_globalNameTablespaceMetric(t *testing.T) {
 	var wg sync.WaitGroup
 	metricChan := make(chan newrelicMetricSender, 10)
 
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
 	wg.Add(1)
-	go globalNameTablespaceMetric.Collect(db, &wg, metricChan)
+	go globalNameTablespaceMetric.Collect(sqlxDb, &wg, metricChan)
 	go func() {
 		wg.Wait()
 		close(metricChan)
@@ -175,8 +179,9 @@ func Test_dbIDInstanceMetric(t *testing.T) {
 	var wg sync.WaitGroup
 	metricChan := make(chan newrelicMetricSender, 10)
 
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
 	wg.Add(1)
-	go dbIDInstanceMetric.Collect(db, &wg, metricChan)
+	go dbIDInstanceMetric.Collect(sqlxDb, &wg, metricChan)
 	go func() {
 		wg.Wait()
 		close(metricChan)
@@ -222,8 +227,9 @@ func Test_globalNameInstanceMetric(t *testing.T) {
 	var wg sync.WaitGroup
 	metricChan := make(chan newrelicMetricSender, 10)
 
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
 	wg.Add(1)
-	go globalNameInstanceMetric.Collect(db, &wg, metricChan)
+	go globalNameInstanceMetric.Collect(sqlxDb, &wg, metricChan)
 	go func() {
 		wg.Wait()
 		close(metricChan)
@@ -268,8 +274,9 @@ func TestOracleTablespaceGlobalNameMetrics(t *testing.T) {
 	var wg sync.WaitGroup
 	metricChan := make(chan newrelicMetricSender, 10)
 
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
 	wg.Add(1)
-	go globalNameTablespaceMetric.Collect(db, &wg, metricChan)
+	go globalNameTablespaceMetric.Collect(sqlxDb, &wg, metricChan)
 	go func() {
 		wg.Wait()
 		close(metricChan)
@@ -317,8 +324,9 @@ func TestOracleTablespaceMetrics_Whitlist(t *testing.T) {
 	var wg sync.WaitGroup
 	metricChan := make(chan newrelicMetricSender, 10)
 
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
 	wg.Add(1)
-	go oracleTablespaceMetrics.Collect(db, &wg, metricChan)
+	go oracleTablespaceMetrics.Collect(sqlxDb, &wg, metricChan)
 	go func() {
 		wg.Wait()
 		close(metricChan)
@@ -374,8 +382,9 @@ func TestOracleReadWriteMetrics(t *testing.T) {
 	var wg sync.WaitGroup
 	metricChan := make(chan newrelicMetricSender, 100)
 
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
 	wg.Add(1)
-	go oracleReadWriteMetrics.Collect(db, &wg, metricChan)
+	go oracleReadWriteMetrics.Collect(sqlxDb, &wg, metricChan)
 	go func() {
 		wg.Wait()
 		close(metricChan)
@@ -468,8 +477,9 @@ func TestOraclePgaMetrics(t *testing.T) {
 	var wg sync.WaitGroup
 	metricChan := make(chan newrelicMetricSender, 100)
 
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
 	wg.Add(1)
-	go oraclePgaMetrics.Collect(db, &wg, metricChan)
+	go oraclePgaMetrics.Collect(sqlxDb, &wg, metricChan)
 	go func() {
 		wg.Wait()
 		close(metricChan)
@@ -517,9 +527,10 @@ func TestOracleSysMetrics(t *testing.T) {
 	var wg sync.WaitGroup
 	metricChan := make(chan newrelicMetricSender, 10)
 
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
 	wg.Add(1)
 	var generatedMetrics []newrelicMetricSender
-	go oracleSysMetrics.Collect(db, &wg, metricChan)
+	go oracleSysMetrics.Collect(sqlxDb, &wg, metricChan)
 	go func() {
 		wg.Wait()
 		close(metricChan)

@@ -1,18 +1,18 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"strconv"
 	"sync"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
 )
 
 // collectInventory queries the database for the inventory items, then populates
 // the integration with the results
-func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration, instanceLookUp map[string]string) {
+func collectInventory(db *sqlx.DB, wg *sync.WaitGroup, i *integration.Integration, instanceLookUp map[string]string) {
 	defer wg.Done()
 
 	const sqlQuery = `
@@ -23,7 +23,7 @@ func collectInventory(db *sql.DB, wg *sync.WaitGroup, i *integration.Integration
 			DESCRIPTION
 		FROM gv$parameter
 		UNION
-		SELECT 
+		SELECT
 			INST_ID,
 			'version',
 			VERSION,

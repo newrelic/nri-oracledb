@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	"github.com/jmoiron/sqlx"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/persist"
@@ -47,9 +48,10 @@ func TestCollectMetrics(t *testing.T) {
 		"1": "MyInstance",
 	}
 
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
 	var populaterWg sync.WaitGroup
 	populaterWg.Add(1)
-	go collectMetrics(db, &populaterWg, i, lookup)
+	go collectMetrics(sqlxDb, &populaterWg, i, lookup, "")
 	populaterWg.Wait()
 
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -203,8 +205,9 @@ func Test_collectTableSpaces_NoWhitelist_Ok(t *testing.T) {
 	metricChan := make(chan newrelicMetricSender, 10)
 	var collectorWg sync.WaitGroup
 
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
 	collectorWg.Add(1)
-	go collectTableSpaces(db, &collectorWg, metricChan)
+	go collectTableSpaces(sqlxDb, &collectorWg, metricChan)
 
 	collectorWg.Wait()
 

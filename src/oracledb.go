@@ -2,13 +2,13 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 	"sync"
 
+	"github.com/jmoiron/sqlx"
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
@@ -28,6 +28,7 @@ type argumentList struct {
 	ExtendedMetrics    bool   `default:"false" help:"Enable extended metrics"`
 	MaxOpenConnections int    `default:"5" help:"Maximum number of connections opened by the integration"`
 	ConnectionString   string `default:"" help:"An advanced connection string. Takes precedence over host, port, and service name"`
+	CustomMetricsQuery string `default:"" help:"A SQL query to collect custom metrics. Must have the columns metric_name, metric_type, and metric_value. Additional columns are added as attributes"`
 }
 
 const (
@@ -53,7 +54,7 @@ func main() {
 	err = parseTablespaceWhitelist()
 	exitOnErr(err)
 
-	db, err := sql.Open("goracle", getConnectionString())
+	db, err := sqlx.Open("goracle", getConnectionString())
 	exitOnErr(err)
 	db.SetMaxOpenConns(args.MaxOpenConnections)
 
@@ -73,7 +74,7 @@ func main() {
 
 	if args.HasMetrics() {
 		populaterWg.Add(1)
-		go collectMetrics(db, &populaterWg, i, instanceLookUp)
+		go collectMetrics(db, &populaterWg, i, instanceLookUp, args.CustomMetricsQuery)
 	}
 
 	if args.HasInventory() {
@@ -125,9 +126,9 @@ func parseTablespaceWhitelist() error {
 	return json.Unmarshal([]byte(args.Tablespaces), &tablespaceWhiteList)
 }
 
-func createInstanceIDLookup(db *sql.DB) (map[string]string, error) {
-	const instanceQuery = `SELECT 
-		INSTANCE_NAME, INST_ID 
+func createInstanceIDLookup(db *sqlx.DB) (map[string]string, error) {
+	const instanceQuery = `SELECT
+		INSTANCE_NAME, INST_ID
 		FROM gv$instance`
 
 	rows, err := db.Query(instanceQuery)

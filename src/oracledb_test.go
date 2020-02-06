@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	"github.com/jmoiron/sqlx"
 )
 
 func TestGetCollectionString(t *testing.T) {
@@ -72,12 +73,14 @@ func Test_createInstanceIDLookup_QueryFail(t *testing.T) {
 	}
 
 	mock.
-		ExpectQuery(`SELECT 
-		INSTANCE_NAME, INST_ID 
+		ExpectQuery(`SELECT
+		INSTANCE_NAME, INST_ID
 		FROM gv\$instance`).
 		WillReturnError(errors.New("error"))
 
-	_, err = createInstanceIDLookup(db)
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
+
+	_, err = createInstanceIDLookup(sqlxDb)
 	if err == nil {
 		t.Error("Did not return expected error")
 	}
@@ -91,8 +94,8 @@ func Test_createInstanceIDLookup(t *testing.T) {
 	}
 
 	mock.
-		ExpectQuery(`SELECT 
-		INSTANCE_NAME, INST_ID 
+		ExpectQuery(`SELECT
+		INSTANCE_NAME, INST_ID
 		FROM gv\$instance`).
 		WillReturnRows(
 			sqlmock.NewRows([]string{"INSTANCE_NAME", "INST_ID"}).
@@ -107,7 +110,8 @@ func Test_createInstanceIDLookup(t *testing.T) {
 		"3": "three",
 	}
 
-	out, err := createInstanceIDLookup(db)
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
+	out, err := createInstanceIDLookup(sqlxDb)
 	if err != nil {
 		t.Errorf("Unexpected Error %s", err.Error())
 		t.FailNow()

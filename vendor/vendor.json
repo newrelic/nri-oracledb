@@ -23,6 +23,18 @@
 			"versionExact": "v2.18.0"
 		},
 		{
+			"checksumSHA1": "1jKXAI3z7h/k1qqWWsZv/HM2JAc=",
+			"path": "github.com/jmoiron/sqlx",
+			"revision": "2ba0fc60eb4a54030f3a6d73ff0a047349c7eeca",
+			"revisionTime": "2019-12-03T22:28:53Z"
+		},
+		{
+			"checksumSHA1": "i2O6Ji8ZL6q+EL+4cu/ftBytqZg=",
+			"path": "github.com/jmoiron/sqlx/reflectx",
+			"revision": "2ba0fc60eb4a54030f3a6d73ff0a047349c7eeca",
+			"revisionTime": "2019-12-03T22:28:53Z"
+		},
+		{
 			"checksumSHA1": "3ohk4dFYrERZ6WTdKkIwnTA0HSI=",
 			"path": "github.com/kr/pretty",
 			"revision": "73f6ac0b30a98e433b289500d779f50c1a6f0712",
@@ -93,6 +105,10 @@
 			"path": "github.com/stretchr/objx",
 			"revision": "9e1dfc121bca96d392da5d00591953bdb54ab306",
 			"revisionTime": "2018-06-26T19:55:58Z"
+		},
+		{
+			"path": "github/jmoiron/sqlx",
+			"revision": ""
 		},
 		{
 			"checksumSHA1": "2ASLMJZTR6eztP6gOvFu4xzNvl8=",

@@ -1,11 +1,11 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"sync"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
@@ -13,7 +13,7 @@ import (
 
 // collectMetrics spins off goroutines for each of the metric groups, which
 // send their metrics to the populateMetrics goroutine
-func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Integration, instanceLookUp map[string]string) {
+func collectMetrics(db *sqlx.DB, populaterWg *sync.WaitGroup, i *integration.Integration, instanceLookUp map[string]string, customMetricsQuery string) {
 	defer populaterWg.Done()
 
 	var collectorWg sync.WaitGroup
@@ -49,6 +49,12 @@ func collectMetrics(db *sql.DB, populaterWg *sync.WaitGroup, i *integration.Inte
 	go oracleSGA.Collect(db, &collectorWg, metricChan)
 	go oracleRollbackSegments.Collect(db, &collectorWg, metricChan)
 	go oracleRedoLogWaits.Collect(db, &collectorWg, metricChan)
+
+	if customMetricsQuery != "" {
+		custom := customMetricGroup{customMetricsQuery}
+		collectorWg.Add(1)
+		go custom.Collect(db, &collectorWg, metricChan)
+	}
 
 	// When the metric groups are finished collecting, close the channel
 	go func() {
@@ -142,7 +148,7 @@ func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[stri
 const maxTablespaces = 200
 const tablespaceCountQuery = `SELECT count(1) FROM DBA_TABLESPACES WHERE TABLESPACE_NAME <> 'TEMP'`
 
-func collectTableSpaces(db *sql.DB, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
+func collectTableSpaces(db *sqlx.DB, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
 	defer wg.Done()
 
 	// Get count from database
@@ -172,7 +178,7 @@ func collectTableSpaces(db *sql.DB, wg *sync.WaitGroup, metricChan chan<- newrel
 
 }
 
-func queryNumTablespaces(db *sql.DB) (int, error) {
+func queryNumTablespaces(db *sqlx.DB) (int, error) {
 	rows, err := db.Query(tablespaceCountQuery)
 	if err != nil {
 		return 0, err
