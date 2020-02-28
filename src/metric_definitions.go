@@ -1118,8 +1118,7 @@ var oraclePDBNonWrite = oracleMetricGroup{
 var oracleTablespaceMetrics = oracleMetricGroup{
 	sqlQuery: func() string {
 		query := `
-			SELECT
-				a.TABLESPACE_NAME,
+			SELECT a.TABLESPACE_NAME,
 				a.USED_PERCENT,
 				a.USED_SPACE AS "USED",
 				a.TABLESPACE_SIZE AS "SIZE",

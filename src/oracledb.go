@@ -133,7 +133,12 @@ func createInstanceIDLookup(db *sqlx.DB) (map[string]string, error) {
 		return nil, err
 	}
 
-	defer rows.Close()
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Error("Failed to close rows: %s", err)
+		}
+	}()
 
 	var instance struct {
 		Name string

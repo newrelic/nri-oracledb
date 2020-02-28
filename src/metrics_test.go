@@ -197,7 +197,7 @@ func Test_collectTableSpaces_NoWhitelist_Ok(t *testing.T) {
 			AddRow(1),
 	)
 
-	mock.ExpectQuery(`.*FROM dba_data_files.*`).WillReturnRows(
+	mock.ExpectQuery(`.*FROM DBA_TABLESPACE_USAGE_METRICS.*`).WillReturnRows(
 		sqlmock.NewRows([]string{"TABLESPACE_NAME", "USED", "OFFLINE", "SIZE", "USED_PERCENT"}).
 			AddRow("testtablespace", 1234, 0, 4321, 12),
 	)

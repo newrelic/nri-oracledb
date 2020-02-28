@@ -18,7 +18,7 @@ func TestOracleTablespaceMetrics(t *testing.T) {
 		t.Error(err)
 	}
 
-	mock.ExpectQuery(`SELECT TABLESPACE_NAME, SUM\(bytes\) AS "USED",.*`).WillReturnRows(
+	mock.ExpectQuery(`SELECT a.TABLESPACE_NAME.*`).WillReturnRows(
 		sqlmock.NewRows([]string{"TABLESPACE_NAME", "USED", "OFFLINE", "SIZE", "USED_PERCENT"}).
 			AddRow("testtablespace", 1234, 0, 4321, 12),
 	)
