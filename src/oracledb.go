@@ -133,6 +133,8 @@ func createInstanceIDLookup(db *sqlx.DB) (map[string]string, error) {
 		return nil, err
 	}
 
+	defer rows.Close()
+
 	var instance struct {
 		Name string
 		ID   int

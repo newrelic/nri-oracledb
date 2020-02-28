@@ -1118,13 +1118,21 @@ var oraclePDBNonWrite = oracleMetricGroup{
 var oracleTablespaceMetrics = oracleMetricGroup{
 	sqlQuery: func() string {
 		query := `
-		SELECT
-			TABLESPACE_NAME,
-			SUM(bytes) AS "USED",
-			MAX( CASE WHEN status = 'OFFLINE' THEN 1 ELSE 0 END) AS "OFFLINE",
-			SUM(maxbytes) AS "SIZE",
-      SUM( bytes ) / SUM(DECODE(maxbytes, 0, 2147483648, maxbytes)) * 100 AS "USED_PERCENT"
-		FROM dba_data_files`
+			SELECT
+				a.TABLESPACE_NAME,
+				a.USED_PERCENT,
+				a.USED_SPACE AS "USED",
+				a.TABLESPACE_SIZE AS "SIZE",
+				b.TABLESPACE_OFFLINE AS "OFFLINE"
+			FROM DBA_TABLESPACE_USAGE_METRICS a
+			JOIN (
+				SELECT
+					TABLESPACE_NAME,
+					MAX( CASE WHEN status = 'OFFLINE' THEN 1 ELSE 0 END) AS "TABLESPACE_OFFLINE"
+				FROM DBA_TABLESPACES
+				GROUP BY TABLESPACE_NAME
+			) b
+			ON a.TABLESPACE_NAME = b.TABLESPACE_NAME`
 
 		if len(tablespaceWhiteList) > 0 {
 			query += `
@@ -1141,8 +1149,6 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 			query += ")"
 		}
 
-		query += `
-		GROUP BY TABLESPACE_NAME`
 		return query
 	},
 
