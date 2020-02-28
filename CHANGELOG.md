@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.3.1 (2020-02-28)
+### Fixed
+- Tablespace usage percent calculation
+- Connections not being closed cleanly
+
 ## 2.3.0 (2020-02-06)
 ### Added
 - `custom_metrics_query` to capture metrics that the integration does not query for by default
