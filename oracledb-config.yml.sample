@@ -33,6 +33,6 @@ instances:
       #     SUM(PHYRDS) AS "metric_value",
       #     INST_ID AS "inst_id"
       #   FROM gv$filestat
-      #   GROUP BY INST_ID;
+      #   GROUP BY INST_ID
     labels:
       env: production
