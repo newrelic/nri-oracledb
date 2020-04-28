@@ -316,7 +316,7 @@ func TestOracleTablespaceMetrics_Whitlist(t *testing.T) {
 		t.Error(err)
 	}
 
-	mock.ExpectQuery(`.*WHERE TABLESPACE_NAME IN \('testtablespace','othertablespace'\).*`).WillReturnRows(
+	mock.ExpectQuery(`.*WHERE a.TABLESPACE_NAME IN \('testtablespace','othertablespace'\).*`).WillReturnRows(
 		sqlmock.NewRows([]string{"TABLESPACE_NAME", "USED", "OFFLINE", "SIZE", "USED_PERCENT"}).
 			AddRow("testtablespace", 1234, 0, 4321, 12),
 	)

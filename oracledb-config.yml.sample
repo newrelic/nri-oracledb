@@ -26,13 +26,13 @@ instances:
       tablespaces: '["tablespace1", "tablespace2"]'
       # Collect extended metrics. If omitted, defaults to false.
       extended_metrics: true
-      # custom_metrics_query: >-
-      #   SELECT
-      #     'physical_reads' AS "metric_name",
-      #     'gauge' AS "metric_type",
-      #     SUM(PHYRDS) AS "metric_value",
-      #     INST_ID AS "inst_id"
-      #   FROM gv$filestat
-      #   GROUP BY INST_ID
+      # A custom metrics query will run the custom query, then save the columns as 
+      # metrics on the OracleCustomSample event type.
+      custom_metrics_query: >-
+        SELECT
+          SUM(PHYRDS) AS "physical_reads",
+          INST_ID AS "inst_id"
+        FROM gv$filestat
+        GROUP BY INST_ID
     labels:
       env: production

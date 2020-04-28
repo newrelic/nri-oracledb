@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/newrelic/infra-integrations-sdk/data/metric"
+	nrmetric "github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
 )
@@ -71,8 +71,8 @@ func collectMetrics(db *sqlx.DB, populaterWg *sync.WaitGroup, i *integration.Int
 func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Integration, instanceLookUp map[string]string) {
 
 	// Create storage maps for tablespace and instance metric sets
-	tsMetricSets := make(map[string]*metric.Set)
-	instanceMetricSets := make(map[string]*metric.Set)
+	tsMetricSets := make(map[string]*nrmetric.Set)
+	instanceMetricSets := make(map[string]*nrmetric.Set)
 
 	for {
 		metricSender, ok := <-metricChan
@@ -88,6 +88,25 @@ func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Inte
 			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
 				log.Error("Failed to set metric %s: %s", metric.name, err)
 			}
+		} else if metricSender.customMetrics != nil {
+			instanceID := metricSender.metadata["instanceID"]
+			instanceName := func() string {
+				if name, ok := instanceLookUp[instanceID]; ok {
+					return name
+				}
+
+				return instanceID
+			}()
+
+			for _, row := range metricSender.customMetrics {
+				ms := createCustomMetricSet(instanceName, i)
+				for key, val := range row {
+					err := ms.SetMetric(key, val, inferMetricType(val))
+					if err != nil {
+						log.Error("Failed to set metric %s with value %v and type %T: %s", key, val, val, err)
+					}
+				}
+			}
 		} else if instanceID, ok := metricSender.metadata["instanceID"]; ok {
 			instanceName := func() string {
 				if name, ok := instanceLookUp[instanceID]; ok {
@@ -101,13 +120,25 @@ func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Inte
 			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
 				log.Error("Failed to set metric %s: %s", metric.name, err)
 			}
+
 		}
+	}
+}
+
+func inferMetricType(val interface{}) nrmetric.SourceType {
+	switch val.(type) {
+	case string:
+		return nrmetric.ATTRIBUTE
+	case float32, float64, int, int32, int64:
+		return nrmetric.GAUGE
+	default:
+		return nrmetric.ATTRIBUTE
 	}
 }
 
 // getOrCreateMetricSet either retrieves a metric set from a map or creates the metric set
 // and inserts it into the map.
-func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[string]*metric.Set, i *integration.Integration) *metric.Set {
+func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[string]*nrmetric.Set, i *integration.Integration) *nrmetric.Set {
 
 	// If the metric set already exists, return it
 	set, ok := m[entityIdentifier]
@@ -126,11 +157,11 @@ func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[stri
 		serviceIDAttr,
 	)
 
-	var newSet *metric.Set
+	var newSet *nrmetric.Set
 	if entityType == "instance" {
-		newSet = e.NewMetricSet("OracleDatabaseSample", metric.Attr("entityName", "ora-instance:"+entityIdentifier), metric.Attr("displayName", entityIdentifier))
+		newSet = e.NewMetricSet("OracleDatabaseSample", nrmetric.Attr("entityName", "ora-instance:"+entityIdentifier), nrmetric.Attr("displayName", entityIdentifier))
 	} else if entityType == "tablespace" {
-		newSet = e.NewMetricSet("OracleTablespaceSample", metric.Attr("entityName", "ora-tablespace:"+entityIdentifier), metric.Attr("displayName", entityIdentifier))
+		newSet = e.NewMetricSet("OracleTablespaceSample", nrmetric.Attr("entityName", "ora-tablespace:"+entityIdentifier), nrmetric.Attr("displayName", entityIdentifier))
 	} else {
 		log.Error("Unreachable code")
 		os.Exit(1)
@@ -140,6 +171,20 @@ func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[stri
 	m[entityIdentifier] = newSet
 
 	return newSet
+}
+
+func createCustomMetricSet(instanceID string, i *integration.Integration) *nrmetric.Set {
+	endpointIDAttr := integration.IDAttribute{Key: "endpoint", Value: fmt.Sprintf("%s:%s", args.Hostname, args.Port)}
+	serviceIDAttr := integration.IDAttribute{Key: "serviceName", Value: args.ServiceName}
+	e, _ := i.EntityReportedVia( //can't error if both name and namespace are defined
+		fmt.Sprintf("%s:%s", args.Hostname, args.Port),
+		instanceID,
+		"ora-instance",
+		endpointIDAttr,
+		serviceIDAttr,
+	)
+
+	return e.NewMetricSet("OracleCustomSample", nrmetric.Attr("entityName", "ora-instance:"+instanceID), nrmetric.Attr("displayName", instanceID))
 }
 
 // maxTablespaces is the maximum amount of Tablespaces that can be collect.

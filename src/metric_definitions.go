@@ -34,8 +34,9 @@ type newrelicMetric struct {
 // a channel along with the metadata needed to insert it into the correct
 // metric set
 type newrelicMetricSender struct {
-	metric   *newrelicMetric
-	metadata map[string]string
+	metric        *newrelicMetric
+	metadata      map[string]string
+	customMetrics []map[string]interface{}
 }
 
 // oracleMetricGroup is a struct that contains all the information needed
@@ -157,6 +158,12 @@ func (mg *customMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan
 			return
 		}
 	}
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Error("Failed to close rows: %s", err)
+		}
+	}()
 
 	rows, err = db.Queryx(mg.Query)
 	if err != nil {
@@ -170,6 +177,11 @@ func (mg *customMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan
 		}
 	}()
 
+	sender := newrelicMetricSender{
+		metadata: map[string]string{
+			"instanceID": instanceID,
+		},
+	}
 	for rows.Next() {
 		row := make(map[string]interface{})
 		err := rows.MapScan(row)
@@ -178,58 +190,25 @@ func (mg *customMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan
 			return
 		}
 
-		nameInterface, ok := row["metric_name"]
-		if !ok {
-			log.Error("Missing required column 'metric_name' in custom query")
-			return
-		}
-		name, ok := nameInterface.(string)
-		if !ok {
-			log.Error("Non-string type %T for custom query 'metric_name' column", nameInterface)
-			continue
-		}
-
-		metricTypeInterface, ok := row["metric_type"]
-		if !ok {
-			log.Error("Missing required column 'metric_type' in custom query")
-			return
-		}
-		metricTypeString, ok := metricTypeInterface.(string)
-		if !ok {
-			log.Error("Non-string type %T for custom query 'metric_type' column", metricTypeInterface)
-			continue
-		}
-		metricType, err := metric.SourceTypeForName(metricTypeString)
-		if err != nil {
-			log.Error("Invalid metric type %s: %s", metricTypeString, err)
-			continue
-		}
-
-		value, ok := row["metric_value"]
-		if !ok {
-			log.Error("Missing required column 'metric_type' in custom query")
-			return
-		}
-
-		metadata := make(map[string]string)
-		metadata["instanceID"] = instanceID
-		for k, v := range row {
-			if k == "metric_name" || k == "metric_type" || k == "metric_value" {
-				continue
+		convertedMetrics := make(map[string]interface{})
+		for key, val := range row {
+			switch v := val.(type) {
+			case goracle.Number:
+				num, err := strconv.ParseFloat(string(v), 64)
+				if err != nil {
+					log.Error("Failed to convert %s to a number")
+					continue
+				}
+				convertedMetrics[key] = num
+			default:
+				convertedMetrics[key] = val
 			}
-
-			metadata[k] = fmt.Sprintf("%v", v)
 		}
 
-		newMetric := &newrelicMetric{
-			name:       name,
-			metricType: metricType,
-			value:      value,
-		}
-
-		metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
-
+		sender.customMetrics = append(sender.customMetrics, convertedMetrics)
 	}
+
+	metricChan <- sender
 }
 
 var oracleLongRunningQueries = oracleMetricGroup{
@@ -1135,7 +1114,7 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 
 		if len(tablespaceWhiteList) > 0 {
 			query += `
-			WHERE TABLESPACE_NAME IN (`
+			WHERE a.TABLESPACE_NAME IN (`
 
 			for i, tablespace := range tablespaceWhiteList {
 				query += fmt.Sprintf(`'%s'`, tablespace)
