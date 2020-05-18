@@ -17,7 +17,7 @@ instances:
       # The password for the monitoring user.
       password: password
       # True if the monitoring user is a SysDBA. If omitted, defaults to false.
-      is_sys_dba: true
+      is_sys_dba: false
       # The location of ORACLE_HOME
       oracle_home: /u01/app/oracle/product/version/database
       # True if the monitoring user is a SysOper. If omitted, defaults to false.
@@ -26,7 +26,7 @@ instances:
       tablespaces: '["tablespace1", "tablespace2"]'
       # Collect extended metrics. If omitted, defaults to false.
       extended_metrics: true
-      # A custom metrics query will run the custom query, then save the columns as 
+      # A custom metrics query will run the custom query, then save the columns as
       # metrics on the OracleCustomSample event type.
       custom_metrics_query: >-
         SELECT
