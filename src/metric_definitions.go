@@ -36,6 +36,7 @@ type newrelicMetric struct {
 type newrelicMetricSender struct {
 	metric        *newrelicMetric
 	metadata      map[string]string
+	isCustom      bool
 	customMetrics []map[string]interface{}
 }
 
@@ -178,6 +179,7 @@ func (mg *customMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan
 	}()
 
 	sender := newrelicMetricSender{
+		isCustom: true,
 		metadata: map[string]string{
 			"instanceID": instanceID,
 		},

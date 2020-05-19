@@ -88,7 +88,7 @@ func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Inte
 			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
 				log.Error("Failed to set metric %s: %s", metric.name, err)
 			}
-		} else if metricSender.customMetrics != nil {
+		} else if metricSender.isCustom {
 			instanceID := metricSender.metadata["instanceID"]
 			instanceName := func() string {
 				if name, ok := instanceLookUp[instanceID]; ok {
