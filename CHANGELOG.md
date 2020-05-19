@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.4.1 (2020-05-19)
+### Fixed
+- Panic on empty custom query result
+
 ## 2.4.0 (2020-04-28)
 ### Changed
 - Custom metrics query now does not require special column names, and returns each row as a separate sample with the column names as the metric names. This fixes issues with overwriting metric names as well as increases flexibility of collection so that the queries are less awkward to write. This is a breaking change since metric types are no longer defineable, (numerics are assumed to be gauges) and metric names are defined by the column name.
