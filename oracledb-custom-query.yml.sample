@@ -1,5 +1,6 @@
 ---
 queries:
+  # Metric names are set to the column names in the query results
   - query: >-
       SELECT
         SUM(stat.gets) AS "gets",
@@ -9,6 +10,11 @@ queries:
       FROM GV$ROLLSTAT stat, GV$INSTANCE inst
       WHERE stat.inst_id=inst.inst_id
       GROUP BY inst.inst_id
+    
+    # If not set explicitly here, metric type will default to 
+    # 'gauge' for numbers and 'attribute' for strings
     metric_types:
       gets: gauge
+
+    # If unset, sample_name defaults to OracleCustomSample
     sample_name: MyCustomSample
