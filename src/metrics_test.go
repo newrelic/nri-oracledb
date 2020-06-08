@@ -51,7 +51,7 @@ func TestCollectMetrics(t *testing.T) {
 	sqlxDb := sqlx.NewDb(db, "sqlmock")
 	var populaterWg sync.WaitGroup
 	populaterWg.Add(1)
-	go collectMetrics(sqlxDb, &populaterWg, i, lookup, "")
+	go collectMetrics(sqlxDb, &populaterWg, i, lookup, "", "")
 	populaterWg.Wait()
 
 	if err := mock.ExpectationsWereMet(); err != nil {
