@@ -17,18 +17,19 @@ import (
 
 type argumentList struct {
 	sdkArgs.DefaultArgumentList
-	ServiceName        string `default:"" help:"The Oracle service name"`
-	Username           string `default:"" help:"The OracleDB connection user name"`
-	Password           string `default:"" help:"The OracleDB connection password"`
-	IsSysDBA           bool   `default:"false" help:"Is the user a SysDBA"`
-	IsSysOper          bool   `default:"false" help:"Is the user a SysOper"`
-	Hostname           string `default:"127.0.0.1" help:"The OracleDB connection host name"`
-	Tablespaces        string `default:"" help:"JSON Array of Tablespaces to collect. If empty will collect all tablespaces."`
-	Port               string `default:"1521" help:"The OracleDB connection port"`
-	ExtendedMetrics    bool   `default:"false" help:"Enable extended metrics"`
-	MaxOpenConnections int    `default:"5" help:"Maximum number of connections opened by the integration"`
-	ConnectionString   string `default:"" help:"An advanced connection string. Takes precedence over host, port, and service name"`
-	CustomMetricsQuery string `default:"" help:"A SQL query to collect custom metrics. Must have the columns metric_name, metric_type, and metric_value. Additional columns are added as attributes"`
+	ServiceName         string `default:"" help:"The Oracle service name"`
+	Username            string `default:"" help:"The OracleDB connection user name"`
+	Password            string `default:"" help:"The OracleDB connection password"`
+	IsSysDBA            bool   `default:"false" help:"Is the user a SysDBA"`
+	IsSysOper           bool   `default:"false" help:"Is the user a SysOper"`
+	Hostname            string `default:"127.0.0.1" help:"The OracleDB connection host name"`
+	Tablespaces         string `default:"" help:"JSON Array of Tablespaces to collect. If empty will collect all tablespaces."`
+	Port                string `default:"1521" help:"The OracleDB connection port"`
+	ExtendedMetrics     bool   `default:"false" help:"Enable extended metrics"`
+	MaxOpenConnections  int    `default:"5" help:"Maximum number of connections opened by the integration"`
+	ConnectionString    string `default:"" help:"An advanced connection string. Takes precedence over host, port, and service name"`
+	CustomMetricsQuery  string `default:"" help:"A SQL query to collect custom metrics. Must have the columns metric_name, metric_type, and metric_value. Additional columns are added as attributes"`
+	CustomMetricsConfig string `default:"" help:"YAML configuration file with one or more custom SQL queries to collect"`
 }
 
 const (
@@ -70,7 +71,7 @@ func main() {
 
 	if args.HasMetrics() {
 		populaterWg.Add(1)
-		go collectMetrics(db, &populaterWg, i, instanceLookUp, args.CustomMetricsQuery)
+		go collectMetrics(db, &populaterWg, i, instanceLookUp, args.CustomMetricsQuery, args.CustomMetricsConfig)
 	}
 
 	if args.HasInventory() {

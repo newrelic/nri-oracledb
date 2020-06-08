@@ -34,10 +34,11 @@ type newrelicMetric struct {
 // a channel along with the metadata needed to insert it into the correct
 // metric set
 type newrelicMetricSender struct {
-	metric        *newrelicMetric
-	metadata      map[string]string
-	isCustom      bool
-	customMetrics []map[string]interface{}
+	metric              *newrelicMetric
+	metadata            map[string]string
+	isCustom            bool
+	customMetrics       []map[string]interface{}
+	metricTypeOverrides map[string]metricType
 }
 
 // oracleMetricGroup is a struct that contains all the information needed
@@ -68,7 +69,7 @@ func (mg *oracleMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan
 	}()
 
 	if err = mg.metricsGenerator(rows, mg.metrics, metricChan); err != nil {
-		log.Error("Failed to generate metrics from db response for query %s: %s", mg.sqlQuery, err)
+		log.Error("Failed to generate metrics from db response for query %s: %s", mg.sqlQuery(), err)
 		return
 	}
 }
@@ -150,6 +151,12 @@ func (mg *customMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan
 		log.Error("Failed to execute query %s: %s", mg.Query, err)
 		return
 	}
+	defer func() {
+		err := rows.Close()
+		if err != nil {
+			log.Error("Failed to close rows: %s", err)
+		}
+	}()
 
 	var instanceID string
 	for rows.Next() {
@@ -159,12 +166,6 @@ func (mg *customMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan
 			return
 		}
 	}
-	defer func() {
-		err := rows.Close()
-		if err != nil {
-			log.Error("Failed to close rows: %s", err)
-		}
-	}()
 
 	rows, err = db.Queryx(mg.Query)
 	if err != nil {
@@ -184,6 +185,7 @@ func (mg *customMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan
 			"instanceID": instanceID,
 		},
 	}
+
 	for rows.Next() {
 		row := make(map[string]interface{})
 		err := rows.MapScan(row)
@@ -194,17 +196,7 @@ func (mg *customMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan
 
 		convertedMetrics := make(map[string]interface{})
 		for key, val := range row {
-			switch v := val.(type) {
-			case goracle.Number:
-				num, err := strconv.ParseFloat(string(v), 64)
-				if err != nil {
-					log.Error("Failed to convert %s to a number")
-					continue
-				}
-				convertedMetrics[key] = num
-			default:
-				convertedMetrics[key] = val
-			}
+			convertedMetrics[key] = sanitizeValue(val)
 		}
 
 		sender.customMetrics = append(sender.customMetrics, convertedMetrics)

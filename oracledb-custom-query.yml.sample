@@ -1,0 +1,14 @@
+---
+queries:
+  - query: >-
+      SELECT
+        SUM(stat.gets) AS "gets",
+        SUM(stat.waits) AS "waits",
+        SUM(stat.waits)/SUM(stat.gets) AS "ratio",
+        inst.inst_id
+      FROM GV$ROLLSTAT stat, GV$INSTANCE inst
+      WHERE stat.inst_id=inst.inst_id
+      GROUP BY inst.inst_id
+    metric_types:
+      gets: gauge
+    sample_name: MyCustomSample

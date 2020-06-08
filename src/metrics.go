@@ -2,18 +2,22 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"strconv"
 	"sync"
 
 	"github.com/jmoiron/sqlx"
 	nrmetric "github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
+	goracle "gopkg.in/goracle.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // collectMetrics spins off goroutines for each of the metric groups, which
 // send their metrics to the populateMetrics goroutine
-func collectMetrics(db *sqlx.DB, populaterWg *sync.WaitGroup, i *integration.Integration, instanceLookUp map[string]string, customMetricsQuery string) {
+func collectMetrics(db *sqlx.DB, populaterWg *sync.WaitGroup, i *integration.Integration, instanceLookUp map[string]string, customMetricsQuery string, customMetricsConfig string) {
 	defer populaterWg.Done()
 
 	var collectorWg sync.WaitGroup
@@ -21,39 +25,52 @@ func collectMetrics(db *sqlx.DB, populaterWg *sync.WaitGroup, i *integration.Int
 
 	// Separate logic is needed to see if we should even collect tablespaces
 	// Collect tablespaces first so the list query completes before other queries are run
-	collectorWg.Add(25)
+	collectorWg.Add(1)
 	go collectTableSpaces(db, &collectorWg, metricChan)
 
 	// Create a goroutine for each of the metric groups to collect
-	go oracleCDBDatafilesOffline.Collect(db, &collectorWg, metricChan)
-	go oraclePDBDatafilesOffline.Collect(db, &collectorWg, metricChan)
-	go oraclePDBNonWrite.Collect(db, &collectorWg, metricChan)
-	go oracleLockedAccounts.Collect(db, &collectorWg, metricChan)
-	go oracleReadWriteMetrics.Collect(db, &collectorWg, metricChan)
-	go oraclePgaMetrics.Collect(db, &collectorWg, metricChan)
-	go oracleSysMetrics.Collect(db, &collectorWg, metricChan)
-	go globalNameInstanceMetric.Collect(db, &collectorWg, metricChan)
-	go dbIDInstanceMetric.Collect(db, &collectorWg, metricChan)
-	go oracleLongRunningQueries.Collect(db, &collectorWg, metricChan)
-	go oracleSGAUGATotalMemory.Collect(db, &collectorWg, metricChan)
-	go oracleSGASharedPoolLibraryCacheSharableStatement.Collect(db, &collectorWg, metricChan)
-	go oracleSGASharedPoolLibraryCacheShareableUser.Collect(db, &collectorWg, metricChan)
-	go oracleSGASharedPoolLibraryCacheReloadRatio.Collect(db, &collectorWg, metricChan)
-	go oracleSGASharedPoolLibraryCacheHitRatio.Collect(db, &collectorWg, metricChan)
-	go oracleSGASharedPoolDictCacheRatio.Collect(db, &collectorWg, metricChan)
-	go oracleSGASharedPoolDictCacheRatio.Collect(db, &collectorWg, metricChan)
-	go oracleSGALogBufferSpaceWaits.Collect(db, &collectorWg, metricChan)
-	go oracleSGALogAllocRetries.Collect(db, &collectorWg, metricChan)
-	go oracleSGAHitRatio.Collect(db, &collectorWg, metricChan)
-	go oracleSysstat.Collect(db, &collectorWg, metricChan)
-	go oracleSGA.Collect(db, &collectorWg, metricChan)
-	go oracleRollbackSegments.Collect(db, &collectorWg, metricChan)
-	go oracleRedoLogWaits.Collect(db, &collectorWg, metricChan)
+	baseCollections := []oracleMetricGroup{
+		oracleCDBDatafilesOffline,
+		oraclePDBDatafilesOffline,
+		oraclePDBNonWrite,
+		oracleLockedAccounts,
+		oracleReadWriteMetrics,
+		oraclePgaMetrics,
+		oracleSysMetrics,
+		globalNameInstanceMetric,
+		dbIDInstanceMetric,
+		oracleLongRunningQueries,
+		oracleSGAUGATotalMemory,
+		oracleSGASharedPoolLibraryCacheSharableStatement,
+		oracleSGASharedPoolLibraryCacheShareableUser,
+		oracleSGASharedPoolLibraryCacheReloadRatio,
+		oracleSGASharedPoolLibraryCacheHitRatio,
+		oracleSGASharedPoolDictCacheRatio,
+		oracleSGASharedPoolDictCacheRatio,
+		oracleSGALogBufferSpaceWaits,
+		oracleSGALogAllocRetries,
+		oracleSGAHitRatio,
+		oracleSysstat,
+		oracleSGA,
+		oracleRollbackSegments,
+		oracleRedoLogWaits,
+	}
+
+	for _, collection := range baseCollections {
+		collectorWg.Add(1)
+		c := collection
+		go c.Collect(db, &collectorWg, metricChan)
+	}
 
 	if customMetricsQuery != "" {
 		custom := customMetricGroup{customMetricsQuery}
 		collectorWg.Add(1)
 		go custom.Collect(db, &collectorWg, metricChan)
+	}
+
+	if customMetricsConfig != "" {
+		collectorWg.Add(1)
+		go PopulateCustomMetricsFromFile(db, &collectorWg, metricChan, customMetricsConfig)
 	}
 
 	// When the metric groups are finished collecting, close the channel
@@ -101,7 +118,15 @@ func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Inte
 			for _, row := range metricSender.customMetrics {
 				ms := createCustomMetricSet(instanceName, i)
 				for key, val := range row {
-					err := ms.SetMetric(key, val, inferMetricType(val))
+					sanitized := sanitizeValue(val)
+					inferredMetricType := func() nrmetric.SourceType {
+						if t, ok := metricSender.metricTypeOverrides[key]; ok {
+							return nrmetric.SourceType(t)
+						}
+						return inferMetricType(sanitized)
+					}()
+
+					err := ms.SetMetric(key, sanitized, inferredMetricType)
 					if err != nil {
 						log.Error("Failed to set metric %s with value %v and type %T: %s", key, val, val, err)
 					}
@@ -133,6 +158,23 @@ func inferMetricType(val interface{}) nrmetric.SourceType {
 		return nrmetric.GAUGE
 	default:
 		return nrmetric.ATTRIBUTE
+	}
+}
+
+func sanitizeValue(val interface{}) interface{} {
+	switch v := val.(type) {
+	case string, float32, float64, int, int32, int64:
+		return v
+	case goracle.Number:
+		num, err := strconv.ParseFloat(string(v), 64)
+		if err != nil {
+			log.Error("Failed to convert %s to a number")
+			return 0
+		}
+		return num
+	default:
+		log.Warn("Unknown metric type %T. Falling back to sending as string", val)
+		return fmt.Sprintf("%v", v)
 	}
 }
 
@@ -244,4 +286,129 @@ func queryNumTablespaces(db *sqlx.DB) (int, error) {
 	}
 
 	return count, nil
+}
+
+// PopulateCustomMetricsFromFile collects metrics defined by a custom config file
+func PopulateCustomMetricsFromFile(db *sqlx.DB, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender, configFile string) {
+	defer wg.Done()
+
+	contents, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		log.Error("Failed to read custom config file: %s", err)
+		return
+	}
+
+	var customYAML customMetricsYAML
+	err = yaml.Unmarshal(contents, &customYAML)
+	if err != nil {
+		log.Error("Failed to unmarshal custom config file: %s", err)
+		return
+	}
+
+	// Semaphore to run 10 custom queries concurrently
+	sem := make(chan struct{}, 10)
+	for _, config := range customYAML.Queries {
+		sem <- struct{}{}
+		wg.Add(1)
+		go func(cfg customMetricsConfig) {
+			defer wg.Done()
+			defer func() {
+				<-sem
+			}()
+
+			CollectCustomConfig(db, metricChan, cfg)
+		}(config)
+	}
+}
+
+// CollectCustomConfig collects metrics defined by a custom config
+func CollectCustomConfig(db *sqlx.DB, metricChan chan<- newrelicMetricSender, cfg customMetricsConfig) {
+	instanceQuery := `SELECT INSTANCE_NUMBER FROM v$instance`
+	instanceRows, err := db.Queryx(instanceQuery)
+	if err != nil {
+		log.Error("Failed to execute query %s: %s", instanceQuery, err)
+		return
+	}
+	defer func() {
+		err := instanceRows.Close()
+		if err != nil {
+			log.Error("Failed to close rows: %s", err)
+		}
+	}()
+
+	var instanceID string
+	for instanceRows.Next() {
+		err = instanceRows.Scan(&instanceID)
+		if err != nil {
+			log.Error("Failed to get instance ID %s: %s", instanceQuery, err)
+			return
+		}
+	}
+
+	rows, err := db.Queryx(cfg.Query)
+	if err != nil {
+		log.Error("Could not execute database query: %s", err.Error())
+		return
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	sampleName := func() string {
+		if cfg.SampleName == "" {
+			return "OracleCustomSample"
+		}
+		return cfg.SampleName
+	}()
+
+	sender := newrelicMetricSender{
+		isCustom: true,
+		metadata: map[string]string{
+			"instanceID": instanceID,
+			"sampleName": sampleName,
+		},
+		metricTypeOverrides: cfg.MetricTypes,
+		customMetrics:       make([]map[string]interface{}, 0),
+	}
+
+	for rows.Next() {
+		row := make(map[string]interface{})
+		err := rows.MapScan(row)
+		if err != nil {
+			log.Error("Failed to scan custom query row: %s", err)
+			return
+		}
+
+		sender.customMetrics = append(sender.customMetrics, row)
+	}
+
+	metricChan <- sender
+}
+
+type metricType nrmetric.SourceType
+
+func (m *metricType) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var raw string
+	err := unmarshal(&raw)
+	if err != nil {
+		return err
+	}
+
+	st, err := nrmetric.SourceTypeForName(raw)
+	if err != nil {
+		return err
+	}
+
+	*m = metricType(st)
+	return nil
+}
+
+type customMetricsYAML struct {
+	Queries []customMetricsConfig
+}
+
+type customMetricsConfig struct {
+	Query       string                `yaml:"query"`
+	MetricTypes map[string]metricType `yaml:"metric_types"`
+	SampleName  string                `yaml:"sample_name"`
 }
