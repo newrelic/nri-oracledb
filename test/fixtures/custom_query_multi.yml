@@ -1,0 +1,30 @@
+---
+queries:
+  # Metric names are set to the column names in the query results
+  - query: >-
+      SELECT
+        one, two
+      FROM numbers
+    
+    # If not set explicitly here, metric type will default to 
+    # 'gauge' for numbers and 'attribute' for strings
+    metric_types:
+      one: gauge
+      two: gauge
+
+    # If unset, sample_name defaults to OracleCustomSample
+    sample_name: MyCustomSample
+  - query: >-
+      SELECT
+        something as "something",
+        otherthing as "otherthing"
+      FROM somewhere
+    
+    # If not set explicitly here, metric type will default to 
+    # 'gauge' for numbers and 'attribute' for strings
+    metric_types:
+      something: gauge
+      otherthing: gauge
+
+    # If unset, sample_name defaults to OracleCustomSample
+    sample_name: MyCustomSample

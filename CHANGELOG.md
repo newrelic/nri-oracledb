@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.5.1 (2020-07-30)
+### Fixed
+- Fixed case where sample name for custoem metrics was not being set properly
+
 ## 2.5.0 (2020-06-08)
 ### Added
 - Custom query YAML configuration
