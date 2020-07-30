@@ -219,8 +219,6 @@ func Test_collectTableSpaces_NoWhitelist_Ok(t *testing.T) {
 }
 
 func Test_PopulateMetrics_FromCustomQueryFile(t *testing.T) {
-	t.Skip("this causes other tests to fail for some reason unknown to me")
-
 	qf, err := filepath.Abs(filepath.Join("..", "test", "fixtures", "custom_query_multi.yml"))
 	if err != nil {
 		t.Error(err)
@@ -273,16 +271,13 @@ func Test_PopulateMetrics_FromCustomQueryFile(t *testing.T) {
 	PopulateCustomMetricsFromFile(sqlxDb, &wg, ch, args.CustomMetricsConfig)
 
 	go func() {
-		for {
-			select {
-			case result := <-ch:
-				results = append(results, result)
-			default:
-			}
-		}
+		wg.Wait()
+		close(ch)
 	}()
 
-	wg.Wait()
+	for result := range ch {
+		results = append(results, result)
+	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Error(err)
