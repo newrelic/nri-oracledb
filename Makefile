@@ -10,9 +10,7 @@ GO_FILES    := ./src/
 GOTOOLS      =  github.com/kardianos/govendor \
 								gopkg.in/alecthomas/gometalinter.v2 \
 								github.com/axw/gocov/gocov \
-								github.com/stretchr/testify/assert \
-								github.com/AlekSi/gocov-xml \
-
+								github.com/AlekSi/gocov-xml
 all: build
 
 build: check-version clean validate test compile
