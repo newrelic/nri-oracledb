@@ -107,10 +107,6 @@
 			"revisionTime": "2018-06-26T19:55:58Z"
 		},
 		{
-			"path": "github/jmoiron/sqlx",
-			"revision": ""
-		},
-		{
 			"checksumSHA1": "2ASLMJZTR6eztP6gOvFu4xzNvl8=",
 			"path": "gopkg.in/goracle.v2",
 			"revision": "d9c552548fcebf9cf3ad2b7db0c449ccdfd051f0",
@@ -122,10 +118,6 @@
 			"path": "gopkg.in/yaml.v2",
 			"revision": "5420a8b6744d3b0345ab293f6fcba19c978f1183",
 			"revisionTime": "2018-03-28T19:50:20Z"
-		},
-		{
-			"path": "https://github.com/go-goracle/goracle",
-			"revision": ""
 		}
 	],
 	"rootPath": "github.com/newrelic/nri-oracledb"

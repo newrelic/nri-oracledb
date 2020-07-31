@@ -10,7 +10,6 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/persist"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestCollectMetrics(t *testing.T) {
@@ -283,5 +282,8 @@ func Test_PopulateMetrics_FromCustomQueryFile(t *testing.T) {
 		t.Error(err)
 	}
 
-	assert.Equal(t, 2, len(results))
+	if len(results) != 2 {
+		t.Errorf("expected 2 results, got %v", len(results))
+	}
+
 }
