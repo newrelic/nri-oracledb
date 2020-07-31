@@ -115,8 +115,10 @@ func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Inte
 				return instanceID
 			}()
 
+			sampleName := metricSender.metadata["sampleName"]
+
 			for _, row := range metricSender.customMetrics {
-				ms := createCustomMetricSet(instanceName, i)
+				ms := createCustomMetricSet(sampleName, instanceName, i)
 				for key, val := range row {
 					sanitized := sanitizeValue(val)
 					inferredMetricType := func() nrmetric.SourceType {
@@ -215,7 +217,7 @@ func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[stri
 	return newSet
 }
 
-func createCustomMetricSet(instanceID string, i *integration.Integration) *nrmetric.Set {
+func createCustomMetricSet(sampleName string, instanceID string, i *integration.Integration) *nrmetric.Set {
 	endpointIDAttr := integration.IDAttribute{Key: "endpoint", Value: fmt.Sprintf("%s:%s", args.Hostname, args.Port)}
 	serviceIDAttr := integration.IDAttribute{Key: "serviceName", Value: args.ServiceName}
 	e, _ := i.EntityReportedVia( //can't error if both name and namespace are defined
@@ -226,7 +228,7 @@ func createCustomMetricSet(instanceID string, i *integration.Integration) *nrmet
 		serviceIDAttr,
 	)
 
-	return e.NewMetricSet("OracleCustomSample", nrmetric.Attr("entityName", "ora-instance:"+instanceID), nrmetric.Attr("displayName", instanceID))
+	return e.NewMetricSet(sampleName, nrmetric.Attr("entityName", "ora-instance:"+instanceID), nrmetric.Attr("displayName", instanceID))
 }
 
 // maxTablespaces is the maximum amount of Tablespaces that can be collect.

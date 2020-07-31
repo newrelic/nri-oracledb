@@ -1,6 +1,7 @@
 package main
 
 import (
+	"path/filepath"
 	"sync"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/persist"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCollectMetrics(t *testing.T) {
@@ -214,4 +216,72 @@ func Test_collectTableSpaces_NoWhitelist_Ok(t *testing.T) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("Expectations not met: %s", err.Error())
 	}
+}
+
+func Test_PopulateMetrics_FromCustomQueryFile(t *testing.T) {
+	qf, err := filepath.Abs(filepath.Join("..", "test", "fixtures", "custom_query_multi.yml"))
+	if err != nil {
+		t.Error(err)
+	}
+
+	args = argumentList{
+		Hostname:            "testhost",
+		Port:                "1234",
+		ServiceName:         "testServiceName",
+		CustomMetricsConfig: qf,
+	}
+	defer func() { args = argumentList{} }()
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Error(err)
+	}
+
+	mock.MatchExpectationsInOrder(false)
+
+	// there are 2 queries, so this query will be called 2 times
+	columns := []string{"val1"}
+	mock.ExpectQuery("SELECT.*FROM v\\$instance").WillReturnRows(
+		sqlmock.NewRows(columns).AddRow("1"),
+	)
+
+	mock.ExpectQuery("SELECT.*FROM v\\$instance").WillReturnRows(
+		sqlmock.NewRows(columns).AddRow("1"),
+	)
+
+	// queries from query file
+	columns = []string{"val1", "val2"}
+	mock.ExpectQuery("SELECT.*FROM numbers.*").WillReturnRows(
+		sqlmock.NewRows(columns).AddRow("one", "two"),
+	)
+
+	mock.ExpectQuery("SELECT.*FROM somewhere.*").WillReturnRows(
+		sqlmock.NewRows(columns).AddRow("something", "otherthing"),
+	)
+
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	ch := make(chan newrelicMetricSender)
+
+	results := []newrelicMetricSender{}
+
+	PopulateCustomMetricsFromFile(sqlxDb, &wg, ch, args.CustomMetricsConfig)
+
+	go func() {
+		wg.Wait()
+		close(ch)
+	}()
+
+	for result := range ch {
+		results = append(results, result)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Error(err)
+	}
+
+	assert.Equal(t, 2, len(results))
 }
