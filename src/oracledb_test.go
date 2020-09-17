@@ -20,10 +20,10 @@ func TestGetCollectionString(t *testing.T) {
 	}
 
 	s := getConnectionString()
-	expectedConnectionString := `oracle://testuser:testpassword@testhost:/testservice?connectionClass=&poolIncrement=1&poolMaxSessions=0&poolMinSessions=0&sysdba=1&sysoper=0&standaloneConnection=0`
+	expectedConnectionString := "user=testuser password=testpassword connectString=testhost:/testservice configDir=\nconnectionClass= enableEvents=0 heterogeneousPool=0 libDir= newPassword= poolIncrement=0\npoolMaxSessions=0 poolMinSessions=0 poolSessionMaxLifetime=0s poolSessionTimeout=0s\npoolWaitTimeout=0s prelim=0 standaloneConnection=0 sysasm=0 sysdba=1 sysoper=0\ntimezone=local"
 
 	if s != expectedConnectionString {
-		t.Errorf("Incorrect connection string %s", s)
+		t.Errorf("Incorrect connection string %q", s)
 	}
 
 }
