@@ -7,10 +7,10 @@ import (
 	"strings"
 	"sync"
 
+	godror "github.com/godror/godror"
 	"github.com/jmoiron/sqlx"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/log"
-	goracle "gopkg.in/goracle.v2"
 )
 
 // oracleMetric is a storage struct for the information needed to parse
@@ -79,7 +79,7 @@ func (mg *oracleMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan
 // is here https://github.com/DATA-DOG/go-sqlmock/issues/133
 func getInstanceIDString(originalID interface{}) string {
 	switch id := originalID.(type) {
-	case goracle.Number:
+	case godror.Number:
 		return id.String()
 	case int:
 		return strconv.Itoa(id)
@@ -126,7 +126,7 @@ func columnMetricsGenerator(rows *sql.Rows, metrics []*oracleMetric, metricChan 
 					value:      rowMap[metric.identifier],
 				}
 
-				metadata := map[string]string{"instanceID": (rowMap["INST_ID"].(goracle.Number)).String()}
+				metadata := map[string]string{"instanceID": rowMap["INST_ID"].(string)}
 
 				// Send the new metric down the channel
 				metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}

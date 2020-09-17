@@ -23,6 +23,30 @@
 			"versionExact": "v2.18.0"
 		},
 		{
+			"checksumSHA1": "4cL5YUSt8nM+cx0Y7Q0urkLSYQM=",
+			"path": "github.com/go-logfmt/logfmt",
+			"revision": "3be5f6aae7db841d31dc5e1b3bb7b4cff19200b3",
+			"revisionTime": "2020-01-04T05:22:39Z"
+		},
+		{
+			"checksumSHA1": "F/BGgIZKwOvPOxn7j+LgUhEig4k=",
+			"path": "github.com/godror/godror",
+			"revision": "2dab250ab19e158ba97699841f40c9de9d061f29",
+			"revisionTime": "2020-09-17T12:00:15Z"
+		},
+		{
+			"checksumSHA1": "KBj0Lp0i9S19ERilOcz2rHS2a8o=",
+			"path": "github.com/godror/godror/dsn",
+			"revision": "2dab250ab19e158ba97699841f40c9de9d061f29",
+			"revisionTime": "2020-09-17T12:00:15Z"
+		},
+		{
+			"checksumSHA1": "MxoUdSrLknpPD+n8EU/7H8P5UgY=",
+			"path": "github.com/godror/godror/odpi/src",
+			"revision": "2dab250ab19e158ba97699841f40c9de9d061f29",
+			"revisionTime": "2020-09-17T12:00:15Z"
+		},
+		{
 			"checksumSHA1": "1jKXAI3z7h/k1qqWWsZv/HM2JAc=",
 			"path": "github.com/jmoiron/sqlx",
 			"revision": "2ba0fc60eb4a54030f3a6d73ff0a047349c7eeca",
@@ -107,11 +131,10 @@
 			"revisionTime": "2018-06-26T19:55:58Z"
 		},
 		{
-			"checksumSHA1": "2ASLMJZTR6eztP6gOvFu4xzNvl8=",
-			"path": "gopkg.in/goracle.v2",
-			"revision": "d9c552548fcebf9cf3ad2b7db0c449ccdfd051f0",
-			"revisionTime": "2018-08-03T06:09:41Z",
-			"tree": true
+			"checksumSHA1": "LnzK4nslUNXBIfAt9PbXCJCvMdA=",
+			"path": "golang.org/x/xerrors/internal",
+			"revision": "5ec99f83aff198f5fbd629d6c8d8eb38a04218ca",
+			"revisionTime": "2020-08-04T18:02:15Z"
 		},
 		{
 			"checksumSHA1": "ZSWoOPUNRr5+3dhkLK3C4cZAQPk=",

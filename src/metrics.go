@@ -7,11 +7,11 @@ import (
 	"strconv"
 	"sync"
 
+	godror "github.com/godror/godror"
 	"github.com/jmoiron/sqlx"
 	nrmetric "github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
-	goracle "gopkg.in/goracle.v2"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -167,7 +167,7 @@ func sanitizeValue(val interface{}) interface{} {
 	switch v := val.(type) {
 	case string, float32, float64, int, int32, int64:
 		return v
-	case goracle.Number:
+	case godror.Number:
 		num, err := strconv.ParseFloat(string(v), 64)
 		if err != nil {
 			log.Error("Failed to convert %s to a number")

@@ -8,11 +8,11 @@ import (
 	"strings"
 	"sync"
 
+	godror "github.com/godror/godror"
 	"github.com/jmoiron/sqlx"
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
-	goracle "gopkg.in/goracle.v2"
 )
 
 type argumentList struct {
@@ -51,7 +51,7 @@ func main() {
 	err = parseTablespaceWhitelist()
 	exitOnErr(err)
 
-	db, err := sqlx.Open("goracle", getConnectionString())
+	db, err := sqlx.Open("godror", getConnectionString())
 	exitOnErr(err)
 	db.SetMaxOpenConns(args.MaxOpenConnections)
 
@@ -93,15 +93,20 @@ func getConnectionString() string {
 		sid = strings.Replace(args.ConnectionString, " ", "", -1)
 	}
 
-	cp := goracle.ConnectionParams{
-		Username:      args.Username,
-		Password:      args.Password,
-		SID:           sid,
-		IsSysDBA:      args.IsSysDBA,
-		IsSysOper:     args.IsSysOper,
-		MinSessions:   0,
-		MaxSessions:   args.MaxOpenConnections,
-		PoolIncrement: 1,
+	cp := godror.ConnectionParams{
+		CommonParams: godror.CommonParams{
+			Username:      args.Username,
+			Password:      godror.NewPassword(args.Password),
+			ConnectString: sid,
+		},
+		ConnParams: godror.ConnParams{
+			IsSysDBA:  args.IsSysDBA,
+			IsSysOper: args.IsSysOper,
+		},
+		PoolParams: godror.PoolParams{
+			MinSessions: 0,
+			MaxSessions: args.MaxOpenConnections,
+		},
 	}
 
 	return cp.StringWithPassword()
