@@ -30,7 +30,7 @@ type argumentList struct {
 	ConnectionString      string `default:"" help:"An advanced connection string. Takes precedence over host, port, and service name"`
 	CustomMetricsQuery    string `default:"" help:"A SQL query to collect custom metrics. Must have the columns metric_name, metric_type, and metric_value. Additional columns are added as attributes"`
 	CustomMetricsConfig   string `default:"" help:"YAML configuration file with one or more custom SQL queries to collect"`
-	DisableConnectionPool bool   `default:"false" help:"Disables connection pooling. It may make make the integration run slower but may reduce issues with not being able to execute some queries due to ORA-24459 (failure to get new connection)"`
+	DisableConnectionPool bool   `default:"false" help:"Disables connection pooling. It may make the integration run slower but may reduce issues with not being able to execute queries due to ORA-24459 (failure to get new connection)"`
 }
 
 const (
