@@ -30,6 +30,8 @@
           # ORACLE_HOME: /u01/app/oracle/product/version/database
           # True if the monitoring user is a SysOper. If omitted, defaults to false.
           IS_SYS_OPER: false
+          # Disable connection pool. Might fix issues with the applciation not being able to execute some queries
+          DISABLE_CONNECTION_POOL: false
           # A JSON array of tablespaces to collect. If omitted, collects all tablespaces.
           TABLESPACES: '["tablespace1", "tablespace2"]'
           # Collect extended metrics. If omitted, defaults to false.
