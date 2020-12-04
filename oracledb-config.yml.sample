@@ -26,6 +26,8 @@ instances:
       tablespaces: '["tablespace1", "tablespace2"]'
       # Collect extended metrics. If omitted, defaults to false.
       extended_metrics: true
+      # Disable connection pool. Might fix issues with the applciation not being able to execute some queries
+      disable_connection_pool: false
       # A custom metrics query will run the custom query, then save the columns as
       # metrics on the OracleCustomSample event type.
       custom_metrics_query: >-
