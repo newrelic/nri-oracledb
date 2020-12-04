@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 2.5.2 (2020-12-04)
+### Changed
+- Added configuration option to enable disabling the connection pool. There are cases where the connection pool does not properly re-use cnnections and leads to errors getting new connections thus failing some queries. Disabling the connection pool can lead to lower performance, but removes the issue of not being able to execute some queries.
+
 ## 2.5.1 (2020-07-30)
 ### Fixed
 - Fixed case where sample name for custoem metrics was not being set properly
