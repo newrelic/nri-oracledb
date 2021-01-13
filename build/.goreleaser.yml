@@ -1,80 +1,76 @@
 builds:
-  - id: nri-nginx-nix
+  - id: nri-oracledb-nix
     main: ./src
-    binary: nri-nginx
-    gobinary: "go1.9.7"
+    binary: nri-oracledb
+    gobinary: "go1.15.2"
     ldflags:
       - -s -w -X main.integrationVersion={{.Version}} -X main.gitCommit={{.Commit}} -X main.buildDate={{.Date}}
     goos:
       - linux
-      - darwin
     goarch:
-      - 386
       - amd64
-      - arm
-      - arm64
     ignore:
       - goos: darwin
         goarch: 386
 
-  - id: nri-nginx-win
-    main: ./src
-    binary: nri-nginx
-    gobinary: "go1.9.7"
-    ldflags:
-      - -s -w -X main.integrationVersion={{.Version}} -X main.gitCommit={{.Commit}} -X main.buildDate={{.Date}}
-    goos:
-      - windows
-    goarch:
-      - 386
-      - amd64
-    hooks:
-      pre: build/windows/set_exe_properties.sh {{ .Env.TAG }} "nginx"
+#  - id: nri-oracledb-win
+#    main: ./src
+#    binary: nri-oracledb
+#    gobinary: "go1.15.2"
+#    ldflags:
+#      - -s -w -X main.integrationVersion={{.Version}} -X main.gitCommit={{.Commit}} -X main.buildDate={{.Date}}
+#    goos:
+#      - windows
+#    goarch:
+#      #- 386
+#      - amd64
+#    hooks:
+#      pre: build/windows/set_exe_properties.sh {{ .Env.TAG }} "oracledb"
 
 nfpms:
-  - id: nri-nginx-deb
+  - id: nri-oracledb-deb
     builds:
-      - nri-nginx-nix
+      - nri-oracledb-nix
     file_name_template: "{{ .ProjectName }}_{{ .Version }}-1_{{ .Arch }}"
     vendor: "New Relic, Inc."
     homepage: "https://www.newrelic.com/infrastructure"
     maintainer: "New Relic Infrastructure Team <infrastructure-eng@newrelic.com>"
-    description: "New Relic Infrastructure nginx Integration extend the core New Relic\nInfrastructure agent's capabilities to allow you to collect metric and\nlive state data from nginx components."
+    description: "New Relic Infrastructure oracledb Integration extend the core New Relic\nInfrastructure agent's capabilities to allow you to collect metric and\nlive state data from oracledb components."
     license: "https://newrelic.com/terms (also see LICENSE installed with this package)"
     # Formats to be generated.
     formats:
       - deb
     bindir: "/var/db/newrelic-infra/newrelic-integrations/bin"
     files:
-      "nginx-config.yml.sample": "/etc/newrelic-infra/integrations.d/nginx-config.yml.sample"
-      "CHANGELOG.md": "/usr/share/doc/nri-nginx/CHANGELOG.md"
-      "README.md":  "/usr/share/doc/nri-nginx/README.md"
-      "LICENSE": "/usr/share/doc/nri-nginx/LICENSE"
+      "oracledb-config.yml.sample": "/etc/newrelic-infra/integrations.d/oracledb-config.yml.sample"
+      "CHANGELOG.md": "/usr/share/doc/nri-oracledb/CHANGELOG.md"
+      "README.md":  "/usr/share/doc/nri-oracledb/README.md"
+      "LICENSE": "/usr/share/doc/nri-oracledb/LICENSE"
     config_files:
-      "nginx-definition.yml": "/var/db/newrelic-infra/newrelic-integrations/nginx-definition.yml"
+      "oracledb-definition.yml": "/var/db/newrelic-infra/newrelic-integrations/oracledb-definition.yml"
     dependencies:
       - "newrelic-infra"
 
-  - id: nri-nginx-rpm
+  - id: nri-oracledb-rpm
     builds:
-      - nri-nginx-nix
+      - nri-oracledb-nix
     file_name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Arch }}"
     vendor: "New Relic, Inc."
     homepage: "https://www.newrelic.com/infrastructure"
     maintainer: "New Relic Infrastructure Team <infrastructure-eng@newrelic.com>"
-    description: "New Relic Infrastructure nginx Integration extend the core New Relic\nInfrastructure agent's capabilities to allow you to collect metric and\nlive state data from nginx components."
+    description: "New Relic Infrastructure oracledb Integration extend the core New Relic\nInfrastructure agent's capabilities to allow you to collect metric and\nlive state data from oracledb components."
     license: "https://newrelic.com/terms (also see LICENSE installed with this package)"
     # Formats to be generated.
     formats:
       - rpm
     bindir: "/var/db/newrelic-infra/newrelic-integrations/bin"
     files:
-      "nginx-config.yml.sample": "/etc/newrelic-infra/integrations.d/nginx-config.yml.sample"
-      "CHANGELOG.md": "/usr/share/doc/nri-nginx/CHANGELOG.md"
-      "README.md":  "/usr/share/doc/nri-nginx/README.md"
-      "LICENSE": "/usr/share/doc/nri-nginx/LICENSE"
+      "oracledb-config.yml.sample": "/etc/newrelic-infra/integrations.d/oracledb-config.yml.sample"
+      "CHANGELOG.md": "/usr/share/doc/nri-oracledb/CHANGELOG.md"
+      "README.md":  "/usr/share/doc/nri-oracledb/README.md"
+      "LICENSE": "/usr/share/doc/nri-oracledb/LICENSE"
     config_files:
-      "nginx-definition.yml": "/var/db/newrelic-infra/newrelic-integrations/nginx-definition.yml"
+      "oracledb-definition.yml": "/var/db/newrelic-infra/newrelic-integrations/oracledb-definition.yml"
     dependencies:
       - "newrelic-infra"
     overrides:
@@ -83,23 +79,23 @@ nfpms:
           amd64: 1.x86_64
 
 archives:
-  - id: nri-nginx-nix
+  - id: nri-oracledb-nix
     builds:
-      - nri-nginx-nix
+      - nri-oracledb-nix
     name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Version }}_{{ .Arch }}_dirty"
     files:
-      - nginx-config.yml.sample
-      - nginx-definition.yml
+      - oracledb-config.yml.sample
+      - oracledb-definition.yml
     format: tar.gz
 
-  - id: nri-nginx-win
-    builds:
-      - nri-nginx-win
-    name_template: "{{ .ProjectName }}-{{ .Arch }}.{{ .Version }}_dirty"
-    files:
-      - nginx-win-config.yml.sample
-      - nginx-win-definition.yml
-    format: zip
+#  - id: nri-oracledb-win
+#    builds:
+#      - nri-oracledb-win
+#    name_template: "{{ .ProjectName }}-{{ .Arch }}.{{ .Version }}_dirty"
+#    files:
+#      - oracledb-win-config.yml.sample
+#      - oracledb-win-definition.yml
+#    format: zip
 
 # we use custom publisher for fixing archives and signing them
 release:
