@@ -37,8 +37,6 @@ endif
 release/fix-archive:
 	@echo "===> $(INTEGRATION) === [release/fix-archive] fixing tar.gz archives internal structure"
 	@bash $(CURDIR)/build/nix/fix_archives.sh $(CURDIR)
-	@echo "===> $(INTEGRATION) === [release/fix-archive] fixing zip archives internal structure"
-	@bash $(CURDIR)/build/windows/fix_archives.sh $(CURDIR)
 
 .PHONY : release/sign/nix
 release/sign/nix:

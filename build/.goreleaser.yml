@@ -9,23 +9,6 @@ builds:
       - linux
     goarch:
       - amd64
-    ignore:
-      - goos: darwin
-        goarch: 386
-
-#  - id: nri-oracledb-win
-#    main: ./src
-#    binary: nri-oracledb
-#    gobinary: "go1.15.2"
-#    ldflags:
-#      - -s -w -X main.integrationVersion={{.Version}} -X main.gitCommit={{.Commit}} -X main.buildDate={{.Date}}
-#    goos:
-#      - windows
-#    goarch:
-#      #- 386
-#      - amd64
-#    hooks:
-#      pre: build/windows/set_exe_properties.sh {{ .Env.TAG }} "oracledb"
 
 nfpms:
   - id: nri-oracledb-deb
@@ -87,15 +70,6 @@ archives:
       - oracledb-config.yml.sample
       - oracledb-definition.yml
     format: tar.gz
-
-#  - id: nri-oracledb-win
-#    builds:
-#      - nri-oracledb-win
-#    name_template: "{{ .ProjectName }}-{{ .Arch }}.{{ .Version }}_dirty"
-#    files:
-#      - oracledb-win-config.yml.sample
-#      - oracledb-win-definition.yml
-#    format: zip
 
 # we use custom publisher for fixing archives and signing them
 release:
