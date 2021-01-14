@@ -14,11 +14,9 @@ env:
   GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
   INTEGRATION: "oracledb"
+  SNYK_TOKEN: ${{ secrets.COREINT_SNYK_TOKEN }}
   ORIGINAL_REPO_NAME: 'newrelic/nri-oracledb'
   REPO_FULL_NAME: ${{ github.event.repository.full_name }}
-  SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
-  SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
-  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
   TAG: ${{ github.event.release.tag_name }}
 
 jobs:
@@ -28,6 +26,11 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.OHAI_DOCKER_HUB_ID }}
+          password: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
       - name: Validate code
         run: make ci/validate
 
@@ -36,6 +39,11 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.OHAI_DOCKER_HUB_ID }}
+          password: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
       - name: Scan code for vulnerabilities
         run: make ci/snyk-test
 
@@ -44,37 +52,25 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.OHAI_DOCKER_HUB_ID }}
+          password: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
       - name: Unit tests
         run: make ci/test
 
-  # can't run this step inside of container because of tests specific
-  test-integration-nix:
-    name: Run integration tests on *Nix
-    runs-on: ubuntu-20.04
-    defaults:
-      run:
-        working-directory: src/github.com/${{env.ORIGINAL_REPO_NAME}}
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 1
-          path: src/github.com/${{env.ORIGINAL_REPO_NAME}}
-      - name: Install Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ${{env.GO_VERSION}}
-      - name: Integration test
-        env:
-          GOPATH: ${{ github.workspace }}
-        run: make integration-test
-
   prerelease:
-    name: Build binary for *Nix/Win, create archives for *Nix/Win, create packages for *Nix, upload all artifacts into GH Release assets
+    name: Create packages for *Nix, upload all artifacts into GH Release assets
     runs-on: ubuntu-20.04
-    needs: [validate, test-nix, snyk, test-integration-nix]
+    needs: [validate, test-nix, snyk]
     steps:
       - uses: actions/checkout@v2
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.OHAI_DOCKER_HUB_ID }}
+          password: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
       - name: Pre release
         run: make ci/prerelease
       - name: Notify failure via Slack
@@ -82,5 +78,5 @@ jobs:
         uses: archive/github-actions-slack@master
         with:
           slack-bot-user-oauth-access-token: ${{ secrets.SLACK_TOKEN }}
-          slack-channel: ${{ env.SLACK_CHANNEL }}
-          slack-text: ":shit: Repo: ${{ env.REPO_FULL_NAME }}, prerelease for nix FAILURE!"
+          slack-channel: ${{ secrets.SLACK_CHANNEL }}
+          slack-text: "❌ `${{ env.REPO_FULL_NAME }}`: prerelease pipeline failed."

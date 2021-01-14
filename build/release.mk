@@ -27,10 +27,10 @@ release/deps: $(GORELEASER_BIN)
 release/build: release/deps release/clean
 ifeq ($(PRERELEASE), true)
 	@echo "===> $(INTEGRATION) === [release/build] PRE-RELEASE compiling all binaries, creating packages, archives"
-	@$(GORELEASER_BIN) release --config $(CURDIR)/build/.goreleaser.yml --rm-dist --debug
+	@$(GORELEASER_BIN) release --config $(CURDIR)/build/.goreleaser.yml --rm-dist
 else
 	@echo "===> $(INTEGRATION) === [release/build] build compiling all binaries"
-	@$(GORELEASER_BIN) build --config $(CURDIR)/build/.goreleaser.yml --snapshot --rm-dist --debug
+	@$(GORELEASER_BIN) build --config $(CURDIR)/build/.goreleaser.yml --snapshot --rm-dist
 endif
 
 .PHONY : release/fix-archive
