@@ -24,13 +24,18 @@ nfpms:
     formats:
       - deb
     bindir: "/var/db/newrelic-infra/newrelic-integrations/bin"
-    files:
-      "oracledb-config.yml.sample": "/etc/newrelic-infra/integrations.d/oracledb-config.yml.sample"
-      "CHANGELOG.md": "/usr/share/doc/nri-oracledb/CHANGELOG.md"
-      "README.md":  "/usr/share/doc/nri-oracledb/README.md"
-      "LICENSE": "/usr/share/doc/nri-oracledb/LICENSE"
-    config_files:
-      "oracledb-definition.yml": "/var/db/newrelic-infra/newrelic-integrations/oracledb-definition.yml"
+    contents:
+      - src: oracledb-config.yml.sample
+        dst: /etc/newrelic-infra/integrations.d/oracledb-config.yml.sample
+      - src: CHANGELOG.md
+        dst: /usr/share/doc/nri-oracledb/CHANGELOG.md
+      - src: README.md
+        dst: /usr/share/doc/nri-oracledb/README.md
+      - src: LICENSE
+        dst: /usr/share/doc/nri-oracledb/LICENSE
+      - src: oracledb-definition.yml
+        dst: /var/db/newrelic-infra/newrelic-integrations/oracledb-definition.yml
+        type: config
     dependencies:
       - "newrelic-infra"
 
@@ -47,13 +52,18 @@ nfpms:
     formats:
       - rpm
     bindir: "/var/db/newrelic-infra/newrelic-integrations/bin"
-    files:
-      "oracledb-config.yml.sample": "/etc/newrelic-infra/integrations.d/oracledb-config.yml.sample"
-      "CHANGELOG.md": "/usr/share/doc/nri-oracledb/CHANGELOG.md"
-      "README.md":  "/usr/share/doc/nri-oracledb/README.md"
-      "LICENSE": "/usr/share/doc/nri-oracledb/LICENSE"
-    config_files:
-      "oracledb-definition.yml": "/var/db/newrelic-infra/newrelic-integrations/oracledb-definition.yml"
+    contents:
+      - src: oracledb-config.yml.sample
+        dst: /etc/newrelic-infra/integrations.d/oracledb-config.yml.sample
+      - src: CHANGELOG.md
+        dst: /usr/share/doc/nri-oracledb/CHANGELOG.md
+      - src: README.md
+        dst: /usr/share/doc/nri-oracledb/README.md
+      - src: LICENSE
+        dst: /usr/share/doc/nri-oracledb/LICENSE
+      - src: oracledb-definition.yml
+        dst: /var/db/newrelic-infra/newrelic-integrations/oracledb-definition.yml
+        type: config
     dependencies:
       - "newrelic-infra"
     overrides:
