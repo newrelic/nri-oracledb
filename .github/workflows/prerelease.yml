@@ -14,7 +14,6 @@ env:
   GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
   GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
   INTEGRATION: "oracledb"
-  SNYK_TOKEN: ${{ secrets.COREINT_SNYK_TOKEN }}
   ORIGINAL_REPO_NAME: 'newrelic/nri-oracledb'
   REPO_FULL_NAME: ${{ github.event.repository.full_name }}
   TAG: ${{ github.event.release.tag_name }}
@@ -37,6 +36,8 @@ jobs:
   snyk:
     name: Run security checks via snyk
     runs-on: ubuntu-20.04
+    env:
+      SNYK_TOKEN: ${{ secrets.COREINT_SNYK_TOKEN }}
     steps:
       - uses: actions/checkout@v2
       - name: Login to DockerHub
