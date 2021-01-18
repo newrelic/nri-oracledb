@@ -1,0 +1,86 @@
+builds:
+  - id: nri-oracledb-nix
+    main: ./src
+    binary: nri-oracledb
+    gobinary: "go1.11.13"
+    ldflags:
+      - -s -w -X main.integrationVersion={{.Version}} -X main.gitCommit={{.Commit}} -X main.buildDate={{.Date}}
+    goos:
+      - linux
+    goarch:
+      - amd64
+
+nfpms:
+  - id: nri-oracledb-deb
+    builds:
+      - nri-oracledb-nix
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}-1_{{ .Arch }}"
+    vendor: "New Relic, Inc."
+    homepage: "https://www.newrelic.com/infrastructure"
+    maintainer: "New Relic Infrastructure Team <infrastructure-eng@newrelic.com>"
+    description: "New Relic Infrastructure oracledb Integration extend the core New Relic\nInfrastructure agent's capabilities to allow you to collect metric and\nlive state data from oracledb components."
+    license: "https://newrelic.com/terms (also see LICENSE installed with this package)"
+    # Formats to be generated.
+    formats:
+      - deb
+    bindir: "/var/db/newrelic-infra/newrelic-integrations/bin"
+    contents:
+      - src: oracledb-config.yml.sample
+        dst: /etc/newrelic-infra/integrations.d/oracledb-config.yml.sample
+      - src: CHANGELOG.md
+        dst: /usr/share/doc/nri-oracledb/CHANGELOG.md
+      - src: README.md
+        dst: /usr/share/doc/nri-oracledb/README.md
+      - src: LICENSE
+        dst: /usr/share/doc/nri-oracledb/LICENSE
+      - src: oracledb-definition.yml
+        dst: /var/db/newrelic-infra/newrelic-integrations/oracledb-definition.yml
+        type: config
+    dependencies:
+      - "newrelic-infra"
+
+  - id: nri-oracledb-rpm
+    builds:
+      - nri-oracledb-nix
+    file_name_template: "{{ .ProjectName }}-{{ .Version }}-{{ .Arch }}"
+    vendor: "New Relic, Inc."
+    homepage: "https://www.newrelic.com/infrastructure"
+    maintainer: "New Relic Infrastructure Team <infrastructure-eng@newrelic.com>"
+    description: "New Relic Infrastructure oracledb Integration extend the core New Relic\nInfrastructure agent's capabilities to allow you to collect metric and\nlive state data from oracledb components."
+    license: "https://newrelic.com/terms (also see LICENSE installed with this package)"
+    # Formats to be generated.
+    formats:
+      - rpm
+    bindir: "/var/db/newrelic-infra/newrelic-integrations/bin"
+    contents:
+      - src: oracledb-config.yml.sample
+        dst: /etc/newrelic-infra/integrations.d/oracledb-config.yml.sample
+      - src: CHANGELOG.md
+        dst: /usr/share/doc/nri-oracledb/CHANGELOG.md
+      - src: README.md
+        dst: /usr/share/doc/nri-oracledb/README.md
+      - src: LICENSE
+        dst: /usr/share/doc/nri-oracledb/LICENSE
+      - src: oracledb-definition.yml
+        dst: /var/db/newrelic-infra/newrelic-integrations/oracledb-definition.yml
+        type: config
+    dependencies:
+      - "newrelic-infra"
+    overrides:
+      rpm:
+        replacements:
+          amd64: 1.x86_64
+
+archives:
+  - id: nri-oracledb-nix
+    builds:
+      - nri-oracledb-nix
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Version }}_{{ .Arch }}_dirty"
+    files:
+      - oracledb-config.yml.sample
+      - oracledb-definition.yml
+    format: tar.gz
+
+# we use custom publisher for fixing archives and signing them
+release:
+  disable: true

@@ -40,3 +40,6 @@ Session.vim
 debug
 Makefile-deploy.mk
 .idea
+
+dist
+*.gpg
