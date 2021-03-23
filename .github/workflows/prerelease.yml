@@ -10,9 +10,6 @@ on:
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   GO_VERSION: '1.11.13'
-  GPG_MAIL: 'infrastructure-eng@newrelic.com'
-  GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
-  GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
   INTEGRATION: "oracledb"
   ORIGINAL_REPO_NAME: 'newrelic/nri-oracledb'
   REPO_FULL_NAME: ${{ github.event.repository.full_name }}
@@ -36,8 +33,6 @@ jobs:
   snyk:
     name: Run security checks via snyk
     runs-on: ubuntu-20.04
-    env:
-      SNYK_TOKEN: ${{ secrets.COREINT_SNYK_TOKEN }}
     steps:
       - uses: actions/checkout@v2
       - name: Login to DockerHub
@@ -46,6 +41,8 @@ jobs:
           username: ${{ secrets.OHAI_DOCKER_HUB_ID }}
           password: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
       - name: Scan code for vulnerabilities
+        env:
+          SNYK_TOKEN: ${{ secrets.COREINT_SNYK_TOKEN }}
         run: make ci/snyk-test
 
   test-nix:
@@ -62,7 +59,7 @@ jobs:
         run: make ci/test
 
   prerelease:
-    name: Create packages for *Nix, upload all artifacts into GH Release assets
+    name: Build binary for *Nix/Win, create archives for *Nix/Win, create packages for *Nix, upload all artifacts into GH Release assets
     runs-on: ubuntu-20.04
     needs: [validate, test-nix, snyk]
     steps:
@@ -74,6 +71,10 @@ jobs:
           password: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
       - name: Pre release
         run: make ci/prerelease
+        env:
+          GPG_MAIL: 'infrastructure-eng@newrelic.com'
+          GPG_PASSPHRASE: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+          GPG_PRIVATE_KEY_BASE64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }} # base64 encoded
       - name: Notify failure via Slack
         if: ${{ failure() }}
         uses: archive/github-actions-slack@master
@@ -81,3 +82,51 @@ jobs:
           slack-bot-user-oauth-access-token: ${{ secrets.COREINT_SLACK_TOKEN }}
           slack-channel: ${{ secrets.COREINT_SLACK_CHANNEL }}
           slack-text: "❌ `${{ env.REPO_FULL_NAME }}`: prerelease pipeline failed."
+      - name: Test package installability
+        uses: newrelic/integrations-pkg-test-action/linux@v1
+        with:
+          tag: ${{ env.TAG }}
+          integration: nri-${{ env.INTEGRATION }}
+
+  publish-to-s3:
+    name: Send release assets to S3
+    runs-on: ubuntu-20.04
+    needs: [package-win]
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.OHAI_DOCKER_HUB_ID }}
+          password: ${{ secrets.OHAI_DOCKER_HUB_PASSWORD }}
+      - name: Publish to S3 action
+        uses: newrelic/infrastructure-publish-action@v1
+        env:
+          AWS_S3_BUCKET_NAME: "nr-downloads-ohai-staging"
+          AWS_S3_LOCK_BUCKET_NAME: "onhost-ci-lock-staging"
+        with:
+          disable_lock: false
+          run_id: ${{ github.run_id }}
+          tag: ${{env.TAG}}
+          app_name: "nri-${{env.INTEGRATION}}"
+          repo_name: ${{ env.ORIGINAL_REPO_NAME }}
+          schema: "custom"
+          schema_url: "https://raw.githubusercontent.com/newrelic/nri-${{ env.INTEGRATION }}/${{ env.TAG }}/build/s3-publish-schema.yml"
+          aws_region: "us-east-1"
+          aws_role_arn: ${{ secrets.OHAI_AWS_ROLE_ARN_STAGING }}
+          aws_role_session_name: ${{ secrets.OHAI_AWS_ROLE_SESSION_NAME_STAGING }}
+          aws_access_key_id: ${{ secrets.OHAI_AWS_ACCESS_KEY_ID_STAGING }}
+          aws_secret_access_key: ${{ secrets.OHAI_AWS_SECRET_ACCESS_KEY_STAGING }}
+          aws_s3_bucket_name: ${{ env.AWS_S3_BUCKET_NAME }}
+          # used for locking in case of concurrent releases
+          aws_s3_lock_bucket_name: ${{ env.AWS_S3_LOCK_BUCKET_NAME }}
+          # used for signing package stuff
+          gpg_passphrase: ${{ secrets.OHAI_GPG_PASSPHRASE }}
+          gpg_private_key_base64: ${{ secrets.OHAI_GPG_PRIVATE_KEY_BASE64 }}
+      - name: Test uploaded package installability
+        uses: newrelic/integrations-pkg-test-action/linux@v1
+        with:
+          tag: ${{ env.TAG }}
+          integration: nri-${{ env.INTEGRATION }}
+          packageLocation: repo
+          stagingRepo: true
+          upgrade: false

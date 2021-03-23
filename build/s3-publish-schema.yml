@@ -1,0 +1,48 @@
+# This is a schema for newrelic/infrastructure-publish-action@v1, which decides which files are uploaded and where.
+# nri-oracledb do not support arm and Windows due to the cross-compilation complexity.
+---
+- src: "{app_name}_linux_{version}_{arch}.tar.gz"
+  uploads:
+    - type: file
+      dest: "{dest_prefix}binaries/linux/{arch}/{src}"
+  arch:
+    - amd64
+
+- src: "{app_name}_{version}-1_{arch}.deb"
+  arch:
+    - amd64
+  uploads:
+    - type: apt
+      src_repo: "http://download.newrelic.com/infrastructure_agent/linux/apt"
+      dest: "{dest_prefix}linux/apt/"
+      os_version:
+        - focal
+        - bionic
+        - buster
+        - jessie
+        - precise
+        - stretch
+        - trusty
+        - wheezy
+        - xenial
+
+- src: "{app_name}-{version}-1.{arch}.rpm"
+  arch:
+    - x86_64
+  uploads:
+    - type: yum
+      dest: "{dest_prefix}linux/yum/el/{os_version}/{arch}/"
+      os_version:
+        - 5
+        - 6
+        - 7
+        - 8
+
+    - type: zypp
+      dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/"
+      os_version:
+        - 11.4
+        - 12.1
+        - 12.2
+        - 12.3
+        - 12.4
