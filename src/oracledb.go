@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -31,22 +32,37 @@ type argumentList struct {
 	CustomMetricsQuery    string `default:"" help:"A SQL query to collect custom metrics. Must have the columns metric_name, metric_type, and metric_value. Additional columns are added as attributes"`
 	CustomMetricsConfig   string `default:"" help:"YAML configuration file with one or more custom SQL queries to collect"`
 	DisableConnectionPool bool   `default:"false" help:"Disables connection pooling. It may make the integration run slower but may reduce issues with not being able to execute queries due to ORA-24459 (failure to get new connection)"`
+	ShowVersion           bool   `default:"false" help:"Print build information and exit"`
 }
 
 const (
-	integrationName    = "com.newrelic.oracledb"
-	integrationVersion = "2.5.1"
+	integrationName = "com.newrelic.oracledb"
 )
 
 var (
 	args                argumentList
 	tablespaceWhiteList []string
+	integrationVersion  = "0.0.0"
+	gitCommit           = ""
+	buildDate           = ""
 )
 
 func main() {
 	// Create Integration
 	i, err := integration.New(integrationName, integrationVersion, integration.Args(&args))
 	exitOnErr(err)
+
+	if args.ShowVersion {
+		fmt.Printf(
+			"New Relic %s integration Version: %s, Platform: %s, GoVersion: %s, GitCommit: %s, BuildDate: %s\n",
+			strings.Title(strings.Replace(integrationName, "com.newrelic.", "", 1)),
+			integrationVersion,
+			fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+			runtime.Version(),
+			gitCommit,
+			buildDate)
+		os.Exit(0)
+	}
 
 	// parse tablespace whitelist
 	err = parseTablespaceWhitelist()
