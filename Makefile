@@ -5,63 +5,31 @@ NATIVEOS    := $(shell go version | awk -F '[ /]' '{print $$4}')
 NATIVEARCH  := $(shell go version | awk -F '[ /]' '{print $$5}')
 INTEGRATION := oracledb
 BINARY_NAME  = nri-$(INTEGRATION)
-GO_PKGS     := $(shell go list ./... | grep -v "/vendor/")
-GO_FILES    := ./src/ 
-GOTOOLS      =  github.com/kardianos/govendor \
-								gopkg.in/alecthomas/gometalinter.v2 \
-								github.com/axw/gocov/gocov \
-								github.com/AlekSi/gocov-xml
+GO_FILES    := ./src/
+
 all: build
 
-build: check-version clean validate test compile
+build: check-version clean test compile
 
 clean:
 	@echo "=== $(INTEGRATION) === [ clean ]: Removing binaries and coverage file..."
 	@rm -rfv bin coverage.xml $(TARGET)
 
-tools: check-version
-	@echo "=== $(INTEGRATION) === [ tools ]: Installing tools required by the project..."
-	@go get $(GOTOOLS)
-	@gometalinter.v2 --install
-
-tools-update: check-version
-	@echo "=== $(INTEGRATION) === [ tools-update ]: Updating tools required by the project..."
-	@go get -u $(GOTOOLS)
-	@gometalinter.v2 --install
-
-deps: tools deps-only
-
-deps-only:
-	@echo "=== $(INTEGRATION) === [ deps ]: Installing package dependencies required by the project..."
-	@govendor sync
-
-validate: deps
-	@echo "=== $(INTEGRATION) === [ validate ]: Validating source code running gometalinter..."
-	@gometalinter.v2 --config=.gometalinter.json ./...
-
-validate-all: deps
-	@echo "=== $(INTEGRATION) === [ validate ]: Validating source code running gometalinter..."
-	@gometalinter.v2 --config=.gometalinter.json --enable=interfacer --enable=gosimple ./...
-
-compile: deps
+compile:
 	@echo "=== $(INTEGRATION) === [ compile ]: Building $(BINARY_NAME)..."
 	@go build -o bin/$(BINARY_NAME) ./src
 
-compile-only: deps-only
-	@echo "=== $(INTEGRATION) === [ compile ]: Building $(BINARY_NAME)..."
-	@go build -o bin/$(BINARY_NAME) ./src
-
-cross-compile-all: deps-only
+cross-compile-all:
 	@echo "=== $(INTEGRATION) === [ compile ]: Building cross-compiled binaries..."
 	@xgo --targets=linux/amd64,linux/386,windows/amd64,windows/386,darwin/amd64,darwin/386 --dest=bin --out=$(BINARY_NAME) ./src
 
-cross-compile-linux64: deps-only
+cross-compile-linux64:
 	@echo "=== $(INTEGRATION) === [ compile ]: Building cross-compiled binaries..."
 	@xgo --targets=linux/amd64 --dest=bin --out=$(BINARY_NAME) ./src
 
-test: deps
+test:
 	@echo "=== $(INTEGRATION) === [ test ]: Running unit tests..."
-	@gocov test -race $(GO_PKGS) | gocov-xml > coverage.xml
+	@go test -race ./...
 
 # Include thematic Makefiles
 include $(CURDIR)/build/ci.mk
@@ -79,4 +47,4 @@ ifneq "$(GOARCH)" "$(NATIVEARCH)"
 endif
 endif
 
-.PHONY: all build clean tools tools-update deps validate compile test check-version
+.PHONY: all build clean compile test check-version
