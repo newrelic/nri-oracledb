@@ -4,16 +4,17 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/godror/godror/dsn"
 	"os"
 	"runtime"
 	"strings"
 	"sync"
 
+	"github.com/godror/godror"
 	"github.com/jmoiron/sqlx"
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
-	"gopkg.in/goracle.v2"
 )
 
 type argumentList struct {
@@ -68,7 +69,7 @@ func main() {
 	err = parseTablespaceWhitelist()
 	exitOnErr(err)
 
-	db, err := sqlx.Open("goracle", getConnectionString())
+	db, err := sqlx.Open("godror", getConnectionString())
 	exitOnErr(err)
 	db.SetMaxOpenConns(args.MaxOpenConnections)
 
@@ -102,27 +103,22 @@ func main() {
 }
 
 func getConnectionString() string {
-
-	sid := ""
-	if args.ConnectionString == "" {
-		sid = fmt.Sprintf("%s:%s/%s", args.Hostname, args.Port, args.ServiceName)
-	} else {
-		sid = strings.Replace(args.ConnectionString, " ", "", -1)
-	}
-
-	cp := goracle.ConnectionParams{
-		Username:             args.Username,
-		Password:             args.Password,
-		SID:                  sid,
-		IsSysDBA:             args.IsSysDBA,
-		IsSysOper:            args.IsSysOper,
+	return godror.ConnectionParams{
 		StandaloneConnection: args.DisableConnectionPool,
-		MinSessions:          0,
-		MaxSessions:          args.MaxOpenConnections,
-		PoolIncrement:        1,
-	}
-
-	return cp.StringWithPassword()
+		CommonParams: dsn.CommonParams{
+			Username: args.Username,
+			Password: dsn.NewPassword(args.Password),
+		},
+		PoolParams: dsn.PoolParams{
+			MinSessions:      0,
+			MaxSessions:      args.MaxOpenConnections,
+			SessionIncrement: 1,
+		},
+		ConnParams: dsn.ConnParams{
+			IsSysDBA:  args.IsSysDBA,
+			IsSysOper: args.IsSysOper,
+		},
+	}.StringWithPassword()
 }
 
 func exitOnErr(err error) {

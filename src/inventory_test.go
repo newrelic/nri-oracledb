@@ -5,9 +5,9 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	_ "github.com/godror/godror"
 	"github.com/jmoiron/sqlx"
 	"github.com/newrelic/infra-integrations-sdk/integration"
-	_ "gopkg.in/goracle.v2"
 )
 
 func TestPopulateInventory(t *testing.T) {
