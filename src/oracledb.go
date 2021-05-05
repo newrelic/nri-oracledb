@@ -103,11 +103,19 @@ func main() {
 }
 
 func getConnectionString() string {
+	var connString string
+	if args.ConnectionString == "" {
+		connString = fmt.Sprintf("%s:%s/%s", args.Hostname, args.Port, args.ServiceName)
+	} else {
+		connString = strings.ReplaceAll(args.ConnectionString, " ", "")
+	}
+
 	return godror.ConnectionParams{
 		StandaloneConnection: args.DisableConnectionPool,
 		CommonParams: dsn.CommonParams{
-			Username: args.Username,
-			Password: dsn.NewPassword(args.Password),
+			Username:      args.Username,
+			Password:      dsn.NewPassword(args.Password),
+			ConnectString: connString,
 		},
 		PoolParams: dsn.PoolParams{
 			MinSessions:      0,
