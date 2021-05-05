@@ -126,7 +126,7 @@ func columnMetricsGenerator(rows *sql.Rows, metrics []*oracleMetric, metricChan 
 					value:      rowMap[metric.identifier],
 				}
 
-				metadata := map[string]string{"instanceID": (rowMap["INST_ID"].(godror.Number)).String()}
+				metadata := map[string]string{"instanceID": getInstanceIDString(rowMap["INST_ID"])}
 
 				// Send the new metric down the channel
 				metricChan <- newrelicMetricSender{metric: newMetric, metadata: metadata}
