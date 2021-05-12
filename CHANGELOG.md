@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 3.0.0 (2021-05-12)
+### Changed
+* Integration SDK has been upgrade to 3.6.7, which fixes a bug that caused scrambled metrics when integration autodiscovery was used (#67)
+  - Additionally, this PR also switches to go modules, go 1.16, and upgrades the driver used to connect to the database to its latest version
+
+Since these changes involve a change of the oracle database driver, a major version bump has been issued.
+While we have not detected any breakage during our tests, we encourage users to monitor the solution to ensure their use case has not been impacted. 
+
 ## 2.5.2 (2020-12-04)
 ### Changed
 - Added configuration option to enable disabling the connection pool. There are cases where the connection pool does not properly re-use cnnections and leads to errors getting new connections thus failing some queries. Disabling the connection pool can lead to lower performance, but removes the issue of not being able to execute some queries.
