@@ -2,17 +2,18 @@ package main
 
 import (
 	"fmt"
+	"github.com/newrelic/infra-integrations-sdk/data/attribute"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"sync"
 
+	"github.com/godror/godror"
 	"github.com/jmoiron/sqlx"
 	nrmetric "github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
-	goracle "gopkg.in/goracle.v2"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 // collectMetrics spins off goroutines for each of the metric groups, which
@@ -167,7 +168,7 @@ func sanitizeValue(val interface{}) interface{} {
 	switch v := val.(type) {
 	case string, float32, float64, int, int32, int64:
 		return v
-	case goracle.Number:
+	case godror.Number:
 		num, err := strconv.ParseFloat(string(v), 64)
 		if err != nil {
 			log.Error("Failed to convert %s to a number")
@@ -203,9 +204,9 @@ func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[stri
 
 	var newSet *nrmetric.Set
 	if entityType == "instance" {
-		newSet = e.NewMetricSet("OracleDatabaseSample", nrmetric.Attr("entityName", "ora-instance:"+entityIdentifier), nrmetric.Attr("displayName", entityIdentifier))
+		newSet = e.NewMetricSet("OracleDatabaseSample", attribute.Attr("entityName", "ora-instance:"+entityIdentifier), attribute.Attr("displayName", entityIdentifier))
 	} else if entityType == "tablespace" {
-		newSet = e.NewMetricSet("OracleTablespaceSample", nrmetric.Attr("entityName", "ora-tablespace:"+entityIdentifier), nrmetric.Attr("displayName", entityIdentifier))
+		newSet = e.NewMetricSet("OracleTablespaceSample", attribute.Attr("entityName", "ora-tablespace:"+entityIdentifier), attribute.Attr("displayName", entityIdentifier))
 	} else {
 		log.Error("Unreachable code")
 		os.Exit(1)
@@ -228,7 +229,7 @@ func createCustomMetricSet(sampleName string, instanceID string, i *integration.
 		serviceIDAttr,
 	)
 
-	return e.NewMetricSet(sampleName, nrmetric.Attr("entityName", "ora-instance:"+instanceID), nrmetric.Attr("displayName", instanceID))
+	return e.NewMetricSet(sampleName, attribute.Attr("entityName", "ora-instance:"+instanceID), attribute.Attr("displayName", instanceID))
 }
 
 // maxTablespaces is the maximum amount of Tablespaces that can be collect.

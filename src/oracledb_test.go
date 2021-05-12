@@ -9,25 +9,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func TestGetCollectionString(t *testing.T) {
-
-	args = argumentList{
-		ServiceName: "testservice",
-		Hostname:    "testhost",
-		Password:    "testpassword",
-		Username:    "testuser",
-		IsSysDBA:    true,
-	}
-
-	s := getConnectionString()
-	expectedConnectionString := `oracle://testuser:testpassword@testhost:/testservice?connectionClass=&poolIncrement=1&poolMaxSessions=0&poolMinSessions=0&sysdba=1&sysoper=0&standaloneConnection=0`
-
-	if s != expectedConnectionString {
-		t.Errorf("Incorrect connection string %s", s)
-	}
-
-}
-
 func Test_parseTablespaceWhitelist(t *testing.T) {
 	testCases := []struct {
 		name string

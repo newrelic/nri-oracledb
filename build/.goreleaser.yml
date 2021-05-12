@@ -2,7 +2,6 @@ builds:
   - id: nri-oracledb-nix
     main: ./src
     binary: nri-oracledb
-    gobinary: "go1.11.13"
     ldflags:
       - -s -w -X main.integrationVersion={{.Version}} -X main.gitCommit={{.Commit}} -X main.buildDate={{.Date}}
     goos:

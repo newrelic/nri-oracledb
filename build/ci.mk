@@ -18,13 +18,6 @@ ci/debug-container: ci/deps
 			-e GPG_PRIVATE_KEY_BASE64 \
 			$(BUILDER_TAG) bash
 
-.PHONY : ci/validate
-ci/validate: ci/deps
-	@docker run --rm -t \
-			-v $(CURDIR):/go/src/github.com/newrelic/nri-$(INTEGRATION) \
-			-w /go/src/github.com/newrelic/nri-$(INTEGRATION) \
-			$(BUILDER_TAG) make validate
-
 .PHONY : ci/test
 ci/test: ci/deps
 	@docker run --rm -t \

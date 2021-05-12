@@ -26,7 +26,7 @@ For installation and usage instructions, see our [documentation web site](https:
 
 ## Compatibility
 
-* Supported OS: No limitations
+* Supported OS: Linux x86_64
 * oracledb versions: 11.2+
 
 ## Building
@@ -66,8 +66,6 @@ $ make test
 ## Support
 
 Should you need assistance with New Relic products, you are in good hands with several support diagnostic tools and support channels.
-
-
 
 > New Relic offers NRDiag, [a client-side diagnostic utility](https://docs.newrelic.com/docs/using-new-relic/cross-product-functions/troubleshooting/new-relic-diagnostics) that automatically detects common problems with New Relic agents. If NRDiag detects a problem, it suggests troubleshooting steps. NRDiag can also automatically attach troubleshooting data to a New Relic Support ticket.
 
