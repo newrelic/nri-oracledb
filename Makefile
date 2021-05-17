@@ -6,10 +6,12 @@ NATIVEARCH  := $(shell go version | awk -F '[ /]' '{print $$5}')
 INTEGRATION := oracledb
 BINARY_NAME  = nri-$(INTEGRATION)
 GO_FILES    := ./src/
+GOFLAGS          = -mod=readonly
+GOLANGCI_LINT    = github.com/golangci/golangci-lint/cmd/golangci-lint
 
 all: build
 
-build: check-version clean test compile
+build: clean validate test compile
 
 clean:
 	@echo "=== $(INTEGRATION) === [ clean ]: Removing binaries and coverage file..."
@@ -27,24 +29,18 @@ cross-compile-linux64:
 	@echo "=== $(INTEGRATION) === [ compile ]: Building cross-compiled binaries..."
 	@xgo --targets=linux/amd64 --dest=bin --out=$(BINARY_NAME) ./src
 
+validate:
+	@printf "=== $(INTEGRATION) === [ validate ]: running golangci-lint & semgrep... "
+	@go run  $(GOFLAGS) $(GOLANGCI_LINT) run --verbose
+	@[ -f .semgrep.yml ] && semgrep_config=".semgrep.yml" || semgrep_config="p/golang" ; \
+	docker run --rm -v "${PWD}:/src:ro" --workdir /src returntocorp/semgrep -c "$$semgrep_config"
+
 test:
 	@echo "=== $(INTEGRATION) === [ test ]: Running unit tests..."
-	@go test -race ./...
+	@go test -race ./... -count=1
 
 # Include thematic Makefiles
 include $(CURDIR)/build/ci.mk
 include $(CURDIR)/build/release.mk
 
-check-version:
-ifdef GOOS
-ifneq "$(GOOS)" "$(NATIVEOS)"
-	$(error GOOS is not $(NATIVEOS). Cross-compiling is only allowed for 'clean', 'deps-only' and 'compile-only' targets)
-endif
-endif
-ifdef GOARCH
-ifneq "$(GOARCH)" "$(NATIVEARCH)"
-	$(error GOARCH variable is not $(NATIVEARCH). Cross-compiling is only allowed for 'clean', 'deps-only' and 'compile-only' targets)
-endif
-endif
-
-.PHONY: all build clean compile test check-version
+.PHONY: all build clean validate compile test
