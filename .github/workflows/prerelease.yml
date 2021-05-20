@@ -95,6 +95,7 @@ jobs:
           tag: ${{env.TAG}}
           app_name: "nri-${{env.INTEGRATION}}"
           repo_name: ${{ env.ORIGINAL_REPO_NAME }}
+          access_point_host: "staging"
           schema: "custom"
           schema_url: "https://raw.githubusercontent.com/newrelic/nri-${{ env.INTEGRATION }}/${{ env.TAG }}/build/s3-publish-schema.yml"
           aws_region: "us-east-1"
