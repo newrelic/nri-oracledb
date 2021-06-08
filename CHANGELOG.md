@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 3.0.1 (2021-06-08)
+## Changed
+- Support for ARM
+
 ## 3.0.0 (2021-05-12)
 ### Changed
 * Integration SDK has been upgrade to 3.6.7, which fixes a bug that caused scrambled metrics when integration autodiscovery was used (#67)
