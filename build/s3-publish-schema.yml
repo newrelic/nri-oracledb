@@ -46,3 +46,9 @@
         - 12.2
         - 12.3
         - 12.4
+
+    - type: yum
+      dest: "{dest_prefix}linux/yum/amazonlinux/{os_version}/{arch}/"
+      os_version:
+        - 2
+
