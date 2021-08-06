@@ -1,40 +1,43 @@
-integration_name: com.newrelic.oracledb
+integrations:
+- name: nri-oracledb
+  env:
+    # The service name for the Oracle instance
+    service_name: ORCL
+    # The host on which Oracle is listening. If omitted, defaults to 127.0.0.1
+    hostname: oracle_host
+    # The port on which Oracle is listening. If omitted, defaults to 1521
+    port: 12345
+    # Alternatively, a full connection string can be used. This takes priority over host, port, and service_name.
+    # connection_string:   (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=oraclehost)(PORT=1521))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=orcl)))
 
-instances:
-  - name: oracle-metrics
-    command: all_data
-    arguments:
-      # The service name for the Oracle instance
-      service_name: ORCL
-      # The host on which Oracle is listening. If omitted, defaults to 127.0.0.1
-      hostname: oracle_host
-      # The port on which Oracle is listening. If omitted, defaults to 1521
-      port: 12345
-      # Alternatively, a full connection string can be used. This takes priority over host, port, and service_name.
-      # connection_string:   (DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=oraclehost)(PORT=1521))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=orcl)))
-      # The username for the monitoring user.
-      username: oracle_monitor
-      # The password for the monitoring user.
-      password: password
-      # True if the monitoring user is a SysDBA. If omitted, defaults to false.
-      is_sys_dba: false
-      # The location of ORACLE_HOME
-      oracle_home: /u01/app/oracle/product/version/database
-      # True if the monitoring user is a SysOper. If omitted, defaults to false.
-      is_sys_oper: false
-      # A JSON array of tablespaces to collect. If omitted, collects all tablespaces.
-      tablespaces: '["tablespace1", "tablespace2"]'
-      # Collect extended metrics. If omitted, defaults to false.
-      extended_metrics: true
-      # Disable connection pool. Might fix issues with the applciation not being able to execute some queries
-      disable_connection_pool: false
-      # A custom metrics query will run the custom query, then save the columns as
-      # metrics on the OracleCustomSample event type.
-      custom_metrics_query: >-
-        SELECT
-          SUM(PHYRDS) AS "physical_reads",
-          INST_ID AS "inst_id"
-        FROM gv$filestat
-        GROUP BY INST_ID
-    labels:
-      env: production
+    # The username for the monitoring user.
+    username: oracle_monitor
+    # The password for the monitoring user.
+    password: password
+
+    # True if the monitoring user is a SysDBA. If omitted, defaults to false.
+    is_sys_dba: false
+    # The location of ORACLE_HOME
+    oracle_home: /u01/app/oracle/product/version/database
+    # True if the monitoring user is a SysOper. If omitted, defaults to false.
+    is_sys_oper: false
+    # A JSON array of tablespaces to collect. If omitted, collects all tablespaces.
+    tablespaces: '["tablespace1", "tablespace2"]'
+
+    # Collect extended metrics. If omitted, defaults to false.
+    extended_metrics: true
+    # Disable connection pool. Might fix issues with the applciation not being able to execute some queries
+    disable_connection_pool: false
+
+    # A custom metrics query will run the custom query, then save the columns as
+    # metrics on the OracleCustomSample event type.
+    custom_metrics_query: >-
+      SELECT
+        SUM(PHYRDS) AS "physical_reads",
+        INST_ID AS "inst_id"
+      FROM gv$filestat
+      GROUP BY INST_ID
+  interval: 15s
+  labels:
+    env: production
+  inventory_source: config/oracledb
