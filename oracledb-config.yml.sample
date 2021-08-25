@@ -31,12 +31,12 @@ integrations:
 
     # A custom metrics query will run the custom query, then save the columns as
     # metrics on the OracleCustomSample event type.
-    CUSTOM_METRICS_QUERY: >-
-      SELECT
-        SUM(PHYRDS) AS "physical_reads",
-        INST_ID AS "inst_id"
-      FROM gv$filestat
-      GROUP BY INST_ID
+    # CUSTOM_METRICS_QUERY: >-
+    #   SELECT
+    #     SUM(PHYRDS) AS "physical_reads",
+    #     INST_ID AS "inst_id"
+    #   FROM gv$filestat
+    #   GROUP BY INST_ID
   interval: 15s
   labels:
     env: production
