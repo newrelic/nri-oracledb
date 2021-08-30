@@ -29,6 +29,9 @@ integrations:
     # Disable connection pool. Might fix issues with the applciation not being able to execute some queries
     DISABLE_CONNECTION_POOL: false
 
+    # Maximum number of connections opened by the integration
+    # MAX_OPEN_CONNECTIONS: 5
+
     # A custom metrics query will run the custom query, then save the columns as
     # metrics on the OracleCustomSample event type.
     # CUSTOM_METRICS_QUERY: >-
