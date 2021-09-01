@@ -32,7 +32,7 @@ nfpms:
         dst: /usr/share/doc/nri-oracledb/README.md
       - src: LICENSE
         dst: /usr/share/doc/nri-oracledb/LICENSE
-      - src: oracledb-definition.yml
+      - src: legacy/oracledb-definition.yml
         dst: /var/db/newrelic-infra/newrelic-integrations/oracledb-definition.yml
         type: config
     dependencies:
