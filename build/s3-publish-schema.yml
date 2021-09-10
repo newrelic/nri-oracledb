@@ -25,6 +25,9 @@
         - trusty
         - wheezy
         - xenial
+        - groovy
+        - hirsute
+        - bullseye
 
 - src: "{app_name}-{version}-1.{arch}.rpm"
   arch:
@@ -46,6 +49,9 @@
         - 12.2
         - 12.3
         - 12.4
+        - 12.5
+        - 15.1
+        - 15.2
 
     - type: yum
       dest: "{dest_prefix}linux/yum/amazonlinux/{os_version}/{arch}/"
