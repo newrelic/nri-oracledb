@@ -52,6 +52,7 @@
         - 12.5
         - 15.1
         - 15.2
+        - 15.3
 
     - type: yum
       dest: "{dest_prefix}linux/yum/amazonlinux/{os_version}/{arch}/"
