@@ -8,17 +8,36 @@ The New Relic integration for Oracle Database monitors key performance metrics f
 
 * A working installation of the Oracle Instant Client. Installation instructions [here](http://www.oracle.com/technetwork/database/database-technologies/instant-client/downloads/index.html).
 * A user with the necessary permissions to collect all the metrics and inventory can be configured as follows:
-    ```sql
-    alter session set "_ORACLE_SCRIPT"=true;
-    CREATE USER <username> IDENTIFIED BY "<password>";
-    GRANT CONNECT TO <username>;
-    GRANT SELECT ON gv_$sysmetric TO <username>;
-    GRANT SELECT ON gv_$pgastat TO <username>;
-    GRANT SELECT ON gv_$instance TO <username>;
-    GRANT SELECT ON gv_$filestat TO <username>;
-    GRANT SELECT ON gv_$parameter TO <username>;
-    GRANT SELECT ON sys.dba_data_files TO <username>;
-    ```
+```sql
+ALTER SESSION set "_Oracle_SCRIPT"=true;
+CREATE USER <username> IDENTIFIED BY "<user_password>";
+GRANT CONNECT TO <username>;
+GRANT SELECT ON cdb_data_files TO <username>;
+GRANT SELECT ON cdb_pdbs TO <username>;
+GRANT SELECT ON cdb_users TO <username>;
+GRANT SELECT ON gv_$sysmetric TO <username>;
+GRANT SELECT ON gv_$pgastat TO <username>;
+GRANT SELECT ON gv_$instance TO <username>;
+GRANT SELECT ON gv_$filestat TO <username>;
+GRANT SELECT ON gv_$parameter TO <username>;
+GRANT SELECT ON sys.dba_data_files TO <username>;
+GRANT SELECT ON DBA_TABLESPACES TO <username>;
+GRANT SELECT ON DBA_TABLESPACE_USAGE_METRICS TO <username>;
+GRANT SELECT ON gv_$session TO <username>;
+GRANT SELECT ON gv_$sesstat TO <username>;
+GRANT SELECT ON gv_$statname TO <username>;
+GRANT SELECT ON gv_$rowcache TO <username>;
+GRANT SELECT ON gv_$sga TO <username>;
+GRANT SELECT ON gv_$sysstat TO <username>;
+GRANT SELECT ON v_$database TO <username>;
+GRANT SELECT ON gv_$librarycache TO <username>;
+GRANT SELECT ON gv_$sqlarea TO <username>;
+GRANT SELECT ON gv_$system_event TO <username>;
+GRANT SELECT ON dba_tablespaces TO <username>;
+GRANT SELECT ON gv_$session_wait TO <username>;
+GRANT SELECT ON gv_$rollstat TO <username>;
+GRANT SELECT ON v_$instance TO <username>;
+```
 
 ## Installation and usage
 
