@@ -359,7 +359,7 @@ func CollectCustomConfig(db *sqlx.DB, metricChan chan<- newrelicMetricSender, cf
 
 	sampleName := func() string {
 		if cfg.SampleName == "" {
-			return "OracleCustomSample"
+			return defaultCustomSampleType
 		}
 		return cfg.SampleName
 	}()
