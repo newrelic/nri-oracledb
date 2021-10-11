@@ -13,7 +13,7 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/log"
 )
 
-const defaultCustomMetricType = "OracleCustomSample"
+const defaultCustomSampleType = "OracleCustomSample"
 
 // oracleMetric is a storage struct for the information needed to parse
 // a metric from a query and create a newrelicMetric
@@ -185,7 +185,7 @@ func (mg *customMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan
 		isCustom: true,
 		metadata: map[string]string{
 			"instanceID": instanceID,
-			"sampleName": defaultCustomMetricType,
+			"sampleName": defaultCustomSampleType,
 		},
 	}
 
