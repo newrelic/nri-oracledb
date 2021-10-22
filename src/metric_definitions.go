@@ -205,6 +205,10 @@ func (mg *customMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan
 		sender.customMetrics = append(sender.customMetrics, convertedMetrics)
 	}
 
+	if sender.customMetrics == nil {
+		log.Info("Query did not return any results: %s", mg.Query)
+	}
+
 	metricChan <- sender
 }
 

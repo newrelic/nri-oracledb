@@ -385,6 +385,10 @@ func CollectCustomConfig(db *sqlx.DB, metricChan chan<- newrelicMetricSender, cf
 		sender.customMetrics = append(sender.customMetrics, row)
 	}
 
+	if sender.customMetrics == nil {
+		log.Info("Query did not return any results: %s", cfg.Query)
+	}
+
 	metricChan <- sender
 }
 
