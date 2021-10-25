@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"errors"
+
 	"github.com/jmoiron/sqlx"
 )
 

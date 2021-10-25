@@ -37,8 +37,8 @@ func TestPopulateInventory(t *testing.T) {
 		"1": "MyInstance",
 	}
 
-	sqlxDb := sqlx.NewDb(db, "sqlmock")
-	dbWrapper := database.NewDBWrapper(sqlxDb)
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDB)
 	wg.Add(1)
 	go collectInventory(dbWrapper, &wg, i, lookup)
 	wg.Wait()

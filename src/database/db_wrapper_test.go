@@ -1,9 +1,11 @@
 package database
 
 import (
+	"errors"
+	"testing"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
-	"testing"
 )
 
 func TestRowsWrapper_Next(t *testing.T) {
@@ -43,7 +45,7 @@ func TestRowsWrapper_Next(t *testing.T) {
 			dbWrapper := NewDBWrapper(sqlxDb)
 
 			rows, err := dbWrapper.Query(query)
-			if err != tt.errorExpected {
+			if !errors.Is(err, tt.errorExpected) {
 				t.Errorf("Error not expected got: %w", err)
 			}
 
@@ -92,7 +94,7 @@ func TestRowsxWrapper_Next(t *testing.T) {
 			dbWrapper := NewDBWrapper(sqlxDb)
 
 			rowsx, err := dbWrapper.Queryx(query)
-			if err != tt.errorExpected {
+			if !errors.Is(err, tt.errorExpected) {
 				t.Errorf("Error not expected got: %w", err)
 			}
 
