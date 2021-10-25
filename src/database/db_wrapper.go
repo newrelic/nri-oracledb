@@ -2,8 +2,11 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/jmoiron/sqlx"
 )
+
+var ErrNotImplemented = errors.New("method not implemented")
 
 type Rows interface {
 	Next() bool
@@ -24,21 +27,21 @@ func NewDBWrapper(db *sqlx.DB) DBWrapper {
 
 func (d *DBWrapper) Query(query string, args ...interface{}) (*RowsWrapper, error) {
 	rows, err := d.db.Query(query, args...)
-	return &RowsWrapper{rows: rows}, err
+	return &RowsWrapper{Rows: rows}, err
 }
 
 func (d *DBWrapper) Queryx(query string, args ...interface{}) (*RowsxWrapper, error) {
 	rows, err := d.db.Queryx(query, args...)
-	return &RowsxWrapper{rows: rows}, err
+	return &RowsxWrapper{Rows: rows}, err
 }
 
 type RowsWrapper struct {
 	count int
-	rows  *sql.Rows
+	*sql.Rows
 }
 
 func (r *RowsWrapper) Next() bool {
-	n := r.rows.Next()
+	n := r.Rows.Next()
 	if n {
 		r.count++
 	}
@@ -50,52 +53,24 @@ func (r *RowsWrapper) ScannedRowsCount() int {
 	return r.count
 }
 
-func (r *RowsWrapper) Scan(dest ...interface{}) error {
-	return r.rows.Scan(dest...)
-}
-
-func (r *RowsWrapper) Columns() ([]string, error) {
-	return r.rows.Columns()
-}
-
 func (r *RowsWrapper) MapScan(_ map[string]interface{}) error {
-	return nil
-}
-
-func (r *RowsWrapper) Close() error {
-	return r.rows.Close()
+	return ErrNotImplemented
 }
 
 type RowsxWrapper struct {
 	count int
-	rows  *sqlx.Rows
+	*sqlx.Rows
 }
 
 func (rx *RowsxWrapper) Next() bool {
-	n := rx.rows.Next()
+	n := rx.Rows.Next()
 	if n {
 		rx.count++
 	}
 	return n
 }
 
-func (rx *RowsxWrapper) Scan(dest ...interface{}) error {
-	return rx.rows.Scan(dest...)
-}
-
 // ScannedRowsCount returns the number of rows iterated with Next
 func (rx *RowsxWrapper) ScannedRowsCount() int {
 	return rx.count
-}
-
-func (rx *RowsxWrapper) MapScan(dest map[string]interface{}) error {
-	return rx.rows.MapScan(dest)
-}
-
-func (rx *RowsxWrapper) Columns() ([]string, error) {
-	return rx.rows.Columns()
-}
-
-func (rx *RowsxWrapper) Close() error {
-	return rx.rows.Close()
 }
