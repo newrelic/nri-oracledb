@@ -15,12 +15,12 @@ func NewDBWrapper(db *sqlx.DB) DBWrapper {
 }
 
 func (d *DBWrapper) Query(query string, args ...interface{}) (*RowsWrapper, error) {
-	rows, err := d.db.Query(query, args)
+	rows, err := d.db.Query(query, args...)
 	return &RowsWrapper{rows: rows, executedQuery: query}, err
 }
 
 func (d *DBWrapper) Queryx(query string, args ...interface{}) (*RowsxWrapper, error) {
-	rows, err := d.db.Queryx(query, args)
+	rows, err := d.db.Queryx(query, args...)
 	return &RowsxWrapper{rows: rows, executedQuery: query}, err
 }
 
@@ -40,19 +40,15 @@ func (r *RowsWrapper) Next() bool {
 }
 
 func (r *RowsWrapper) Scan(dest ...interface{}) error {
-	return r.Scan(dest)
-}
-
-func (r *RowsWrapper) MapScan(dest map[string]interface{}) error {
-	return r.MapScan(dest)
+	return r.rows.Scan(dest...)
 }
 
 func (r *RowsWrapper) Columns() ([]string, error) {
-	return r.Columns()
+	return r.rows.Columns()
 }
 
 func (r *RowsWrapper) Close() error {
-	return r.Close()
+	return r.rows.Close()
 }
 
 type RowsxWrapper struct {
@@ -71,17 +67,17 @@ func (rx *RowsxWrapper) Next() bool {
 }
 
 func (rx *RowsxWrapper) Scan(dest ...interface{}) error {
-	return rx.Scan(dest)
+	return rx.rows.Scan(dest...)
 }
 
 func (rx *RowsxWrapper) MapScan(dest map[string]interface{}) error {
-	return rx.MapScan(dest)
+	return rx.rows.MapScan(dest)
 }
 
 func (rx *RowsxWrapper) Columns() ([]string, error) {
-	return rx.Columns()
+	return rx.rows.Columns()
 }
 
 func (rx *RowsxWrapper) Close() error {
-	return rx.Close()
+	return rx.rows.Close()
 }
