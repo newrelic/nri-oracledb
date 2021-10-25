@@ -48,7 +48,7 @@ func TestRowsWrapper_Next(t *testing.T) {
 			}
 
 			_ = rows.Next()
-			if rows.count != tt.countExpected {
+			if rows.ScannedRowsCount() != tt.countExpected {
 				t.Errorf("Expected rows count: %d got %d", tt.countExpected, rows.count)
 			}
 		})
@@ -97,7 +97,7 @@ func TestRowsxWrapper_Next(t *testing.T) {
 			}
 
 			_ = rowsx.Next()
-			if rowsx.count != tt.countExpected {
+			if rowsx.ScannedRowsCount() != tt.countExpected {
 				t.Errorf("Expected rows count: %d got %d", tt.countExpected, rowsx.count)
 			}
 		})

@@ -160,6 +160,7 @@ func createInstanceIDLookup(db database.DBWrapper) (map[string]string, error) {
 	}
 
 	defer func() {
+		checkAndLogEmptyQueryResult(instanceQuery, rows)
 		err := rows.Close()
 		if err != nil {
 			log.Error("Failed to close rows: %s", err)
@@ -184,4 +185,10 @@ func createInstanceIDLookup(db database.DBWrapper) (map[string]string, error) {
 	}
 
 	return lookup, nil
+}
+
+func checkAndLogEmptyQueryResult(executedQuery string, rows database.Rows) {
+	if rows.ScannedRowsCount() < 1 {
+		log.Warn("Query did not return any results: %s", executedQuery)
+	}
 }

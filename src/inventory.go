@@ -44,6 +44,7 @@ func collectInventory(db database.DBWrapper, wg *sync.WaitGroup, i *integration.
 		return
 	}
 	defer func() {
+		checkAndLogEmptyQueryResult(sqlQuery, rows)
 		err := rows.Close()
 		if err != nil {
 			log.Error("Failed to close rows: %s", err)
@@ -51,7 +52,6 @@ func collectInventory(db database.DBWrapper, wg *sync.WaitGroup, i *integration.
 	}()
 
 	for rows.Next() {
-
 		// Scan the row into a struct
 		var inventoryResultRow inventoryRow
 		err := rows.Scan(&inventoryResultRow.instID, &inventoryResultRow.name, &inventoryResultRow.value, &inventoryResultRow.description)

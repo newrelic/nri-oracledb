@@ -274,6 +274,7 @@ func queryNumTablespaces(db database.DBWrapper) (int, error) {
 		return 0, err
 	}
 	defer func() {
+		checkAndLogEmptyQueryResult(tablespaceCountQuery, rows)
 		err := rows.Close()
 		if err != nil {
 			log.Error("Failed to close rows: %s", err)
@@ -333,6 +334,7 @@ func CollectCustomConfig(db database.DBWrapper, metricChan chan<- newrelicMetric
 		return
 	}
 	defer func() {
+		checkAndLogEmptyQueryResult(instanceQuery, instanceRows)
 		err := instanceRows.Close()
 		if err != nil {
 			log.Error("Failed to close rows: %s", err)
@@ -354,6 +356,7 @@ func CollectCustomConfig(db database.DBWrapper, metricChan chan<- newrelicMetric
 		return
 	}
 	defer func() {
+		checkAndLogEmptyQueryResult(cfg.Query, rows)
 		_ = rows.Close()
 	}()
 
