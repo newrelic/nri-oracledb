@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/newrelic/nri-oracledb/src/database"
 	"sync"
 	"testing"
 
@@ -9,6 +8,7 @@ import (
 	_ "github.com/godror/godror"
 	"github.com/jmoiron/sqlx"
 	"github.com/newrelic/infra-integrations-sdk/integration"
+	"github.com/newrelic/nri-oracledb/src/database"
 )
 
 func TestPopulateInventory(t *testing.T) {

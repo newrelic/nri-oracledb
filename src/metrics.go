@@ -2,17 +2,17 @@ package main
 
 import (
 	"fmt"
-	"github.com/newrelic/infra-integrations-sdk/data/attribute"
-	"github.com/newrelic/nri-oracledb/src/database"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"sync"
 
 	"github.com/godror/godror"
+	"github.com/newrelic/infra-integrations-sdk/data/attribute"
 	nrmetric "github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
+	"github.com/newrelic/nri-oracledb/src/database"
 	"gopkg.in/yaml.v2"
 )
 

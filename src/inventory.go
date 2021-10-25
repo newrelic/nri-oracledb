@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/newrelic/nri-oracledb/src/database"
 	"strconv"
 	"sync"
 
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
+	"github.com/newrelic/nri-oracledb/src/database"
 )
 
 // collectInventory queries the database for the inventory items, then populates

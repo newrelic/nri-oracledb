@@ -4,18 +4,18 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/godror/godror/dsn"
-	"github.com/newrelic/nri-oracledb/src/database"
 	"os"
 	"runtime"
 	"strings"
 	"sync"
 
 	"github.com/godror/godror"
+	"github.com/godror/godror/dsn"
 	"github.com/jmoiron/sqlx"
 	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
+	"github.com/newrelic/nri-oracledb/src/database"
 )
 
 type argumentList struct {

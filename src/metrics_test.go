@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/newrelic/nri-oracledb/src/database"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -11,6 +10,7 @@ import (
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/persist"
+	"github.com/newrelic/nri-oracledb/src/database"
 )
 
 func TestCollectMetrics(t *testing.T) {

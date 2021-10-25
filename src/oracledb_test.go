@@ -5,10 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/newrelic/nri-oracledb/src/database"
-
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
+	"github.com/newrelic/nri-oracledb/src/database"
 )
 
 func Test_parseTablespaceWhitelist(t *testing.T) {

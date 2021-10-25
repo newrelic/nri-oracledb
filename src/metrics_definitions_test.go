@@ -5,13 +5,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/newrelic/nri-oracledb/src/database"
-
-	"github.com/jmoiron/sqlx"
-	"github.com/newrelic/infra-integrations-sdk/data/metric"
-
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	"github.com/jmoiron/sqlx"
 	"github.com/kr/pretty"
+	"github.com/newrelic/infra-integrations-sdk/data/metric"
+	"github.com/newrelic/nri-oracledb/src/database"
 )
 
 func TestOracleTablespaceMetrics(t *testing.T) {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/newrelic/nri-oracledb/src/database"
 	"strconv"
 	"strings"
 	"sync"
@@ -10,6 +9,7 @@ import (
 	"github.com/godror/godror"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/log"
+	"github.com/newrelic/nri-oracledb/src/database"
 )
 
 const defaultCustomSampleType = "OracleCustomSample"
