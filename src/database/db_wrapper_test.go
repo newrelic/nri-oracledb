@@ -41,8 +41,8 @@ func TestRowsWrapper_Next(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mock.ExpectQuery(query).WillReturnRows(tt.returnedRows)
 
-			sqlxDb := sqlx.NewDb(db, "sqlmock")
-			dbWrapper := NewDBWrapper(sqlxDb)
+			sqlxDB := sqlx.NewDb(db, "sqlmock")
+			dbWrapper := NewDBWrapper(sqlxDB)
 
 			rows, err := dbWrapper.Query(query)
 			if !errors.Is(err, tt.errorExpected) {
@@ -90,8 +90,8 @@ func TestRowsxWrapper_Next(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mock.ExpectQuery(query).WillReturnRows(tt.returnedRows)
 
-			sqlxDb := sqlx.NewDb(db, "sqlmock")
-			dbWrapper := NewDBWrapper(sqlxDb)
+			sqlxDB := sqlx.NewDb(db, "sqlmock")
+			dbWrapper := NewDBWrapper(sqlxDB)
 
 			rowsx, err := dbWrapper.Queryx(query)
 			if !errors.Is(err, tt.errorExpected) {

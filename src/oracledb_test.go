@@ -2,9 +2,10 @@ package main
 
 import (
 	"errors"
-	"github.com/newrelic/nri-oracledb/src/database"
 	"reflect"
 	"testing"
+
+	"github.com/newrelic/nri-oracledb/src/database"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
@@ -60,8 +61,8 @@ func Test_createInstanceIDLookup_QueryFail(t *testing.T) {
 		FROM gv\$instance`).
 		WillReturnError(errors.New("error"))
 
-	sqlxDb := sqlx.NewDb(db, "sqlmock")
-	dbWrapper := database.NewDBWrapper(sqlxDb)
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDB)
 
 	_, err = createInstanceIDLookup(dbWrapper)
 	if err == nil {
@@ -93,8 +94,8 @@ func Test_createInstanceIDLookup(t *testing.T) {
 		"3": "three",
 	}
 
-	sqlxDb := sqlx.NewDb(db, "sqlmock")
-	dbWrapper := database.NewDBWrapper(sqlxDb)
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDB)
 
 	out, err := createInstanceIDLookup(dbWrapper)
 	if err != nil {
