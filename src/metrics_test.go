@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/newrelic/nri-oracledb/src/database"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -50,9 +51,10 @@ func TestCollectMetrics(t *testing.T) {
 	}
 
 	sqlxDb := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDb)
 	var populaterWg sync.WaitGroup
 	populaterWg.Add(1)
-	go collectMetrics(sqlxDb, &populaterWg, i, lookup, "", "")
+	go collectMetrics(dbWrapper, &populaterWg, i, lookup, "", "")
 	populaterWg.Wait()
 
 	if err := mock.ExpectationsWereMet(); err != nil {
@@ -207,8 +209,9 @@ func Test_collectTableSpaces_NoWhitelist_Ok(t *testing.T) {
 	var collectorWg sync.WaitGroup
 
 	sqlxDb := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDb)
 	collectorWg.Add(1)
-	go collectTableSpaces(sqlxDb, &collectorWg, metricChan)
+	go collectTableSpaces(dbWrapper, &collectorWg, metricChan)
 
 	collectorWg.Wait()
 
@@ -259,6 +262,7 @@ func Test_PopulateMetrics_FromCustomQueryFile(t *testing.T) {
 	)
 
 	sqlxDb := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDb)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -267,7 +271,7 @@ func Test_PopulateMetrics_FromCustomQueryFile(t *testing.T) {
 
 	results := []newrelicMetricSender{}
 
-	PopulateCustomMetricsFromFile(sqlxDb, &wg, ch, args.CustomMetricsConfig)
+	PopulateCustomMetricsFromFile(dbWrapper, &wg, ch, args.CustomMetricsConfig)
 
 	go func() {
 		wg.Wait()

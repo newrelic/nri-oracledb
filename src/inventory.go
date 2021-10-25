@@ -2,17 +2,17 @@ package main
 
 import (
 	"fmt"
+	"github.com/newrelic/nri-oracledb/src/database"
 	"strconv"
 	"sync"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
 )
 
 // collectInventory queries the database for the inventory items, then populates
 // the integration with the results
-func collectInventory(db *sqlx.DB, wg *sync.WaitGroup, i *integration.Integration, instanceLookUp map[string]string) {
+func collectInventory(db database.DBWrapper, wg *sync.WaitGroup, i *integration.Integration, instanceLookUp map[string]string) {
 	defer wg.Done()
 
 	const sqlQuery = `

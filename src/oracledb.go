@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/godror/godror/dsn"
+	"github.com/newrelic/nri-oracledb/src/database"
 	"os"
 	"runtime"
 	"strings"
@@ -84,17 +85,19 @@ func main() {
 
 	var populaterWg sync.WaitGroup
 
-	instanceLookUp, err := createInstanceIDLookup(db)
+	dbWrapper := database.NewDBWrapper(db)
+
+	instanceLookUp, err := createInstanceIDLookup(dbWrapper)
 	exitOnErr(err)
 
 	if args.HasMetrics() {
 		populaterWg.Add(1)
-		go collectMetrics(db, &populaterWg, i, instanceLookUp, args.CustomMetricsQuery, args.CustomMetricsConfig)
+		go collectMetrics(dbWrapper, &populaterWg, i, instanceLookUp, args.CustomMetricsQuery, args.CustomMetricsConfig)
 	}
 
 	if args.HasInventory() {
 		populaterWg.Add(1)
-		go collectInventory(db, &populaterWg, i, instanceLookUp)
+		go collectInventory(dbWrapper, &populaterWg, i, instanceLookUp)
 	}
 
 	populaterWg.Wait()
@@ -145,7 +148,7 @@ func parseTablespaceWhitelist() error {
 	return json.Unmarshal([]byte(args.Tablespaces), &tablespaceWhiteList)
 }
 
-func createInstanceIDLookup(db *sqlx.DB) (map[string]string, error) {
+func createInstanceIDLookup(db database.DBWrapper) (map[string]string, error) {
 	const instanceQuery = `SELECT
 		INSTANCE_NAME, INST_ID
 		FROM gv$instance`

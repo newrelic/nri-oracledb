@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/newrelic/nri-oracledb/src/database"
 	"sync"
 	"testing"
 
@@ -37,8 +38,9 @@ func TestPopulateInventory(t *testing.T) {
 	}
 
 	sqlxDb := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDb)
 	wg.Add(1)
-	go collectInventory(sqlxDb, &wg, i, lookup)
+	go collectInventory(dbWrapper, &wg, i, lookup)
 	wg.Wait()
 
 	marshalled, _ := i.MarshalJSON()

@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"github.com/newrelic/nri-oracledb/src/database"
 	"reflect"
 	"testing"
 
@@ -60,8 +61,9 @@ func Test_createInstanceIDLookup_QueryFail(t *testing.T) {
 		WillReturnError(errors.New("error"))
 
 	sqlxDb := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDb)
 
-	_, err = createInstanceIDLookup(sqlxDb)
+	_, err = createInstanceIDLookup(dbWrapper)
 	if err == nil {
 		t.Error("Did not return expected error")
 	}
@@ -92,7 +94,9 @@ func Test_createInstanceIDLookup(t *testing.T) {
 	}
 
 	sqlxDb := sqlx.NewDb(db, "sqlmock")
-	out, err := createInstanceIDLookup(sqlxDb)
+	dbWrapper := database.NewDBWrapper(sqlxDb)
+
+	out, err := createInstanceIDLookup(dbWrapper)
 	if err != nil {
 		t.Errorf("Unexpected Error %s", err.Error())
 		t.FailNow()
