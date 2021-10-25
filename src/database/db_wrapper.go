@@ -32,9 +32,13 @@ type RowsWrapper struct {
 
 func (r *RowsWrapper) Next() bool {
 	n := r.rows.Next()
-	if !n && r.count < 1 {
-		log.Warn("Query did not return any results: %s", r.executedQuery)
+	if !n {
+		if r.count < 1 {
+			log.Warn("Query did not return any results: %s", r.executedQuery)
+		}
+		return n
 	}
+
 	r.count++
 	return n
 }
@@ -59,9 +63,13 @@ type RowsxWrapper struct {
 
 func (rx *RowsxWrapper) Next() bool {
 	n := rx.rows.Next()
-	if !n && rx.count < 1 {
-		log.Warn("Query did not return any results: %s", rx.executedQuery)
+	if !n {
+		if rx.count < 1 {
+			log.Warn("Query did not return any results: %s", rx.executedQuery)
+		}
+		return n
 	}
+
 	rx.count++
 	return n
 }
