@@ -7,6 +7,7 @@ import (
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
+	"github.com/newrelic/nri-oracledb/src/database"
 )
 
 func Test_parseTablespaceWhitelist(t *testing.T) {
@@ -59,9 +60,10 @@ func Test_createInstanceIDLookup_QueryFail(t *testing.T) {
 		FROM gv\$instance`).
 		WillReturnError(errors.New("error"))
 
-	sqlxDb := sqlx.NewDb(db, "sqlmock")
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDB)
 
-	_, err = createInstanceIDLookup(sqlxDb)
+	_, err = createInstanceIDLookup(dbWrapper)
 	if err == nil {
 		t.Error("Did not return expected error")
 	}
@@ -91,8 +93,10 @@ func Test_createInstanceIDLookup(t *testing.T) {
 		"3": "three",
 	}
 
-	sqlxDb := sqlx.NewDb(db, "sqlmock")
-	out, err := createInstanceIDLookup(sqlxDb)
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDB)
+
+	out, err := createInstanceIDLookup(dbWrapper)
 	if err != nil {
 		t.Errorf("Unexpected Error %s", err.Error())
 		t.FailNow()

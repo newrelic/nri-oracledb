@@ -2,23 +2,23 @@ package main
 
 import (
 	"fmt"
-	"github.com/newrelic/infra-integrations-sdk/data/attribute"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"sync"
 
 	"github.com/godror/godror"
-	"github.com/jmoiron/sqlx"
+	"github.com/newrelic/infra-integrations-sdk/data/attribute"
 	nrmetric "github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
+	"github.com/newrelic/nri-oracledb/src/database"
 	"gopkg.in/yaml.v2"
 )
 
 // collectMetrics spins off goroutines for each of the metric groups, which
 // send their metrics to the populateMetrics goroutine
-func collectMetrics(db *sqlx.DB, populaterWg *sync.WaitGroup, i *integration.Integration, instanceLookUp map[string]string, customMetricsQuery string, customMetricsConfig string) {
+func collectMetrics(db database.DBWrapper, populaterWg *sync.WaitGroup, i *integration.Integration, instanceLookUp map[string]string, customMetricsQuery string, customMetricsConfig string) {
 	defer populaterWg.Done()
 
 	var collectorWg sync.WaitGroup
@@ -238,7 +238,7 @@ func createCustomMetricSet(sampleName string, instanceID string, i *integration.
 const maxTablespaces = 200
 const tablespaceCountQuery = `SELECT count(1) FROM DBA_TABLESPACES WHERE TABLESPACE_NAME <> 'TEMP'`
 
-func collectTableSpaces(db *sqlx.DB, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
+func collectTableSpaces(db database.DBWrapper, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
 	defer wg.Done()
 
 	// Get count from database
@@ -268,12 +268,13 @@ func collectTableSpaces(db *sqlx.DB, wg *sync.WaitGroup, metricChan chan<- newre
 
 }
 
-func queryNumTablespaces(db *sqlx.DB) (int, error) {
+func queryNumTablespaces(db database.DBWrapper) (int, error) {
 	rows, err := db.Query(tablespaceCountQuery)
 	if err != nil {
 		return 0, err
 	}
 	defer func() {
+		checkAndLogEmptyQueryResult(tablespaceCountQuery, rows)
 		err := rows.Close()
 		if err != nil {
 			log.Error("Failed to close rows: %s", err)
@@ -292,7 +293,7 @@ func queryNumTablespaces(db *sqlx.DB) (int, error) {
 }
 
 // PopulateCustomMetricsFromFile collects metrics defined by a custom config file
-func PopulateCustomMetricsFromFile(db *sqlx.DB, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender, configFile string) {
+func PopulateCustomMetricsFromFile(db database.DBWrapper, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender, configFile string) {
 	defer wg.Done()
 
 	contents, err := ioutil.ReadFile(configFile)
@@ -325,7 +326,7 @@ func PopulateCustomMetricsFromFile(db *sqlx.DB, wg *sync.WaitGroup, metricChan c
 }
 
 // CollectCustomConfig collects metrics defined by a custom config
-func CollectCustomConfig(db *sqlx.DB, metricChan chan<- newrelicMetricSender, cfg customMetricsConfig) {
+func CollectCustomConfig(db database.DBWrapper, metricChan chan<- newrelicMetricSender, cfg customMetricsConfig) {
 	instanceQuery := `SELECT INSTANCE_NUMBER FROM v$instance`
 	instanceRows, err := db.Queryx(instanceQuery)
 	if err != nil {
@@ -333,6 +334,7 @@ func CollectCustomConfig(db *sqlx.DB, metricChan chan<- newrelicMetricSender, cf
 		return
 	}
 	defer func() {
+		checkAndLogEmptyQueryResult(instanceQuery, instanceRows)
 		err := instanceRows.Close()
 		if err != nil {
 			log.Error("Failed to close rows: %s", err)
@@ -354,6 +356,7 @@ func CollectCustomConfig(db *sqlx.DB, metricChan chan<- newrelicMetricSender, cf
 		return
 	}
 	defer func() {
+		checkAndLogEmptyQueryResult(cfg.Query, rows)
 		_ = rows.Close()
 	}()
 

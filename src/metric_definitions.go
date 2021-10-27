@@ -1,16 +1,15 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/godror/godror"
-	"github.com/jmoiron/sqlx"
 	"github.com/newrelic/infra-integrations-sdk/data/metric"
 	"github.com/newrelic/infra-integrations-sdk/log"
+	"github.com/newrelic/nri-oracledb/src/database"
 )
 
 const defaultCustomSampleType = "OracleCustomSample"
@@ -50,12 +49,12 @@ type newrelicMetricSender struct {
 type oracleMetricGroup struct {
 	sqlQuery         func() string
 	metrics          []*oracleMetric
-	metricsGenerator func(*sql.Rows, []*oracleMetric, chan<- newrelicMetricSender) error
+	metricsGenerator func(database.Rows, []*oracleMetric, chan<- newrelicMetricSender) error
 }
 
 // Collect is a method on oracleMetricGroups which collects the metrics defined
 // by the metric group and sends them down the channel passed to it
-func (mg *oracleMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
+func (mg *oracleMetricGroup) Collect(db database.DBWrapper, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
 	defer wg.Done()
 
 	rows, err := db.Query(mg.sqlQuery())
@@ -64,6 +63,7 @@ func (mg *oracleMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan
 		return
 	}
 	defer func() {
+		checkAndLogEmptyQueryResult(mg.sqlQuery(), rows)
 		err := rows.Close()
 		if err != nil {
 			log.Error("Failed to close rows: %s", err)
@@ -92,8 +92,7 @@ func getInstanceIDString(originalID interface{}) string {
 	}
 }
 
-func columnMetricsGenerator(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
-
+func columnMetricsGenerator(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
 	columnNames, err := rows.Columns()
 	if err != nil {
 		return fmt.Errorf("failed to retrieve columns from rows")
@@ -145,7 +144,7 @@ type customMetricGroup struct {
 
 // Collect is a method on oracleMetricGroups which collects the metrics defined
 // by the metric group and sends them down the channel passed to it
-func (mg *customMetricGroup) Collect(db *sqlx.DB, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
+func (mg *customMetricGroup) Collect(db database.DBWrapper, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
 	defer wg.Done()
 
 	rows, err := db.Queryx(`SELECT INSTANCE_NUMBER FROM v$instance`)
@@ -508,7 +507,7 @@ var oracleSysstat = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
 
 		var sysScanner struct {
 			value  int
@@ -574,7 +573,7 @@ var oracleSGA = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
 
 		var sysScanner struct {
 			value  int
@@ -714,7 +713,7 @@ var oracleRedoLogWaits = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
 
 		var sysScanner struct {
 			totalWaits int
@@ -794,7 +793,7 @@ var oraclePDBDatafilesOffline = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
 
 		columnNames, err := rows.Columns()
 		if err != nil {
@@ -881,7 +880,7 @@ var oracleCDBDatafilesOffline = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
 
 		columnNames, err := rows.Columns()
 		if err != nil {
@@ -958,7 +957,7 @@ var oracleLockedAccounts = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
 
 		columnNames, err := rows.Columns()
 		if err != nil {
@@ -1043,7 +1042,7 @@ var oraclePDBNonWrite = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
 
 		columnNames, err := rows.Columns()
 		if err != nil {
@@ -1154,7 +1153,7 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
 
 		columnNames, err := rows.Columns()
 		if err != nil {
@@ -1225,7 +1224,7 @@ var globalNameInstanceMetric = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
 
 		type pgaRow struct {
 			instID int
@@ -1282,7 +1281,7 @@ var globalNameTablespaceMetric = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
 
 		type pgaRow struct {
 			tableName string
@@ -1339,7 +1338,7 @@ var dbIDInstanceMetric = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
 
 		type pgaRow struct {
 			instID int
@@ -1396,7 +1395,7 @@ var dbIDTablespaceMetric = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
 
 		type pgaRow struct {
 			tableName string
@@ -1488,7 +1487,7 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
 
 		columnNames, err := rows.Columns()
 		if err != nil {
@@ -1568,7 +1567,7 @@ var oraclePgaMetrics = oracleMetricGroup{
 			identifier:    "global memory bound",
 		},
 	},
-	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
 
 		type pgaRow struct {
 			instID int
@@ -2423,7 +2422,7 @@ var oracleSysMetrics = oracleMetricGroup{
 			defaultMetric: true,
 		},
 	},
-	metricsGenerator: func(rows *sql.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
+	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
 
 		var sysScanner struct {
 			instID     int

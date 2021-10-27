@@ -5,14 +5,14 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/newrelic/infra-integrations-sdk/integration"
 	"github.com/newrelic/infra-integrations-sdk/log"
+	"github.com/newrelic/nri-oracledb/src/database"
 )
 
 // collectInventory queries the database for the inventory items, then populates
 // the integration with the results
-func collectInventory(db *sqlx.DB, wg *sync.WaitGroup, i *integration.Integration, instanceLookUp map[string]string) {
+func collectInventory(db database.DBWrapper, wg *sync.WaitGroup, i *integration.Integration, instanceLookUp map[string]string) {
 	defer wg.Done()
 
 	const sqlQuery = `
@@ -44,6 +44,7 @@ func collectInventory(db *sqlx.DB, wg *sync.WaitGroup, i *integration.Integratio
 		return
 	}
 	defer func() {
+		checkAndLogEmptyQueryResult(sqlQuery, rows)
 		err := rows.Close()
 		if err != nil {
 			log.Error("Failed to close rows: %s", err)
@@ -51,7 +52,6 @@ func collectInventory(db *sqlx.DB, wg *sync.WaitGroup, i *integration.Integratio
 	}()
 
 	for rows.Next() {
-
 		// Scan the row into a struct
 		var inventoryResultRow inventoryRow
 		err := rows.Scan(&inventoryResultRow.instID, &inventoryResultRow.name, &inventoryResultRow.value, &inventoryResultRow.description)

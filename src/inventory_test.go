@@ -8,6 +8,7 @@ import (
 	_ "github.com/godror/godror"
 	"github.com/jmoiron/sqlx"
 	"github.com/newrelic/infra-integrations-sdk/integration"
+	"github.com/newrelic/nri-oracledb/src/database"
 )
 
 func TestPopulateInventory(t *testing.T) {
@@ -36,9 +37,10 @@ func TestPopulateInventory(t *testing.T) {
 		"1": "MyInstance",
 	}
 
-	sqlxDb := sqlx.NewDb(db, "sqlmock")
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDB)
 	wg.Add(1)
-	go collectInventory(sqlxDb, &wg, i, lookup)
+	go collectInventory(dbWrapper, &wg, i, lookup)
 	wg.Wait()
 
 	marshalled, _ := i.MarshalJSON()
