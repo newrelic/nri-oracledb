@@ -189,6 +189,6 @@ func createInstanceIDLookup(db database.DBWrapper) (map[string]string, error) {
 
 func checkAndLogEmptyQueryResult(executedQuery string, rows database.Rows) {
 	if rows.ScannedRowsCount() == 0 {
-		log.Warn("Query did not return any results: %s", executedQuery)
+		log.Warn("Query did not return any results: %s", strings.Join(strings.Fields(executedQuery), " "))
 	}
 }
