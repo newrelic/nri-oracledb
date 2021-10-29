@@ -155,7 +155,7 @@ func createInstanceIDLookup(db database.DBWrapper) (map[string]string, error) {
 
 	rows, err := db.Query(instanceQuery)
 	if err != nil {
-		log.Error("Failed running query: %s", instanceQuery)
+		log.Error("Failed running query: %s", formatQueryForLogging(instanceQuery))
 		return nil, err
 	}
 
@@ -189,6 +189,10 @@ func createInstanceIDLookup(db database.DBWrapper) (map[string]string, error) {
 
 func checkAndLogEmptyQueryResult(executedQuery string, rows database.Rows) {
 	if rows.ScannedRowsCount() == 0 {
-		log.Warn("Query did not return any results: %s", strings.Join(strings.Fields(executedQuery), " "))
+		log.Warn("Query did not return any results: %s", formatQueryForLogging(executedQuery))
 	}
+}
+
+func formatQueryForLogging(query string) string {
+	return strings.Join(strings.Fields(query), " ")
 }
