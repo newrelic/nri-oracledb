@@ -59,7 +59,7 @@ func (mg *oracleMetricGroup) Collect(db database.DBWrapper, wg *sync.WaitGroup, 
 
 	rows, err := db.Query(mg.sqlQuery())
 	if err != nil {
-		log.Error("Failed to execute query %s: %s", mg.sqlQuery(), err)
+		log.Error("Failed to execute query %s: %s", formatQueryForLogging(mg.sqlQuery()), err)
 		return
 	}
 	defer func() {
@@ -71,7 +71,7 @@ func (mg *oracleMetricGroup) Collect(db database.DBWrapper, wg *sync.WaitGroup, 
 	}()
 
 	if err = mg.metricsGenerator(rows, mg.metrics, metricChan); err != nil {
-		log.Error("Failed to generate metrics from db response for query %s: %s", mg.sqlQuery(), err)
+		log.Error("Failed to generate metrics from db response for query %s: %s", formatQueryForLogging(mg.sqlQuery()), err)
 		return
 	}
 }
@@ -149,7 +149,7 @@ func (mg *customMetricGroup) Collect(db database.DBWrapper, wg *sync.WaitGroup, 
 
 	rows, err := db.Queryx(`SELECT INSTANCE_NUMBER FROM v$instance`)
 	if err != nil {
-		log.Error("Failed to execute query %s: %s", mg.Query, err)
+		log.Error("Failed to execute query %s: %s", formatQueryForLogging(mg.Query), err)
 		return
 	}
 	defer func() {
@@ -163,14 +163,14 @@ func (mg *customMetricGroup) Collect(db database.DBWrapper, wg *sync.WaitGroup, 
 	for rows.Next() {
 		err = rows.Scan(&instanceID)
 		if err != nil {
-			log.Error("Failed to get instance ID %s: %s", mg.Query, err)
+			log.Error("Failed to get instance ID %s: %s", formatQueryForLogging(mg.Query), err)
 			return
 		}
 	}
 
 	rows, err = db.Queryx(mg.Query)
 	if err != nil {
-		log.Error("Failed to execute query %s: %s", mg.Query, err)
+		log.Error("Failed to execute query %s: %s", formatQueryForLogging(mg.Query), err)
 		return
 	}
 	defer func() {

@@ -330,7 +330,7 @@ func CollectCustomConfig(db database.DBWrapper, metricChan chan<- newrelicMetric
 	instanceQuery := `SELECT INSTANCE_NUMBER FROM v$instance`
 	instanceRows, err := db.Queryx(instanceQuery)
 	if err != nil {
-		log.Error("Failed to execute query %s: %s", instanceQuery, err)
+		log.Error("Failed to execute query %s: %s", formatQueryForLogging(instanceQuery), err)
 		return
 	}
 	defer func() {
@@ -345,14 +345,14 @@ func CollectCustomConfig(db database.DBWrapper, metricChan chan<- newrelicMetric
 	for instanceRows.Next() {
 		err = instanceRows.Scan(&instanceID)
 		if err != nil {
-			log.Error("Failed to get instance ID %s: %s", instanceQuery, err)
+			log.Error("Failed to get instance ID %s: %s", formatQueryForLogging(instanceQuery), err)
 			return
 		}
 	}
 
 	rows, err := db.Queryx(cfg.Query)
 	if err != nil {
-		log.Error("Could not execute database query: %s", err.Error())
+		log.Error("Could not execute database query %s: %s", formatQueryForLogging(cfg.Query), err.Error())
 		return
 	}
 	defer func() {
