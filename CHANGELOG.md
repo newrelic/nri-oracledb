@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## 3.1.1 (2022-01-10)
 ### Changed
-- Added warning log when a query returns no results (87)
+- Added warning log when a query returns no results (#87)
 - Fix missing event type on custom metric config (#86)
 - Strip spaces from logged result query (#88)
 
