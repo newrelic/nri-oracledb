@@ -508,7 +508,6 @@ var oracleSysstat = oracleMetricGroup{
 	},
 
 	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
-
 		var sysScanner struct {
 			value  int
 			instID int
@@ -574,7 +573,6 @@ var oracleSGA = oracleMetricGroup{
 	},
 
 	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
-
 		var sysScanner struct {
 			value  int
 			instID int
@@ -714,7 +712,6 @@ var oracleRedoLogWaits = oracleMetricGroup{
 	},
 
 	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
-
 		var sysScanner struct {
 			totalWaits int
 			instID     int
@@ -794,7 +791,6 @@ var oraclePDBDatafilesOffline = oracleMetricGroup{
 	},
 
 	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
-
 		columnNames, err := rows.Columns()
 		if err != nil {
 			return fmt.Errorf("failed to retrieve columns from rows")
@@ -881,7 +877,6 @@ var oracleCDBDatafilesOffline = oracleMetricGroup{
 	},
 
 	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
-
 		columnNames, err := rows.Columns()
 		if err != nil {
 			return fmt.Errorf("failed to retrieve columns from rows")
@@ -958,7 +953,6 @@ var oracleLockedAccounts = oracleMetricGroup{
 	},
 
 	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
-
 		columnNames, err := rows.Columns()
 		if err != nil {
 			return fmt.Errorf("failed to retrieve columns from rows")
@@ -1030,7 +1024,6 @@ var oraclePDBNonWrite = oracleMetricGroup{
 		query += `
 		GROUP BY TABLESPACE_NAME`
 		return query
-
 	},
 
 	metrics: []*oracleMetric{
@@ -1043,7 +1036,6 @@ var oraclePDBNonWrite = oracleMetricGroup{
 	},
 
 	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
-
 		columnNames, err := rows.Columns()
 		if err != nil {
 			return fmt.Errorf("failed to retrieve columns from rows")
@@ -1095,16 +1087,17 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 		query := `
 			SELECT a.TABLESPACE_NAME,
 				a.USED_PERCENT,
-				a.USED_SPACE AS "USED",
-				a.TABLESPACE_SIZE AS "SIZE",
+				a.USED_SPACE * b.BLOCK_SIZE AS "USED",
+				a.TABLESPACE_SIZE * b.BLOCK_SIZE AS "SIZE",
 				b.TABLESPACE_OFFLINE AS "OFFLINE"
 			FROM DBA_TABLESPACE_USAGE_METRICS a
 			JOIN (
 				SELECT
 					TABLESPACE_NAME,
+					BLOCK_SIZE,
 					MAX( CASE WHEN status = 'OFFLINE' THEN 1 ELSE 0 END) AS "TABLESPACE_OFFLINE"
 				FROM DBA_TABLESPACES
-				GROUP BY TABLESPACE_NAME
+				GROUP BY TABLESPACE_NAME, BLOCK_SIZE
 			) b
 			ON a.TABLESPACE_NAME = b.TABLESPACE_NAME`
 
@@ -1154,7 +1147,6 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 	},
 
 	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
-
 		columnNames, err := rows.Columns()
 		if err != nil {
 			return fmt.Errorf("failed to retrieve columns from rows")
@@ -1225,7 +1217,6 @@ var globalNameInstanceMetric = oracleMetricGroup{
 	},
 
 	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
-
 		type pgaRow struct {
 			instID int
 			value  string
@@ -1282,7 +1273,6 @@ var globalNameTablespaceMetric = oracleMetricGroup{
 	},
 
 	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
-
 		type pgaRow struct {
 			tableName string
 			value     string
@@ -1339,7 +1329,6 @@ var dbIDInstanceMetric = oracleMetricGroup{
 	},
 
 	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
-
 		type pgaRow struct {
 			instID int
 			value  string
@@ -1396,7 +1385,6 @@ var dbIDTablespaceMetric = oracleMetricGroup{
 	},
 
 	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
-
 		type pgaRow struct {
 			tableName string
 			value     string
@@ -1488,7 +1476,6 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 	},
 
 	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
-
 		columnNames, err := rows.Columns()
 		if err != nil {
 			return fmt.Errorf("failed to get column names from rows")
@@ -1568,7 +1555,6 @@ var oraclePgaMetrics = oracleMetricGroup{
 		},
 	},
 	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricChan chan<- newrelicMetricSender) error {
-
 		type pgaRow struct {
 			instID int
 			name   string
@@ -2423,7 +2409,6 @@ var oracleSysMetrics = oracleMetricGroup{
 		},
 	},
 	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
-
 		var sysScanner struct {
 			instID     int
 			metricName string
