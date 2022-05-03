@@ -40,7 +40,13 @@ func TestPopulateInventory(t *testing.T) {
 	sqlxDB := sqlx.NewDb(db, "sqlmock")
 	dbWrapper := database.NewDBWrapper(sqlxDB)
 	wg.Add(1)
-	go collectInventory(dbWrapper, &wg, i, lookup)
+	ic := inventoryCollector{
+		integration:    i,
+		db:             dbWrapper,
+		wg:             &wg,
+		instanceLookUp: lookup,
+	}
+	go ic.collectInventory()
 	wg.Wait()
 
 	marshalled, _ := i.MarshalJSON()
@@ -49,5 +55,4 @@ func TestPopulateInventory(t *testing.T) {
 	if string(marshalled) != expectedMarshalled {
 		t.Errorf("Expected %s, got %s", expectedMarshalled, marshalled)
 	}
-
 }

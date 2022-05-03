@@ -105,7 +105,13 @@ func main() {
 
 	if args.HasInventory() {
 		populaterWg.Add(1)
-		go collectInventory(dbWrapper, &populaterWg, i, instanceLookUp)
+		ic := inventoryCollector{
+			integration:    i,
+			db:             dbWrapper,
+			wg:             &populaterWg,
+			instanceLookUp: instanceLookUp,
+		}
+		go ic.collectInventory()
 	}
 
 	populaterWg.Wait()
