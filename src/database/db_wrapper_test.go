@@ -46,7 +46,7 @@ func TestRowsWrapper_Next(t *testing.T) {
 
 			rows, err := dbWrapper.Query(query)
 			if !errors.Is(err, tt.errorExpected) {
-				t.Errorf("Error not expected got: %w", err)
+				t.Errorf("Error not expected got: %s", err)
 			}
 
 			_ = rows.Next()
@@ -95,7 +95,7 @@ func TestRowsxWrapper_Next(t *testing.T) {
 
 			rowsx, err := dbWrapper.Queryx(query)
 			if !errors.Is(err, tt.errorExpected) {
-				t.Errorf("Error not expected got: %w", err)
+				t.Errorf("Error not expected got: %s", err)
 			}
 
 			_ = rowsx.Next()
