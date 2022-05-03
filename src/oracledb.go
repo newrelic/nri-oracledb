@@ -92,7 +92,15 @@ func main() {
 
 	if args.HasMetrics() {
 		populaterWg.Add(1)
-		go collectMetrics(dbWrapper, &populaterWg, i, instanceLookUp, args.CustomMetricsQuery, args.CustomMetricsConfig)
+		mc := metricsCollector{
+			integration:         i,
+			db:                  dbWrapper,
+			wg:                  &populaterWg,
+			instanceLookUp:      instanceLookUp,
+			customMetricsQuery:  args.CustomMetricsQuery,
+			customMetricsConfig: args.CustomMetricsConfig,
+		}
+		go mc.collectMetrics()
 	}
 
 	if args.HasInventory() {

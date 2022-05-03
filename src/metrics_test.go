@@ -54,13 +54,18 @@ func TestCollectMetrics(t *testing.T) {
 	dbWrapper := database.NewDBWrapper(sqlxDb)
 	var populaterWg sync.WaitGroup
 	populaterWg.Add(1)
-	go collectMetrics(dbWrapper, &populaterWg, i, lookup, "", "")
+	mc := metricsCollector{
+		integration:    i,
+		db:             dbWrapper,
+		wg:             &populaterWg,
+		instanceLookUp: lookup,
+	}
+	go mc.collectMetrics()
 	populaterWg.Wait()
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Error(err)
 	}
-
 }
 
 func TestGetOrCreateMetricSet(t *testing.T) {
@@ -114,7 +119,6 @@ func TestGetOrCreateMetricSet(t *testing.T) {
 }
 
 func TestPopulateMetrics(t *testing.T) {
-
 	args = argumentList{
 		Hostname:    "testhost",
 		Port:        "1234",
@@ -289,5 +293,4 @@ func Test_PopulateMetrics_FromCustomQueryFile(t *testing.T) {
 	if len(results) != 2 {
 		t.Errorf("expected 2 results, got %v", len(results))
 	}
-
 }
