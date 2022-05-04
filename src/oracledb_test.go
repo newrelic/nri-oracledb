@@ -10,19 +10,19 @@ import (
 	"github.com/newrelic/nri-oracledb/src/database"
 )
 
-func Test_parseTablespaceWhitelist(t *testing.T) {
+func Test_parseJsonConfigBasedlist(t *testing.T) {
 	testCases := []struct {
 		name string
 		arg  string
 		want []string
 	}{
 		{
-			"No Whitelist",
+			"nil list",
 			"",
 			nil,
 		},
 		{
-			"Whitelist",
+			"list",
 			`["one", "two", "three"]`,
 			[]string{"one", "two", "three"},
 		},
@@ -35,14 +35,25 @@ func Test_parseTablespaceWhitelist(t *testing.T) {
 
 	for _, tc := range testCases {
 		args.Tablespaces = tc.arg
+		args.SkipMetricsGroups = tc.arg
 		tablespaceWhiteList = nil
 		if err := parseTablespaceWhitelist(); err != nil {
-			t.Errorf("Test Case %s Failed: Unexpected error: %s", tc.name, err.Error())
+			t.Errorf("Test case %s failed to parse tablespaces %s", tc.name, err.Error())
 			t.FailNow()
 		}
 
 		if !reflect.DeepEqual(tablespaceWhiteList, tc.want) {
-			t.Errorf("Test Case %s Failed: Expected '%+v', got '%+v'", tc.name, tc.want, tablespaceWhiteList)
+			t.Errorf("Test case %s failed: Expected tablespace '%+v', got '%+v'", tc.name, tc.want, tablespaceWhiteList)
+		}
+
+		mg, err := parseSkipMetricsGroups()
+		if err != nil {
+			t.Errorf("Test case %s failed to parse metrics group %s", tc.name, err.Error())
+			t.FailNow()
+		}
+
+		if !reflect.DeepEqual(mg, tc.want) {
+			t.Errorf("Test Case %s Failed: Expected metric group '%+v', got '%+v'", tc.name, tc.want, tablespaceWhiteList)
 		}
 	}
 }

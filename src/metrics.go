@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/godror/godror"
@@ -23,6 +24,7 @@ type metricsCollector struct {
 	instanceLookUp      map[string]string
 	customMetricsQuery  string
 	customMetricsConfig string
+	skipMetricsGroups   []string
 }
 
 // collect spins off goroutines for each of the metric groups, which
@@ -67,6 +69,10 @@ func (mc *metricsCollector) collect() {
 	}
 
 	for _, collection := range baseCollections {
+		if mc.skipGroup(collection.name) {
+			log.Debug("Metric group %s skipped.", collection.name)
+			continue
+		}
 		collectorWg.Add(1)
 		c := collection
 		go c.Collect(mc.db, &collectorWg, metricChan)
@@ -91,6 +97,15 @@ func (mc *metricsCollector) collect() {
 
 	// Create a goroutine to read from the metric channel and insert the metrics
 	populateMetrics(metricChan, mc.integration, mc.instanceLookUp)
+}
+
+func (mc *metricsCollector) skipGroup(metricGroup string) bool {
+	for _, skipMetricsGroup := range mc.skipMetricsGroups {
+		if strings.EqualFold(skipMetricsGroup, metricGroup) {
+			return true
+		}
+	}
+	return false
 }
 
 // populateMetrics reads metrics from the metricChan, then populates the correct
