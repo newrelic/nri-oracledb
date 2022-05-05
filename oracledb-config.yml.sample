@@ -40,6 +40,13 @@ integrations:
     #     INST_ID AS "inst_id"
     #   FROM gv$filestat
     #   GROUP BY INST_ID
+
+    # Metrics collected are grouped together depending on the query used to obtain the data. 
+    # These metric groups are defined in https://github.com/newrelic/nri-oracledb/blob/master/src/metric_definitions.go
+    # and can be skipped from collection by adding the name of the group to SKIP_METRICS_GROUPS in Json array format.
+    # By default no group is skipped.
+    # SKIP_METRICS_GROUPS: '["sgauga_total_memory"]'
+
   interval: 15s
   labels:
     env: production

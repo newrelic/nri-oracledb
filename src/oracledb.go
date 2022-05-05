@@ -29,6 +29,7 @@ type argumentList struct {
 	Tablespaces           string `default:"" help:"JSON Array of Tablespaces to collect. If empty will collect all tablespaces."`
 	Port                  string `default:"1521" help:"The OracleDB connection port"`
 	ExtendedMetrics       bool   `default:"false" help:"Enable extended metrics"`
+	SkipMetricsGroups     string `default:"" help:"JSON Array of of metric groups that will be skipped of collection."`
 	MaxOpenConnections    int    `default:"5" help:"Maximum number of connections opened by the integration"`
 	ConnectionString      string `default:"" help:"An advanced connection string. Takes precedence over host, port, and service name"`
 	CustomMetricsQuery    string `default:"" help:"A SQL query to collect custom metrics. Must have the columns metric_name, metric_type, and metric_value. Additional columns are added as attributes"`
@@ -70,6 +71,9 @@ func main() {
 	err = parseTablespaceWhitelist()
 	exitOnErr(err)
 
+	skipMetricsGroups, err := parseSkipMetricsGroups()
+	exitOnErr(err)
+
 	db, err := sqlx.Open("godror", getConnectionString())
 	exitOnErr(err)
 	db.SetMaxOpenConns(args.MaxOpenConnections)
@@ -99,6 +103,7 @@ func main() {
 			instanceLookUp:      instanceLookUp,
 			customMetricsQuery:  args.CustomMetricsQuery,
 			customMetricsConfig: args.CustomMetricsConfig,
+			skipMetricsGroups:   skipMetricsGroups,
 		}
 		go mc.collect()
 	}
@@ -160,6 +165,20 @@ func parseTablespaceWhitelist() error {
 	}
 
 	return json.Unmarshal([]byte(args.Tablespaces), &tablespaceWhiteList)
+}
+
+func parseSkipMetricsGroups() ([]string, error) {
+	var skipMetricsGroups []string
+
+	if args.SkipMetricsGroups == "" {
+		return skipMetricsGroups, nil
+	}
+
+	if err := json.Unmarshal([]byte(args.SkipMetricsGroups), &skipMetricsGroups); err != nil {
+		return nil, fmt.Errorf("decoding json SkipMetricsGroups: %w", err)
+	}
+
+	return skipMetricsGroups, nil
 }
 
 func createInstanceIDLookup(db database.DBWrapper) (map[string]string, error) {

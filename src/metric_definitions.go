@@ -47,6 +47,7 @@ type newrelicMetricSender struct {
 // the metrics, the list of metrics to collect from that query, and a function
 // to parse the metrics into structs to send down a channel
 type oracleMetricGroup struct {
+	name             string
 	sqlQuery         func() string
 	metrics          []*oracleMetric
 	metricsGenerator func(database.Rows, []*oracleMetric, chan<- newrelicMetricSender) error
@@ -208,6 +209,7 @@ func (mg *customMetricGroup) Collect(db database.DBWrapper, wg *sync.WaitGroup, 
 }
 
 var oracleLongRunningQueries = oracleMetricGroup{
+	name: "oracleLongRunningQueries",
 	sqlQuery: func() string {
 		query := `
     SELECT inst_id, sum(num) AS total FROM ((
@@ -242,6 +244,7 @@ var oracleLongRunningQueries = oracleMetricGroup{
 }
 
 var oracleSGAUGATotalMemory = oracleMetricGroup{
+	name: "sgauga_total_memory",
 	sqlQuery: func() string {
 		query := `
     SELECT SUM(value) AS sum,inst.inst_id
@@ -269,6 +272,7 @@ var oracleSGAUGATotalMemory = oracleMetricGroup{
 }
 
 var oracleSGASharedPoolLibraryCacheSharableStatement = oracleMetricGroup{
+	name: "sga_shared_pool_library_cache_sharable_statement",
 	sqlQuery: func() string {
 		query := `
     SELECT SUM(sqlarea.sharable_mem) AS sum,inst.inst_id
@@ -294,6 +298,7 @@ var oracleSGASharedPoolLibraryCacheSharableStatement = oracleMetricGroup{
 }
 
 var oracleSGASharedPoolLibraryCacheShareableUser = oracleMetricGroup{
+	name: "sga_shared_pool_library_cache_shareable_user",
 	sqlQuery: func() string {
 		query := `
     SELECT SUM(250 * sqlarea.users_opening) AS sum,inst.inst_id
@@ -318,6 +323,7 @@ var oracleSGASharedPoolLibraryCacheShareableUser = oracleMetricGroup{
 }
 
 var oracleSGASharedPoolLibraryCacheReloadRatio = oracleMetricGroup{
+	name: "sga_shared_pool_library_cache_reload_ratio",
 	sqlQuery: func() string {
 		query := `
     SELECT (sum(libcache.reloads)/sum(libcache.pins))  AS ratio,inst.inst_id
@@ -342,6 +348,7 @@ var oracleSGASharedPoolLibraryCacheReloadRatio = oracleMetricGroup{
 }
 
 var oracleSGASharedPoolLibraryCacheHitRatio = oracleMetricGroup{
+	name: "sga_shared_pool_library_cache_hit_ratio",
 	sqlQuery: func() string {
 		query := `
     SELECT libcache.gethitratio as ratio,inst.inst_id
@@ -366,6 +373,7 @@ var oracleSGASharedPoolLibraryCacheHitRatio = oracleMetricGroup{
 }
 
 var oracleSGASharedPoolDictCacheRatio = oracleMetricGroup{
+	name: "sga_shared_pool_dict_cache_ratio",
 	sqlQuery: func() string {
 		query := `
     SELECT (SUM(rcache.getmisses)/SUM(rcache.gets)) as ratio,inst.inst_id
@@ -390,6 +398,7 @@ var oracleSGASharedPoolDictCacheRatio = oracleMetricGroup{
 }
 
 var oracleSGALogBufferSpaceWaits = oracleMetricGroup{
+	name: "sga_log_buffer_space_waits",
 	sqlQuery: func() string {
 		query := `
     SELECT count(wait.inst_id) as count,inst.inst_id
@@ -415,6 +424,7 @@ var oracleSGALogBufferSpaceWaits = oracleMetricGroup{
 }
 
 var oracleSGALogAllocRetries = oracleMetricGroup{
+	name: "sga_log_alloc_retries",
 	sqlQuery: func() string {
 		query := `
     SELECT (rbar.value/re.value) as ratio, inst.inst_id
@@ -440,6 +450,7 @@ var oracleSGALogAllocRetries = oracleMetricGroup{
 }
 
 var oracleSGAHitRatio = oracleMetricGroup{
+	name: "sga_hit_ratio",
 	sqlQuery: func() string {
 		query := `
     SELECT inst.inst_id,(1 - (phy.value - lob.value - dir.value)/ses.value) as ratio
@@ -470,6 +481,7 @@ var oracleSGAHitRatio = oracleMetricGroup{
 }
 
 var oracleSysstat = oracleMetricGroup{
+	name: "sysstat",
 	sqlQuery: func() string {
 		query := `
 		SELECT sysstat.value,inst.inst_id, sysstat.name
@@ -547,6 +559,7 @@ var oracleSysstat = oracleMetricGroup{
 }
 
 var oracleSGA = oracleMetricGroup{
+	name: "sga",
 	sqlQuery: func() string {
 		query := `
     SELECT sga.name, sga.value,inst.inst_id
@@ -612,6 +625,7 @@ var oracleSGA = oracleMetricGroup{
 }
 
 var oracleRollbackSegments = oracleMetricGroup{
+	name: "rollback_segments",
 	sqlQuery: func() string {
 		query := `SELECT
       SUM(stat.gets) AS gets,
@@ -651,6 +665,7 @@ var oracleRollbackSegments = oracleMetricGroup{
 }
 
 var oracleRedoLogWaits = oracleMetricGroup{
+	name: "redo_log_waits",
 	sqlQuery: func() string {
 		query := `
     SELECT
@@ -751,6 +766,7 @@ var oracleRedoLogWaits = oracleMetricGroup{
 }
 
 var oraclePDBDatafilesOffline = oracleMetricGroup{
+	name: "pdb_datafiles_offline",
 	sqlQuery: func() string {
 		query := `
     SELECT
@@ -838,6 +854,7 @@ var oraclePDBDatafilesOffline = oracleMetricGroup{
 }
 
 var oracleCDBDatafilesOffline = oracleMetricGroup{
+	name: "cdb_datafiles_offline",
 	sqlQuery: func() string {
 		query := `
     SELECT
@@ -924,6 +941,7 @@ var oracleCDBDatafilesOffline = oracleMetricGroup{
 }
 
 var oracleLockedAccounts = oracleMetricGroup{
+	name: "locked_accounts",
 	sqlQuery: func() string {
 		query := `
     SELECT
@@ -1000,6 +1018,7 @@ var oracleLockedAccounts = oracleMetricGroup{
 }
 
 var oraclePDBNonWrite = oracleMetricGroup{
+	name: "pdb_non_write",
 	sqlQuery: func() string {
 		query := `
     SELECT TABLESPACE_NAME, sum(CASE WHEN ONLINE_STATUS IN ('ONLINE','SYSTEM','RECOVER') THEN 0 ELSE 1 END) AS "PDB_NON_WRITE_MODE"
@@ -1083,6 +1102,7 @@ var oraclePDBNonWrite = oracleMetricGroup{
 }
 
 var oracleTablespaceMetrics = oracleMetricGroup{
+	name: "tablespace_metrics",
 	sqlQuery: func() string {
 		query := `
 			SELECT a.TABLESPACE_NAME,
@@ -1194,6 +1214,7 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 }
 
 var globalNameInstanceMetric = oracleMetricGroup{
+	name: "global_name_instance_metric",
 	sqlQuery: func() string {
 		query := `
     SELECT
@@ -1254,6 +1275,7 @@ var globalNameInstanceMetric = oracleMetricGroup{
 }
 
 var globalNameTablespaceMetric = oracleMetricGroup{
+	name: "global_name_tablespace_metric",
 	sqlQuery: func() string {
 		query := `SELECT
 		t1.TABLESPACE_NAME,
@@ -1310,6 +1332,7 @@ var globalNameTablespaceMetric = oracleMetricGroup{
 }
 
 var dbIDInstanceMetric = oracleMetricGroup{
+	name: "db_id_instance_metric",
 	sqlQuery: func() string {
 		query := `SELECT
 		t1.INST_ID,
@@ -1366,6 +1389,7 @@ var dbIDInstanceMetric = oracleMetricGroup{
 }
 
 var dbIDTablespaceMetric = oracleMetricGroup{
+	name: "db_id_tablespace_metric",
 	sqlQuery: func() string {
 		query := `SELECT
 		t1.TABLESPACE_NAME,
@@ -1422,6 +1446,7 @@ var dbIDTablespaceMetric = oracleMetricGroup{
 }
 
 var oracleReadWriteMetrics = oracleMetricGroup{
+	name: "read_write_metrics",
 	sqlQuery: func() string {
 		return `
 		SELECT
@@ -1525,6 +1550,7 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 }
 
 var oraclePgaMetrics = oracleMetricGroup{
+	name: "pga_metrics",
 	sqlQuery: func() string {
 		return `SELECT INST_ID, NAME, VALUE FROM gv$pgastat`
 	},
@@ -1595,6 +1621,7 @@ var oraclePgaMetrics = oracleMetricGroup{
 }
 
 var oracleSysMetrics = oracleMetricGroup{
+	name: "sys_metrics",
 	sqlQuery: func() string {
 		return `
 		SELECT

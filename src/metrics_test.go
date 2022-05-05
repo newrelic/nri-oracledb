@@ -294,3 +294,37 @@ func Test_PopulateMetrics_FromCustomQueryFile(t *testing.T) {
 		t.Errorf("expected 2 results, got %v", len(results))
 	}
 }
+
+func Test_CollectMetrics_SkippedList(t *testing.T) {
+	i, err := integration.New("oracletest", "0.0.1")
+	if err != nil {
+		t.Error(err)
+	}
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Error(err)
+	}
+
+	mock.ExpectQuery(`.*GV\$sesstat, GV\$statname, GV\$INSTANCE.*`)
+
+	dbWrapper := database.NewDBWrapper(sqlx.NewDb(db, "sqlmock"))
+	var populaterWg sync.WaitGroup
+
+	skipMetricGroup := []string{"sgauga_total_memory"}
+
+	populaterWg.Add(1)
+	mc := metricsCollector{
+		integration:       i,
+		db:                dbWrapper,
+		wg:                &populaterWg,
+		instanceLookUp:    map[string]string{"1": "MyInstance"},
+		skipMetricsGroups: skipMetricGroup,
+	}
+	go mc.collect()
+	populaterWg.Wait()
+
+	if err := mock.ExpectationsWereMet(); err == nil {
+		t.Errorf("Metrics group should be excluded from collection: %s", err)
+	}
+}

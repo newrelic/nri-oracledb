@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 3.3.0 (2022-05-05)
+### Added
+- Add `SKIP_METRICS_GROUPS` config: Metrics collected are group together depending on the query used to obtain the data. These metric groups are here and can be skipped from collection by adding the name of the group to SKIP_METRICS_GROUPS in Json array format. By default no group is skipped so no breaking changes are added.
+
+### Changed
+- Bumped dependencies 
+- Change pipeline to use Go 1.18
+
+## 3.2.0 (2022-02-17)
+### Fixed
+- Metrics `tablespace.spaceConsumedInBytes` and `tablespace.spaceReservedInBytes` previously reported in block sizes are now reported in Bytes (#94)
+
 ## 3.1.1 (2022-01-10)
 ### Changed
 - Added warning log when a query returns no results (#87)
