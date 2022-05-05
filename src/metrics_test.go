@@ -60,7 +60,7 @@ func TestCollectMetrics(t *testing.T) {
 		wg:             &populaterWg,
 		instanceLookUp: lookup,
 	}
-	go mc.collectMetrics()
+	go mc.collect()
 	populaterWg.Wait()
 
 	if err := mock.ExpectationsWereMet(); err != nil {

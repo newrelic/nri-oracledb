@@ -25,9 +25,9 @@ type metricsCollector struct {
 	customMetricsConfig string
 }
 
-// collectMetrics spins off goroutines for each of the metric groups, which
+// collect spins off goroutines for each of the metric groups, which
 // send their metrics to the populateMetrics goroutine
-func (mc *metricsCollector) collectMetrics() {
+func (mc *metricsCollector) collect() {
 	defer mc.wg.Done()
 
 	var collectorWg sync.WaitGroup

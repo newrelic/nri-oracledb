@@ -100,7 +100,7 @@ func main() {
 			customMetricsQuery:  args.CustomMetricsQuery,
 			customMetricsConfig: args.CustomMetricsConfig,
 		}
-		go mc.collectMetrics()
+		go mc.collect()
 	}
 
 	if args.HasInventory() {
