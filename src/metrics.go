@@ -16,10 +16,19 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// collectMetrics spins off goroutines for each of the metric groups, which
+type metricsCollector struct {
+	integration         *integration.Integration
+	db                  database.DBWrapper
+	wg                  *sync.WaitGroup
+	instanceLookUp      map[string]string
+	customMetricsQuery  string
+	customMetricsConfig string
+}
+
+// collect spins off goroutines for each of the metric groups, which
 // send their metrics to the populateMetrics goroutine
-func collectMetrics(db database.DBWrapper, populaterWg *sync.WaitGroup, i *integration.Integration, instanceLookUp map[string]string, customMetricsQuery string, customMetricsConfig string) {
-	defer populaterWg.Done()
+func (mc *metricsCollector) collect() {
+	defer mc.wg.Done()
 
 	var collectorWg sync.WaitGroup
 	metricChan := make(chan newrelicMetricSender, 100) // large buffer for speed
@@ -27,7 +36,7 @@ func collectMetrics(db database.DBWrapper, populaterWg *sync.WaitGroup, i *integ
 	// Separate logic is needed to see if we should even collect tablespaces
 	// Collect tablespaces first so the list query completes before other queries are run
 	collectorWg.Add(1)
-	go collectTableSpaces(db, &collectorWg, metricChan)
+	go collectTableSpaces(mc.db, &collectorWg, metricChan)
 
 	// Create a goroutine for each of the metric groups to collect
 	baseCollections := []oracleMetricGroup{
@@ -60,18 +69,18 @@ func collectMetrics(db database.DBWrapper, populaterWg *sync.WaitGroup, i *integ
 	for _, collection := range baseCollections {
 		collectorWg.Add(1)
 		c := collection
-		go c.Collect(db, &collectorWg, metricChan)
+		go c.Collect(mc.db, &collectorWg, metricChan)
 	}
 
-	if customMetricsQuery != "" {
-		custom := customMetricGroup{customMetricsQuery}
+	if mc.customMetricsQuery != "" {
+		custom := customMetricGroup{mc.customMetricsQuery}
 		collectorWg.Add(1)
-		go custom.Collect(db, &collectorWg, metricChan)
+		go custom.Collect(mc.db, &collectorWg, metricChan)
 	}
 
-	if customMetricsConfig != "" {
+	if mc.customMetricsConfig != "" {
 		collectorWg.Add(1)
-		go PopulateCustomMetricsFromFile(db, &collectorWg, metricChan, customMetricsConfig)
+		go PopulateCustomMetricsFromFile(mc.db, &collectorWg, metricChan, mc.customMetricsConfig)
 	}
 
 	// When the metric groups are finished collecting, close the channel
@@ -81,13 +90,12 @@ func collectMetrics(db database.DBWrapper, populaterWg *sync.WaitGroup, i *integ
 	}()
 
 	// Create a goroutine to read from the metric channel and insert the metrics
-	populateMetrics(metricChan, i, instanceLookUp)
+	populateMetrics(metricChan, mc.integration, mc.instanceLookUp)
 }
 
 // populateMetrics reads metrics from the metricChan, then populates the correct
 // metric set with the read metric
 func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Integration, instanceLookUp map[string]string) {
-
 	// Create storage maps for tablespace and instance metric sets
 	tsMetricSets := make(map[string]*nrmetric.Set)
 	instanceMetricSets := make(map[string]*nrmetric.Set)
@@ -184,7 +192,6 @@ func sanitizeValue(val interface{}) interface{} {
 // getOrCreateMetricSet either retrieves a metric set from a map or creates the metric set
 // and inserts it into the map.
 func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[string]*nrmetric.Set, i *integration.Integration) *nrmetric.Set {
-
 	// If the metric set already exists, return it
 	set, ok := m[entityIdentifier]
 	if ok {
@@ -194,7 +201,7 @@ func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[stri
 	// If the metric set doesn't exist, get the entity for it and create a new metric set
 	endpointIDAttr := integration.IDAttribute{Key: "endpoint", Value: fmt.Sprintf("%s:%s", args.Hostname, args.Port)}
 	serviceIDAttr := integration.IDAttribute{Key: "serviceName", Value: args.ServiceName}
-	e, _ := i.EntityReportedVia( //can't error if both name and namespace are defined
+	e, _ := i.EntityReportedVia( // can't error if both name and namespace are defined
 		fmt.Sprintf("%s:%s", args.Hostname, args.Port),
 		entityIdentifier,
 		fmt.Sprintf("ora-%s", entityType),
@@ -221,7 +228,7 @@ func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[stri
 func createCustomMetricSet(sampleName string, instanceID string, i *integration.Integration) *nrmetric.Set {
 	endpointIDAttr := integration.IDAttribute{Key: "endpoint", Value: fmt.Sprintf("%s:%s", args.Hostname, args.Port)}
 	serviceIDAttr := integration.IDAttribute{Key: "serviceName", Value: args.ServiceName}
-	e, _ := i.EntityReportedVia( //can't error if both name and namespace are defined
+	e, _ := i.EntityReportedVia( // can't error if both name and namespace are defined
 		fmt.Sprintf("%s:%s", args.Hostname, args.Port),
 		instanceID,
 		"ora-instance",
@@ -265,7 +272,6 @@ func collectTableSpaces(db database.DBWrapper, wg *sync.WaitGroup, metricChan ch
 	go oracleTablespaceMetrics.Collect(db, wg, metricChan)
 	go globalNameTablespaceMetric.Collect(db, wg, metricChan)
 	go dbIDTablespaceMetric.Collect(db, wg, metricChan)
-
 }
 
 func queryNumTablespaces(db database.DBWrapper) (int, error) {

@@ -10,10 +10,17 @@ import (
 	"github.com/newrelic/nri-oracledb/src/database"
 )
 
-// collectInventory queries the database for the inventory items, then populates
+type inventoryCollector struct {
+	integration    *integration.Integration
+	db             database.DBWrapper
+	wg             *sync.WaitGroup
+	instanceLookUp map[string]string
+}
+
+// collect queries the database for the inventory items, then populates
 // the integration with the results
-func collectInventory(db database.DBWrapper, wg *sync.WaitGroup, i *integration.Integration, instanceLookUp map[string]string) {
-	defer wg.Done()
+func (ic *inventoryCollector) collect() {
+	defer ic.wg.Done()
 
 	const sqlQuery = `
 		SELECT
@@ -38,7 +45,7 @@ func collectInventory(db database.DBWrapper, wg *sync.WaitGroup, i *integration.
 		description string
 	}
 
-	rows, err := db.Query(sqlQuery)
+	rows, err := ic.db.Query(sqlQuery)
 	if err != nil {
 		log.Error("Failed to collect inventory: %s", err)
 		return
@@ -63,7 +70,7 @@ func collectInventory(db database.DBWrapper, wg *sync.WaitGroup, i *integration.
 		// Retrieve or create the instance entity
 		instanceID := strconv.Itoa(inventoryResultRow.instID)
 		instanceName := func() string {
-			if name, ok := instanceLookUp[instanceID]; ok {
+			if name, ok := ic.instanceLookUp[instanceID]; ok {
 				return name
 			}
 
@@ -72,14 +79,13 @@ func collectInventory(db database.DBWrapper, wg *sync.WaitGroup, i *integration.
 
 		endpointIDAttr := integration.IDAttribute{Key: "endpoint", Value: fmt.Sprintf("%s:%s", args.Hostname, args.Port)}
 		serviceIDAttr := integration.IDAttribute{Key: "serviceName", Value: args.ServiceName}
-		e, err := i.EntityReportedVia(
+		e, err := ic.integration.EntityReportedVia(
 			fmt.Sprintf("%s:%s", args.Hostname, args.Port),
 			instanceName,
 			"ora-instance",
 			endpointIDAttr,
 			serviceIDAttr,
 		)
-
 		if err != nil {
 			log.Error("Failed to get instance entity %d", inventoryResultRow.instID)
 			continue
