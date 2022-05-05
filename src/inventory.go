@@ -17,9 +17,9 @@ type inventoryCollector struct {
 	instanceLookUp map[string]string
 }
 
-// collectInventory queries the database for the inventory items, then populates
+// collect queries the database for the inventory items, then populates
 // the integration with the results
-func (ic *inventoryCollector) collectInventory() {
+func (ic *inventoryCollector) collect() {
 	defer ic.wg.Done()
 
 	const sqlQuery = `

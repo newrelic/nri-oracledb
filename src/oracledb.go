@@ -111,7 +111,7 @@ func main() {
 			wg:             &populaterWg,
 			instanceLookUp: instanceLookUp,
 		}
-		go ic.collectInventory()
+		go ic.collect()
 	}
 
 	populaterWg.Wait()

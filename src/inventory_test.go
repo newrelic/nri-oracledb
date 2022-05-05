@@ -46,7 +46,7 @@ func TestPopulateInventory(t *testing.T) {
 		wg:             &wg,
 		instanceLookUp: lookup,
 	}
-	go ic.collectInventory()
+	go ic.collect()
 	wg.Wait()
 
 	marshalled, _ := i.MarshalJSON()
