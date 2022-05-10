@@ -42,7 +42,7 @@ integrations:
     #   GROUP BY INST_ID
 
     # Metrics collected are grouped together depending on the query used to obtain the data. 
-    # These metric groups are defined in https://github.com/newrelic/nri-oracledb/blob/master/src/metric_definitions.go
+    # These metric groups are defined in https://github.com/newrelic/nri-oracledb/blob/master/METRIC_GROUPS.md
     # and can be skipped from collection by adding the name of the group to SKIP_METRICS_GROUPS in Json array format.
     # By default no group is skipped.
     # SKIP_METRICS_GROUPS: '["sgauga_total_memory"]'
