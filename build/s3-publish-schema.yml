@@ -16,6 +16,7 @@
       src_repo: "{access_point_host}/infrastructure_agent/linux/apt"
       dest: "{dest_prefix}linux/apt/"
       os_version:
+        - jammy
         - focal
         - bionic
         - buster
@@ -40,6 +41,7 @@
         - 6
         - 7
         - 8
+        - 9
 
     - type: zypp
       dest: "{dest_prefix}linux/zypp/sles/{os_version}/{arch}/"
@@ -58,4 +60,5 @@
       dest: "{dest_prefix}linux/yum/amazonlinux/{os_version}/{arch}/"
       os_version:
         - 2
+        - 2022
 
