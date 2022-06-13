@@ -252,6 +252,8 @@ func createCustomMetricSet(sampleName string, instanceID string, i *integration.
 }
 
 func collectTableSpaces(db database.DBWrapper, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
+	const tablespaceQueries = 6
+
 	defer wg.Done()
 
 	if tablespaceWhiteList != nil && len(tablespaceWhiteList) == 0 {
@@ -259,7 +261,7 @@ func collectTableSpaces(db database.DBWrapper, wg *sync.WaitGroup, metricChan ch
 		return
 	}
 
-	wg.Add(6)
+	wg.Add(tablespaceQueries)
 	go oracleTablespaceMetrics.Collect(db, wg, metricChan)
 	go globalNameTablespaceMetric.Collect(db, wg, metricChan)
 	go dbIDTablespaceMetric.Collect(db, wg, metricChan)
