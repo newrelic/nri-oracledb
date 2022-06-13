@@ -693,7 +693,7 @@ var oracleRedoLogWaits = oracleMetricGroup{
     FROM
       GV$SYSTEM_EVENT sysevent,
       GV$INSTANCE inst
-    WHERE sysevent.inst_id=inst.inst_id AND
+    WHERE sysevent.inst_id=inst.inst_id
     `
 
 		return query
