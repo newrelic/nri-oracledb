@@ -48,7 +48,7 @@ type newrelicMetricSender struct {
 // to parse the metrics into structs to send down a channel
 type oracleMetricGroup struct {
 	name             string
-	sqlQuery         func() string
+	sqlQuery         func([]*oracleMetric) string
 	metrics          []*oracleMetric
 	metricsGenerator func(database.Rows, []*oracleMetric, chan<- newrelicMetricSender) error
 }
@@ -58,13 +58,13 @@ type oracleMetricGroup struct {
 func (mg *oracleMetricGroup) Collect(db database.DBWrapper, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
 	defer wg.Done()
 
-	rows, err := db.Query(mg.sqlQuery())
+	rows, err := db.Query(mg.sqlQuery(mg.metrics))
 	if err != nil {
-		log.Error("Failed to execute query %s: %s", formatQueryForLogging(mg.sqlQuery()), err)
+		log.Error("Failed to execute query %s: %s", formatQueryForLogging(mg.sqlQuery(mg.metrics)), err)
 		return
 	}
 	defer func() {
-		checkAndLogEmptyQueryResult(mg.sqlQuery(), rows)
+		checkAndLogEmptyQueryResult(mg.sqlQuery(mg.metrics), rows)
 		err := rows.Close()
 		if err != nil {
 			log.Error("Failed to close rows: %s", err)
@@ -72,7 +72,7 @@ func (mg *oracleMetricGroup) Collect(db database.DBWrapper, wg *sync.WaitGroup, 
 	}()
 
 	if err = mg.metricsGenerator(rows, mg.metrics, metricChan); err != nil {
-		log.Error("Failed to generate metrics from db response for query %s: %s", formatQueryForLogging(mg.sqlQuery()), err)
+		log.Error("Failed to generate metrics from db response for query %s: %s", formatQueryForLogging(mg.sqlQuery(mg.metrics)), err)
 		return
 	}
 }
@@ -137,6 +137,23 @@ func columnMetricsGenerator(rows database.Rows, metrics []*oracleMetric, metricC
 	}
 
 	return nil
+}
+
+// inMetrics is a function to build a WHERE IN ('metric1', 'metric2', 'metric...') string
+// This is appended to certain queries in order to return only the metrics included in oracleMetric array
+func inMetrics(field string, metrics []*oracleMetric) string {
+	query := ` ` + field + ` IN (`
+
+	for i, metric := range metrics {
+		query += fmt.Sprintf(`'%s'`, metric.identifier)
+
+		if i != len(metrics)-1 {
+			query += ","
+		}
+	}
+
+	query += ")"
+	return query
 }
 
 type customMetricGroup struct {
@@ -210,7 +227,7 @@ func (mg *customMetricGroup) Collect(db database.DBWrapper, wg *sync.WaitGroup, 
 
 var oracleLongRunningQueries = oracleMetricGroup{
 	name: "oracleLongRunningQueries",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
     SELECT inst_id, sum(num) AS total FROM ((
       SELECT i.inst_id, 1 AS num
@@ -245,7 +262,7 @@ var oracleLongRunningQueries = oracleMetricGroup{
 
 var oracleSGAUGATotalMemory = oracleMetricGroup{
 	name: "sgauga_total_memory",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
     SELECT SUM(value) AS sum,inst.inst_id
     FROM GV$sesstat, GV$statname, GV$INSTANCE inst
@@ -273,7 +290,7 @@ var oracleSGAUGATotalMemory = oracleMetricGroup{
 
 var oracleSGASharedPoolLibraryCacheSharableStatement = oracleMetricGroup{
 	name: "sga_shared_pool_library_cache_sharable_statement",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
     SELECT SUM(sqlarea.sharable_mem) AS sum,inst.inst_id
     FROM GV$sqlarea sqlarea, GV$INSTANCE inst
@@ -299,7 +316,7 @@ var oracleSGASharedPoolLibraryCacheSharableStatement = oracleMetricGroup{
 
 var oracleSGASharedPoolLibraryCacheShareableUser = oracleMetricGroup{
 	name: "sga_shared_pool_library_cache_shareable_user",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
     SELECT SUM(250 * sqlarea.users_opening) AS sum,inst.inst_id
     FROM GV$sqlarea sqlarea, GV$INSTANCE inst
@@ -324,7 +341,7 @@ var oracleSGASharedPoolLibraryCacheShareableUser = oracleMetricGroup{
 
 var oracleSGASharedPoolLibraryCacheReloadRatio = oracleMetricGroup{
 	name: "sga_shared_pool_library_cache_reload_ratio",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
     SELECT (sum(libcache.reloads)/sum(libcache.pins))  AS ratio,inst.inst_id
     FROM GV$librarycache libcache, GV$INSTANCE inst
@@ -349,7 +366,7 @@ var oracleSGASharedPoolLibraryCacheReloadRatio = oracleMetricGroup{
 
 var oracleSGASharedPoolLibraryCacheHitRatio = oracleMetricGroup{
 	name: "sga_shared_pool_library_cache_hit_ratio",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
     SELECT libcache.gethitratio as ratio,inst.inst_id
     FROM GV$librarycache libcache, GV$INSTANCE inst
@@ -374,7 +391,7 @@ var oracleSGASharedPoolLibraryCacheHitRatio = oracleMetricGroup{
 
 var oracleSGASharedPoolDictCacheRatio = oracleMetricGroup{
 	name: "sga_shared_pool_dict_cache_ratio",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
     SELECT (SUM(rcache.getmisses)/SUM(rcache.gets)) as ratio,inst.inst_id
     FROM GV$rowcache rcache, GV$INSTANCE inst
@@ -399,7 +416,7 @@ var oracleSGASharedPoolDictCacheRatio = oracleMetricGroup{
 
 var oracleSGALogBufferSpaceWaits = oracleMetricGroup{
 	name: "sga_log_buffer_space_waits",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
     SELECT count(wait.inst_id) as count,inst.inst_id
     FROM GV$SESSION_WAIT wait, GV$INSTANCE inst
@@ -425,7 +442,7 @@ var oracleSGALogBufferSpaceWaits = oracleMetricGroup{
 
 var oracleSGALogAllocRetries = oracleMetricGroup{
 	name: "sga_log_alloc_retries",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
     SELECT (rbar.value/re.value) as ratio, inst.inst_id
     FROM GV$SYSSTAT rbar, GV$SYSSTAT re, GV$INSTANCE inst
@@ -451,7 +468,7 @@ var oracleSGALogAllocRetries = oracleMetricGroup{
 
 var oracleSGAHitRatio = oracleMetricGroup{
 	name: "sga_hit_ratio",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
     SELECT inst.inst_id,(1 - (phy.value - lob.value - dir.value)/ses.value) as ratio
     FROM GV$SYSSTAT ses, GV$SYSSTAT lob, GV$SYSSTAT dir, GV$SYSSTAT phy, GV$INSTANCE inst
@@ -482,12 +499,13 @@ var oracleSGAHitRatio = oracleMetricGroup{
 
 var oracleSysstat = oracleMetricGroup{
 	name: "sysstat",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
 		SELECT sysstat.value,inst.inst_id, sysstat.name
 		FROM GV$SYSSTAT sysstat, GV$INSTANCE inst
-		WHERE sysstat.inst_id=inst.inst_id
+		WHERE sysstat.inst_id=inst.inst_id AND
     `
+		query += inMetrics("sysstat.name", metrics)
 
 		return query
 	},
@@ -560,13 +578,13 @@ var oracleSysstat = oracleMetricGroup{
 
 var oracleSGA = oracleMetricGroup{
 	name: "sga",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
     SELECT sga.name, sga.value,inst.inst_id
     FROM GV$SGA sga, GV$INSTANCE inst
-    WHERE sga.inst_id=inst.inst_id
+    WHERE sga.inst_id=inst.inst_id AND
     `
-
+		query += inMetrics("NAME", metrics)
 		return query
 	},
 
@@ -626,7 +644,7 @@ var oracleSGA = oracleMetricGroup{
 
 var oracleRollbackSegments = oracleMetricGroup{
 	name: "rollback_segments",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `SELECT
       SUM(stat.gets) AS gets,
       sum(stat.waits) AS waits,
@@ -666,7 +684,7 @@ var oracleRollbackSegments = oracleMetricGroup{
 
 var oracleRedoLogWaits = oracleMetricGroup{
 	name: "redo_log_waits",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
     SELECT
       sysevent.total_waits,
@@ -675,7 +693,7 @@ var oracleRedoLogWaits = oracleMetricGroup{
     FROM
       GV$SYSTEM_EVENT sysevent,
       GV$INSTANCE inst
-    WHERE sysevent.inst_id=inst.inst_id
+    WHERE sysevent.inst_id=inst.inst_id AND
     `
 
 		return query
@@ -767,7 +785,7 @@ var oracleRedoLogWaits = oracleMetricGroup{
 
 var oraclePDBDatafilesOffline = oracleMetricGroup{
 	name: "pdb_datafiles_offline",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
     SELECT
       sum(CASE WHEN ONLINE_STATUS IN ('ONLINE','SYSTEM','RECOVER') THEN 0 ELSE 1 END)
@@ -855,7 +873,7 @@ var oraclePDBDatafilesOffline = oracleMetricGroup{
 
 var oracleCDBDatafilesOffline = oracleMetricGroup{
 	name: "cdb_datafiles_offline",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
     SELECT
       sum(CASE WHEN ONLINE_STATUS IN ('ONLINE', 'SYSTEM','RECOVER') THEN 0 ELSE 1 END)
@@ -942,7 +960,7 @@ var oracleCDBDatafilesOffline = oracleMetricGroup{
 
 var oracleLockedAccounts = oracleMetricGroup{
 	name: "locked_accounts",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
     SELECT
       INST_ID, LOCKED_ACCOUNTS
@@ -1019,7 +1037,7 @@ var oracleLockedAccounts = oracleMetricGroup{
 
 var oraclePDBNonWrite = oracleMetricGroup{
 	name: "pdb_non_write",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
     SELECT TABLESPACE_NAME, sum(CASE WHEN ONLINE_STATUS IN ('ONLINE','SYSTEM','RECOVER') THEN 0 ELSE 1 END) AS "PDB_NON_WRITE_MODE"
     FROM cdb_data_files a, cdb_pdbs b
@@ -1103,7 +1121,7 @@ var oraclePDBNonWrite = oracleMetricGroup{
 
 var oracleTablespaceMetrics = oracleMetricGroup{
 	name: "tablespace_metrics",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
 			SELECT a.TABLESPACE_NAME,
 				a.USED_PERCENT,
@@ -1215,7 +1233,7 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 
 var globalNameInstanceMetric = oracleMetricGroup{
 	name: "global_name_instance_metric",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
     SELECT
       t1.INST_ID,
@@ -1276,12 +1294,28 @@ var globalNameInstanceMetric = oracleMetricGroup{
 
 var globalNameTablespaceMetric = oracleMetricGroup{
 	name: "global_name_tablespace_metric",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `SELECT
 		t1.TABLESPACE_NAME,
 		t2.GLOBAL_NAME
 		FROM (SELECT TABLESPACE_NAME FROM DBA_TABLESPACES) t1,
 		(SELECT GLOBAL_NAME FROM global_name) t2`
+
+		if len(tablespaceWhiteList) > 0 {
+			query += `
+			WHERE TABLESPACE_NAME IN (`
+
+			for i, tablespace := range tablespaceWhiteList {
+				query += fmt.Sprintf(`'%s'`, tablespace)
+
+				if i != len(tablespaceWhiteList)-1 {
+					query += ","
+				}
+			}
+
+			query += ")"
+		}
+
 		return query
 	},
 
@@ -1333,7 +1367,7 @@ var globalNameTablespaceMetric = oracleMetricGroup{
 
 var dbIDInstanceMetric = oracleMetricGroup{
 	name: "db_id_instance_metric",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `SELECT
 		t1.INST_ID,
 		t2.DBID
@@ -1390,12 +1424,28 @@ var dbIDInstanceMetric = oracleMetricGroup{
 
 var dbIDTablespaceMetric = oracleMetricGroup{
 	name: "db_id_tablespace_metric",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `SELECT
 		t1.TABLESPACE_NAME,
 		t2.DBID
 		FROM (SELECT TABLESPACE_NAME FROM DBA_TABLESPACES) t1,
 		(SELECT DBID FROM v$database) t2`
+
+		if len(tablespaceWhiteList) > 0 {
+			query += `
+			WHERE TABLESPACE_NAME IN (`
+
+			for i, tablespace := range tablespaceWhiteList {
+				query += fmt.Sprintf(`'%s'`, tablespace)
+
+				if i != len(tablespaceWhiteList)-1 {
+					query += ","
+				}
+			}
+
+			query += ")"
+		}
+
 		return query
 	},
 
@@ -1447,7 +1497,7 @@ var dbIDTablespaceMetric = oracleMetricGroup{
 
 var oracleReadWriteMetrics = oracleMetricGroup{
 	name: "read_write_metrics",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		return `
 		SELECT
 			INST_ID,
@@ -1551,8 +1601,10 @@ var oracleReadWriteMetrics = oracleMetricGroup{
 
 var oraclePgaMetrics = oracleMetricGroup{
 	name: "pga_metrics",
-	sqlQuery: func() string {
-		return `SELECT INST_ID, NAME, VALUE FROM gv$pgastat`
+	sqlQuery: func(metrics []*oracleMetric) string {
+		query := `SELECT INST_ID, NAME, VALUE FROM gv$pgastat WHERE`
+		query += inMetrics("NAME", metrics)
+		return query
 	},
 	metrics: []*oracleMetric{
 		{
@@ -1622,7 +1674,7 @@ var oraclePgaMetrics = oracleMetricGroup{
 
 var oracleSysMetrics = oracleMetricGroup{
 	name: "sys_metrics",
-	sqlQuery: func() string {
+	sqlQuery: func(metrics []*oracleMetric) string {
 		return `
 		SELECT
 			INST_ID,
@@ -1725,10 +1777,6 @@ var oracleSysMetrics = oracleMetricGroup{
 		{
 			name:          "memory.redoGeneratedBytesPerTransaction",
 			identifier:    "Redo Generated Per Txn",
-			metricType:    metric.GAUGE,
-			defaultMetric: false,
-		},
-		{
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
 		},

@@ -40,11 +40,8 @@ func (mc *metricsCollector) collect() {
 	collectorWg.Add(1)
 	go collectTableSpaces(mc.db, &collectorWg, metricChan)
 
-	// Create a goroutine for each of the metric groups to collect
+	// Create a goroutine for each of the base metric groups to collect
 	baseCollections := []oracleMetricGroup{
-		oracleCDBDatafilesOffline,
-		oraclePDBDatafilesOffline,
-		oraclePDBNonWrite,
 		oracleLockedAccounts,
 		oracleReadWriteMetrics,
 		oraclePgaMetrics,
@@ -254,63 +251,21 @@ func createCustomMetricSet(sampleName string, instanceID string, i *integration.
 	return e.NewMetricSet(sampleName, attribute.Attr("entityName", "ora-instance:"+instanceID), attribute.Attr("displayName", instanceID))
 }
 
-// maxTablespaces is the maximum amount of Tablespaces that can be collect.
-// If there are more than this number of Tablespaces then collection of
-// Tablespaces will fail.
-const maxTablespaces = 200
-const tablespaceCountQuery = `SELECT count(1) FROM DBA_TABLESPACES WHERE TABLESPACE_NAME <> 'TEMP'`
-
 func collectTableSpaces(db database.DBWrapper, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
 	defer wg.Done()
 
-	// Get count from database
-	if tablespaceWhiteList == nil {
-		tablespaceCount, err := queryNumTablespaces(db)
-		if err != nil {
-			log.Error("Unable to determine the number of tablespaces due to '%s'. Skipping tablespace collection", err.Error())
-			return
-		}
-
-		if tablespaceCount > maxTablespaces {
-			log.Error("There are %d tablespaces in collection, the maximum amount of tablespaces to collect is %d. Use the tablespace whitelist configuration parameter to limit collection size.", tablespaceCount, maxTablespaces)
-			return
-		}
-	} else if length := len(tablespaceWhiteList); length > maxTablespaces {
-		log.Error("There are %d tablespaces in collection, the maximum amount of tablespaces to collect is %d. Use the tablespace whitelist configuration parameter to limit collection size.", length, maxTablespaces)
-		return
-	} else if len(tablespaceWhiteList) == 0 {
+	if tablespaceWhiteList != nil && len(tablespaceWhiteList) == 0 {
 		log.Info("No tablespaces specified, skipping tablespace collection.")
 		return
 	}
 
-	wg.Add(3)
+	wg.Add(6)
 	go oracleTablespaceMetrics.Collect(db, wg, metricChan)
 	go globalNameTablespaceMetric.Collect(db, wg, metricChan)
 	go dbIDTablespaceMetric.Collect(db, wg, metricChan)
-}
-
-func queryNumTablespaces(db database.DBWrapper) (int, error) {
-	rows, err := db.Query(tablespaceCountQuery)
-	if err != nil {
-		return 0, err
-	}
-	defer func() {
-		checkAndLogEmptyQueryResult(tablespaceCountQuery, rows)
-		err := rows.Close()
-		if err != nil {
-			log.Error("Failed to close rows: %s", err)
-		}
-	}()
-
-	var count int
-	if rows.Next() {
-		err = rows.Scan(&count)
-		if err != nil {
-			return 0, err
-		}
-	}
-
-	return count, nil
+	go oracleCDBDatafilesOffline.Collect(db, wg, metricChan)
+	go oraclePDBDatafilesOffline.Collect(db, wg, metricChan)
+	go oraclePDBNonWrite.Collect(db, wg, metricChan)
 }
 
 // PopulateCustomMetricsFromFile collects metrics defined by a custom config file

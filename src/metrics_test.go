@@ -199,11 +199,6 @@ func Test_collectTableSpaces_NoWhitelist_Ok(t *testing.T) {
 		t.Error(err)
 	}
 
-	mock.ExpectQuery(`SELECT count\(1\) FROM DBA_TABLESPACES WHERE TABLESPACE_NAME <> 'TEMP'`).WillReturnRows(
-		sqlmock.NewRows([]string{"COUNT(1)"}).
-			AddRow(1),
-	)
-
 	mock.ExpectQuery(`.*FROM DBA_TABLESPACE_USAGE_METRICS.*`).WillReturnRows(
 		sqlmock.NewRows([]string{"TABLESPACE_NAME", "USED", "OFFLINE", "SIZE", "USED_PERCENT"}).
 			AddRow("testtablespace", 1234, 0, 4321, 12),
