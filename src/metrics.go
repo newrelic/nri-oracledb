@@ -30,17 +30,16 @@ type metricsCollector struct {
 // collect spins off goroutines for each of the metric groups, which
 // send their metrics to the populateMetrics goroutine
 func (mc *metricsCollector) collect() {
-	defer mc.wg.Done()
 
-	var collectorWg sync.WaitGroup
-	metricChan := make(chan newrelicMetricSender, 100) // large buffer for speed
+	tablespaceCollections := []oracleMetricGroup{
+		oracleTablespaceMetrics,
+		globalNameTablespaceMetric,
+		dbIDTablespaceMetric,
+		oracleCDBDatafilesOffline,
+		oraclePDBDatafilesOffline,
+		oraclePDBNonWrite,
+	}
 
-	// Separate logic is needed to see if we should even collect tablespaces
-	// Collect tablespaces first so the list query completes before other queries are run
-	collectorWg.Add(1)
-	go collectTableSpaces(mc.db, &collectorWg, metricChan)
-
-	// Create a goroutine for each of the base metric groups to collect
 	baseCollections := []oracleMetricGroup{
 		oracleLockedAccounts,
 		oracleReadWriteMetrics,
@@ -65,6 +64,30 @@ func (mc *metricsCollector) collect() {
 		oracleRedoLogWaits,
 	}
 
+	defer mc.wg.Done()
+
+	var collectorWg sync.WaitGroup
+	metricChan := make(chan newrelicMetricSender, 100) // large buffer for speed
+
+	// Create a goroutine for each of the tablespace metric groups to collect
+	if tablespaceWhiteList != nil && len(tablespaceWhiteList) == 0 {
+		log.Info("No tablespaces specified, skipping tablespace collection.")
+	} else {
+		for _, tbCollection := range tablespaceCollections {
+			if mc.skipGroup(tbCollection.name) {
+				log.Debug("Metric group %s skipped.", tbCollection.name)
+				continue
+			}
+			collectorWg.Add(1)
+			c := tbCollection
+			go c.Collect(mc.db, &collectorWg, metricChan)
+		}
+	}
+
+	// Collect tablespace first so the list query completes before other queries are run
+	collectorWg.Wait()
+
+	// Create a goroutine for each of the base metric groups to collect
 	for _, collection := range baseCollections {
 		if mc.skipGroup(collection.name) {
 			log.Debug("Metric group %s skipped.", collection.name)
@@ -249,25 +272,6 @@ func createCustomMetricSet(sampleName string, instanceID string, i *integration.
 	)
 
 	return e.NewMetricSet(sampleName, attribute.Attr("entityName", "ora-instance:"+instanceID), attribute.Attr("displayName", instanceID))
-}
-
-func collectTableSpaces(db database.DBWrapper, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
-	const tablespaceQueries = 6
-
-	defer wg.Done()
-
-	if tablespaceWhiteList != nil && len(tablespaceWhiteList) == 0 {
-		log.Info("No tablespaces specified, skipping tablespace collection.")
-		return
-	}
-
-	wg.Add(tablespaceQueries)
-	go oracleTablespaceMetrics.Collect(db, wg, metricChan)
-	go globalNameTablespaceMetric.Collect(db, wg, metricChan)
-	go dbIDTablespaceMetric.Collect(db, wg, metricChan)
-	go oracleCDBDatafilesOffline.Collect(db, wg, metricChan)
-	go oraclePDBDatafilesOffline.Collect(db, wg, metricChan)
-	go oraclePDBNonWrite.Collect(db, wg, metricChan)
 }
 
 // PopulateCustomMetricsFromFile collects metrics defined by a custom config file
