@@ -194,6 +194,14 @@ func Test_collectTableSpaces_NoWhitelist_Ok(t *testing.T) {
 	defer func() { args = argumentList{} }()
 
 	tablespaceWhiteList = nil
+	tablespaceCollections := []oracleMetricGroup{
+		oracleTablespaceMetrics,
+		globalNameTablespaceMetric,
+		dbIDTablespaceMetric,
+		oracleCDBDatafilesOffline,
+		oraclePDBDatafilesOffline,
+		oraclePDBNonWrite,
+	}
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Error(err)
@@ -209,13 +217,8 @@ func Test_collectTableSpaces_NoWhitelist_Ok(t *testing.T) {
 
 	sqlxDb := sqlx.NewDb(db, "sqlmock")
 	dbWrapper := database.NewDBWrapper(sqlxDb)
-	collectorWg.Add(6)
-	go oracleTablespaceMetrics.Collect(dbWrapper, &collectorWg, metricChan)
-	go globalNameTablespaceMetric.Collect(dbWrapper, &collectorWg, metricChan)
-	go dbIDTablespaceMetric.Collect(dbWrapper, &collectorWg, metricChan)
-	go oracleCDBDatafilesOffline.Collect(dbWrapper, &collectorWg, metricChan)
-	go oraclePDBDatafilesOffline.Collect(dbWrapper, &collectorWg, metricChan)
-	go oraclePDBNonWrite.Collect(dbWrapper, &collectorWg, metricChan)
+	collectorWg.Add(1)
+	go collectTableSpaces(dbWrapper, &collectorWg, metricChan, tablespaceCollections)
 
 	collectorWg.Wait()
 

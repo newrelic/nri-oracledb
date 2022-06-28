@@ -31,6 +31,7 @@ type metricsCollector struct {
 // send their metrics to the populateMetrics goroutine
 func (mc *metricsCollector) collect() {
 
+	// Create a goroutine for each of the base metric groups to collect
 	tablespaceCollections := []oracleMetricGroup{
 		oracleTablespaceMetrics,
 		globalNameTablespaceMetric,
@@ -40,6 +41,7 @@ func (mc *metricsCollector) collect() {
 		oraclePDBNonWrite,
 	}
 
+	// Create a goroutine for each of the base metric groups to collect
 	baseCollections := []oracleMetricGroup{
 		oracleLockedAccounts,
 		oracleReadWriteMetrics,
@@ -71,25 +73,11 @@ func (mc *metricsCollector) collect() {
 
 	metricChan := make(chan newrelicMetricSender, bufferSize) // large buffer for speed
 
-	// Create a goroutine for each of the tablespace metric groups to collect
-	if tablespaceWhiteList != nil && len(tablespaceWhiteList) == 0 {
-		log.Info("No tablespaces specified, skipping tablespace collection.")
-	} else {
-		for _, tbCollection := range tablespaceCollections {
-			if mc.skipGroup(tbCollection.name) {
-				log.Debug("Metric group %s skipped.", tbCollection.name)
-				continue
-			}
-			collectorWg.Add(1)
-			c := tbCollection
-			go c.Collect(mc.db, &collectorWg, metricChan)
-		}
-	}
+	// Separate logic is needed to see if we should even collect tablespaces
+	// Collect tablespaces first so the list query completes before other queries are run
+	collectorWg.Add(1)
+	go collectTableSpaces(mc.db, &collectorWg, metricChan, tablespaceCollections)
 
-	// Collect tablespace first so the list query completes before other queries are run
-	collectorWg.Wait()
-
-	// Create a goroutine for each of the base metric groups to collect
 	for _, collection := range baseCollections {
 		if mc.skipGroup(collection.name) {
 			log.Debug("Metric group %s skipped.", collection.name)
@@ -274,6 +262,21 @@ func createCustomMetricSet(sampleName string, instanceID string, i *integration.
 	)
 
 	return e.NewMetricSet(sampleName, attribute.Attr("entityName", "ora-instance:"+instanceID), attribute.Attr("displayName", instanceID))
+}
+
+func collectTableSpaces(db database.DBWrapper, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender, tablespaceCollections []oracleMetricGroup) {
+	defer wg.Done()
+
+	if tablespaceWhiteList != nil && len(tablespaceWhiteList) == 0 {
+		log.Info("No tablespaces specified, skipping tablespace collection.")
+		return
+	}
+
+	for _, collection := range tablespaceCollections {
+		wg.Add(1)
+		c := collection
+		go c.Collect(db, wg, metricChan)
+	}
 }
 
 // PopulateCustomMetricsFromFile collects metrics defined by a custom config file

@@ -58,13 +58,15 @@ type oracleMetricGroup struct {
 func (mg *oracleMetricGroup) Collect(db database.DBWrapper, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
 	defer wg.Done()
 
-	rows, err := db.Query(mg.sqlQuery(mg.metrics))
+	query := mg.sqlQuery(mg.metrics)
+
+	rows, err := db.Query(query)
 	if err != nil {
-		log.Error("Failed to execute query %s: %s", formatQueryForLogging(mg.sqlQuery(mg.metrics)), err)
+		log.Error("Failed to execute query %s: %s", formatQueryForLogging(query), err)
 		return
 	}
 	defer func() {
-		checkAndLogEmptyQueryResult(mg.sqlQuery(mg.metrics), rows)
+		checkAndLogEmptyQueryResult(query, rows)
 		err := rows.Close()
 		if err != nil {
 			log.Error("Failed to close rows: %s", err)
@@ -72,7 +74,7 @@ func (mg *oracleMetricGroup) Collect(db database.DBWrapper, wg *sync.WaitGroup, 
 	}()
 
 	if err = mg.metricsGenerator(rows, mg.metrics, metricChan); err != nil {
-		log.Error("Failed to generate metrics from db response for query %s: %s", formatQueryForLogging(mg.sqlQuery(mg.metrics)), err)
+		log.Error("Failed to generate metrics from db response for query %s: %s", formatQueryForLogging(query), err)
 		return
 	}
 }
