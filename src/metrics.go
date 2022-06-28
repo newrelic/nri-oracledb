@@ -67,7 +67,9 @@ func (mc *metricsCollector) collect() {
 	defer mc.wg.Done()
 
 	var collectorWg sync.WaitGroup
-	metricChan := make(chan newrelicMetricSender, 100) // large buffer for speed
+	var bufferSize = 100
+
+	metricChan := make(chan newrelicMetricSender, bufferSize) // large buffer for speed
 
 	// Create a goroutine for each of the tablespace metric groups to collect
 	if tablespaceWhiteList != nil && len(tablespaceWhiteList) == 0 {
