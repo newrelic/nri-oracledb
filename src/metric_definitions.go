@@ -156,6 +156,36 @@ func inMetrics(field string, metrics []*oracleMetric) string {
 	return query
 }
 
+// inWhitelist is a function to build a WHERE/AND IN ('tablespaceWhiteList1', 'tablespaceWhiteList2', 'tablespaceWhiteList...') string
+// This is appended to certain queries in order to return only the metrics for tablespaces included in the Whitelist
+func inWhitelist(field string, addWhere bool, grouped bool) string {
+	query := ` `
+	if len(tablespaceWhiteList) > 0 {
+		if addWhere {
+			query += `WHERE `
+		} else {
+			query += `AND `
+		}
+		query += field + ` IN (`
+
+		for i, tablespace := range tablespaceWhiteList {
+			query += fmt.Sprintf(`'%s'`, tablespace)
+
+			if i != len(tablespaceWhiteList)-1 {
+				query += `,`
+			}
+		}
+
+		query += `) `
+	}
+
+	if grouped {
+		query += `GROUP BY ` + field
+	}
+
+	return query
+}
+
 type customMetricGroup struct {
 	Query string
 }
@@ -795,23 +825,7 @@ var oraclePDBDatafilesOffline = oracleMetricGroup{
     WHERE a.con_id = b.con_id
 		`
 
-		if len(tablespaceWhiteList) > 0 {
-			query += `
-			AND a.TABLESPACE_NAME IN (`
-
-			for i, tablespace := range tablespaceWhiteList {
-				query += fmt.Sprintf(`'%s'`, tablespace)
-
-				if i != len(tablespaceWhiteList)-1 {
-					query += ","
-				}
-			}
-
-			query += ")"
-		}
-
-		query += `
-		GROUP BY a.TABLESPACE_NAME`
+		query += inWhitelist("a.TABLESPACE_NAME", false, true)
 		return query
 	},
 
@@ -882,23 +896,7 @@ var oracleCDBDatafilesOffline = oracleMetricGroup{
     FROM dba_data_files
 		`
 
-		if len(tablespaceWhiteList) > 0 {
-			query += `
-			WHERE TABLESPACE_NAME IN (`
-
-			for i, tablespace := range tablespaceWhiteList {
-				query += fmt.Sprintf(`'%s'`, tablespace)
-
-				if i != len(tablespaceWhiteList)-1 {
-					query += ","
-				}
-			}
-
-			query += ")"
-		}
-
-		query += `
-		GROUP BY TABLESPACE_NAME`
+		query += inWhitelist("TABLESPACE_NAME", true, true)
 		return query
 	},
 
@@ -1043,23 +1041,7 @@ var oraclePDBNonWrite = oracleMetricGroup{
     FROM cdb_data_files a, cdb_pdbs b
     WHERE a.con_id = b.con_id
     `
-		if len(tablespaceWhiteList) > 0 {
-			query += `
-			AND TABLESPACE_NAME IN (`
-
-			for i, tablespace := range tablespaceWhiteList {
-				query += fmt.Sprintf(`'%s'`, tablespace)
-
-				if i != len(tablespaceWhiteList)-1 {
-					query += ","
-				}
-			}
-
-			query += ")"
-		}
-
-		query += `
-		GROUP BY TABLESPACE_NAME`
+		query += inWhitelist("TABLESPACE_NAME", false, true)
 		return query
 	},
 
@@ -1139,21 +1121,7 @@ var oracleTablespaceMetrics = oracleMetricGroup{
 			) b
 			ON a.TABLESPACE_NAME = b.TABLESPACE_NAME`
 
-		if len(tablespaceWhiteList) > 0 {
-			query += `
-			WHERE a.TABLESPACE_NAME IN (`
-
-			for i, tablespace := range tablespaceWhiteList {
-				query += fmt.Sprintf(`'%s'`, tablespace)
-
-				if i != len(tablespaceWhiteList)-1 {
-					query += ","
-				}
-			}
-
-			query += ")"
-		}
-
+		query += inWhitelist("a.TABLESPACE_NAME", true, false)
 		return query
 	},
 
@@ -1301,21 +1269,7 @@ var globalNameTablespaceMetric = oracleMetricGroup{
 		FROM (SELECT TABLESPACE_NAME FROM DBA_TABLESPACES) t1,
 		(SELECT GLOBAL_NAME FROM global_name) t2`
 
-		if len(tablespaceWhiteList) > 0 {
-			query += `
-			WHERE TABLESPACE_NAME IN (`
-
-			for i, tablespace := range tablespaceWhiteList {
-				query += fmt.Sprintf(`'%s'`, tablespace)
-
-				if i != len(tablespaceWhiteList)-1 {
-					query += ","
-				}
-			}
-
-			query += ")"
-		}
-
+		query += inWhitelist("TABLESPACE_NAME", true, false)
 		return query
 	},
 
@@ -1431,21 +1385,7 @@ var dbIDTablespaceMetric = oracleMetricGroup{
 		FROM (SELECT TABLESPACE_NAME FROM DBA_TABLESPACES) t1,
 		(SELECT DBID FROM v$database) t2`
 
-		if len(tablespaceWhiteList) > 0 {
-			query += `
-			WHERE TABLESPACE_NAME IN (`
-
-			for i, tablespace := range tablespaceWhiteList {
-				query += fmt.Sprintf(`'%s'`, tablespace)
-
-				if i != len(tablespaceWhiteList)-1 {
-					query += ","
-				}
-			}
-
-			query += ")"
-		}
-
+		query += inWhitelist("TABLESPACE_NAME", true, false)
 		return query
 	},
 
