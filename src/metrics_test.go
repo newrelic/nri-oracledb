@@ -186,6 +186,7 @@ func TestPopulateMetrics(t *testing.T) {
 }
 
 func Test_collectTableSpaces_NoWhitelist_Ok(t *testing.T) {
+	i, err := integration.New("oracletest", "0.0.1")
 	args = argumentList{
 		Hostname:    "testhost",
 		Port:        "1234",
@@ -207,6 +208,10 @@ func Test_collectTableSpaces_NoWhitelist_Ok(t *testing.T) {
 		t.Error(err)
 	}
 
+	lookup := map[string]string{
+		"1": "MyInstance",
+	}
+
 	mock.ExpectQuery(`.*FROM DBA_TABLESPACE_USAGE_METRICS.*`).WillReturnRows(
 		sqlmock.NewRows([]string{"TABLESPACE_NAME", "USED", "OFFLINE", "SIZE", "USED_PERCENT"}).
 			AddRow("testtablespace", 1234, 0, 4321, 12),
@@ -218,7 +223,13 @@ func Test_collectTableSpaces_NoWhitelist_Ok(t *testing.T) {
 	sqlxDb := sqlx.NewDb(db, "sqlmock")
 	dbWrapper := database.NewDBWrapper(sqlxDb)
 	collectorWg.Add(1)
-	go collectTableSpaces(dbWrapper, &collectorWg, metricChan, tablespaceCollections)
+	mc := metricsCollector{
+		integration:    i,
+		db:             dbWrapper,
+		wg:             &collectorWg,
+		instanceLookUp: lookup,
+	}
+	go mc.collectTableSpaces(&collectorWg, metricChan, tablespaceCollections)
 
 	collectorWg.Wait()
 

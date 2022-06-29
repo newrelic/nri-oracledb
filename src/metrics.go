@@ -76,7 +76,7 @@ func (mc *metricsCollector) collect() {
 	// Separate logic is needed to see if we should even collect tablespaces
 	// Collect tablespaces first so the list query completes before other queries are run
 	collectorWg.Add(1)
-	go collectTableSpaces(mc.db, &collectorWg, metricChan, tablespaceCollections)
+	go mc.collectTableSpaces(&collectorWg, metricChan, tablespaceCollections)
 
 	for _, collection := range baseCollections {
 		if mc.skipGroup(collection.name) {
@@ -107,6 +107,25 @@ func (mc *metricsCollector) collect() {
 
 	// Create a goroutine to read from the metric channel and insert the metrics
 	populateMetrics(metricChan, mc.integration, mc.instanceLookUp)
+}
+
+func (mc *metricsCollector) collectTableSpaces(wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender, tablespaceCollections []oracleMetricGroup) {
+	defer wg.Done()
+
+	if tablespaceWhiteList != nil && len(tablespaceWhiteList) == 0 {
+		log.Info("No tablespaces specified, skipping tablespace collection.")
+		return
+	}
+
+	for _, collection := range tablespaceCollections {
+		if mc.skipGroup(collection.name) {
+			log.Debug("Metric group %s skipped.", collection.name)
+			continue
+		}
+		wg.Add(1)
+		c := collection
+		go c.Collect(mc.db, wg, metricChan)
+	}
 }
 
 func (mc *metricsCollector) skipGroup(metricGroup string) bool {
@@ -262,21 +281,6 @@ func createCustomMetricSet(sampleName string, instanceID string, i *integration.
 	)
 
 	return e.NewMetricSet(sampleName, attribute.Attr("entityName", "ora-instance:"+instanceID), attribute.Attr("displayName", instanceID))
-}
-
-func collectTableSpaces(db database.DBWrapper, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender, tablespaceCollections []oracleMetricGroup) {
-	defer wg.Done()
-
-	if tablespaceWhiteList != nil && len(tablespaceWhiteList) == 0 {
-		log.Info("No tablespaces specified, skipping tablespace collection.")
-		return
-	}
-
-	for _, collection := range tablespaceCollections {
-		wg.Add(1)
-		c := collection
-		go c.Collect(db, wg, metricChan)
-	}
 }
 
 // PopulateCustomMetricsFromFile collects metrics defined by a custom config file
