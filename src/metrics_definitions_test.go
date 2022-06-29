@@ -314,7 +314,7 @@ func TestOracleTablespaceGlobalNameMetrics(t *testing.T) {
 	}
 }
 
-func TestOracleTablespaceMetrics_Whitlist(t *testing.T) {
+func TestOracleTablespaceMetrics_Whitelist(t *testing.T) {
 	tablespaceWhiteList = []string{"testtablespace", "othertablespace"}
 
 	db, mock, err := sqlmock.New()
@@ -573,4 +573,58 @@ func TestOracleSysMetrics(t *testing.T) {
 		t.Errorf("failed to get expected metric: %s", pretty.Diff(expectedMetrics, generatedMetrics))
 	}
 
+}
+
+func TestInMetrics(t *testing.T) {
+	samplemetrics := []*oracleMetric{
+		{
+			name:          "memory.pgaInUseInBytes",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+			identifier:    "total PGA inuse",
+		},
+		{
+			name:          "memory.pgaAllocatedInBytes",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+			identifier:    "total PGA allocated",
+		},
+		{
+			name:          "memory.pgaFreeableInBytes",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+			identifier:    "total freeable PGA memory",
+		},
+	}
+
+	expectedResult := ` METRIC_NAME IN ('total PGA inuse','total PGA allocated','total freeable PGA memory')`
+
+	generatedResult := inMetrics("METRIC_NAME", samplemetrics)
+
+	if !reflect.DeepEqual(expectedResult, generatedResult) {
+		t.Errorf("failed to get expected result: %s", pretty.Diff(expectedResult, generatedResult))
+	}
+}
+
+func TestInWhiteList(t *testing.T) {
+	tablespaceWhiteList = []string{"SYSTEM", "USER", "TABLESPACE1"}
+
+	tests := []struct {
+		field          string
+		addWhere       bool
+		grouped        bool
+		expectedResult string
+	}{
+		{"TABLESPACE_NAME", true, true, ` WHERE TABLESPACE_NAME IN ('SYSTEM','USER','TABLESPACE1') GROUP BY TABLESPACE_NAME`},
+		{"a.TABLESPACE_NAME", true, false, ` WHERE a.TABLESPACE_NAME IN ('SYSTEM','USER','TABLESPACE1')`},
+		{"b.TABLESPACE_NAME", false, true, ` AND b.TABLESPACE_NAME IN ('SYSTEM','USER','TABLESPACE1') GROUP BY b.TABLESPACE_NAME`},
+		{"c.TABLESPACE_NAME", false, false, ` AND c.TABLESPACE_NAME IN ('SYSTEM','USER','TABLESPACE1')`},
+	}
+
+	for _, test := range tests {
+		generatedResult := inWhitelist(test.field, test.addWhere, test.grouped)
+		if !reflect.DeepEqual(test.expectedResult, generatedResult) {
+			t.Errorf("failed to get expected result: %s", pretty.Diff(test.expectedResult, generatedResult))
+		}
+	}
 }
