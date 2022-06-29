@@ -178,11 +178,11 @@ func inWhitelist(field string, addWhere bool, grouped bool) string {
 			}
 		}
 
-		query += `) `
+		query += `)`
 	}
 
 	if grouped {
-		query += `GROUP BY ` + field
+		query += ` GROUP BY ` + field
 	}
 
 	return query
