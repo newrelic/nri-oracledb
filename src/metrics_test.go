@@ -187,6 +187,10 @@ func TestPopulateMetrics(t *testing.T) {
 
 func Test_collectTableSpaces_NoWhitelist_Ok(t *testing.T) {
 	i, err := integration.New("oracletest", "0.0.1")
+	if err != nil {
+		t.Error(err)
+	}
+
 	args = argumentList{
 		Hostname:    "testhost",
 		Port:        "1234",
