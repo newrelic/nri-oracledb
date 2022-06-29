@@ -7,7 +7,7 @@ require (
 	github.com/godror/godror v0.24.6
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/kr/pretty v0.3.0
-	github.com/newrelic/infra-integrations-sdk v3.7.2+incompatible
+	github.com/newrelic/infra-integrations-sdk v3.7.3+incompatible
 	gopkg.in/yaml.v2 v2.4.0
 )
 
