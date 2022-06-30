@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 3.4.0 (2022-06-29)
+### Changed
+- Removed 200 tablespace limitation. Use `TABLESPACE` config parameter to limit the number of tablespaces monitored.
+- Bumped dependencies
+
 ## 3.3.0 (2022-05-05)
 ### Added
 - Add `SKIP_METRICS_GROUPS` config: Metrics collected are group together depending on the query used to obtain the data. These metric groups are here and can be skipped from collection by adding the name of the group to SKIP_METRICS_GROUPS in Json array format. By default no group is skipped so no breaking changes are added.
@@ -45,7 +50,7 @@ While we have not detected any breakage during our tests, we encourage users to 
 
 ## 2.5.1 (2020-07-30)
 ### Fixed
-- Fixed case where sample name for custoem metrics was not being set properly
+- Fixed case where sample name for custom metrics was not being set properly
 
 ## 2.5.0 (2020-06-08)
 ### Added
