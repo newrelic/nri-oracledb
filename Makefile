@@ -6,7 +6,7 @@ NATIVEARCH  := $(shell go version | awk -F '[ /]' '{print $$5}')
 INTEGRATION := oracledb
 BINARY_NAME  = nri-$(INTEGRATION)
 GO_FILES    := ./src/
-GOFLAGS          = -mod=readonly
+GOFLAGS      = -mod=readonly
 
 all: build
 
@@ -35,5 +35,6 @@ test:
 # Include thematic Makefiles
 include $(CURDIR)/build/ci.mk
 include $(CURDIR)/build/release.mk
+include $(CURDIR)/test/terraform_modules/provision.mk
 
 .PHONY: all build clean compile test

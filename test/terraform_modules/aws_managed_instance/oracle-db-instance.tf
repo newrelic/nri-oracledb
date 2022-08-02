@@ -1,17 +1,28 @@
 resource aws_db_subnet_group oracle_db {
-  name       = "oracle-db"
+  name       = "oracle-db--${terraform.workspace}"
+  tags = {
+    from_github = length(regexall("ghrun-", terraform.workspace)) > 0 ? "yes" : "no"
+    workspace = terraform.workspace
+  }
+
   subnet_ids = [
     # If I use a random provider random numbers could collide so https://xkcd.com/221/
-    data.terraform_remote_state.base_framework.outputs.aws_network_private_subnets[0].id,
-    data.terraform_remote_state.base_framework.outputs.aws_network_private_subnets[1].id,
-    data.terraform_remote_state.base_framework.outputs.aws_network_private_subnets[5].id,
+    data.terraform_remote_state.base_framework.outputs.common_networking.aws_subnet.private_subnets[0].id,
+    data.terraform_remote_state.base_framework.outputs.common_networking.aws_subnet.private_subnets[1].id,
+    data.terraform_remote_state.base_framework.outputs.common_networking.aws_subnet.private_subnets[5].id,
   ]
 }
 
 resource aws_db_instance oracle_db {
+  tags = {
+    Name = "oracle-db--${terraform.workspace}"
+    from_github = length(regexall("ghrun-", terraform.workspace)) > 0 ? "yes" : "no"
+    workspace = terraform.workspace
+  }
+
   # https://docs.aws.amazon.com/AmazonRDS/latest/OracleReleaseNotes/Welcome.html
   engine         = "oracle-ee"
-  engine_version = "19.0.0.0.ru-2021-10.rur-2021-10.r1"
+  engine_version = "19.0.0.0.ru-2022-01.rur-2022-01.r1"
   # engine_version = "21.0.0.0.ru-2022-01.rur-2022-01.r1"
 
   instance_class       = "db.t3.small"
