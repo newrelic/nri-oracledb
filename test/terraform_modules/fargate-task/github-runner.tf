@@ -5,15 +5,13 @@ resource aws_ecs_task_definition oracledb_e2e_runner {
   execution_role_arn       = data.terraform_remote_state.base_framework.outputs.github_runner.aws_iam_role.execution_role.arn
   requires_compatibilities = ["FARGATE"]
 
-  cpu          = 2 * 1024 # Measured in shares: 1024 shares == 1 vCPU
+  cpu          = 2 * 1024  # Measured in shares: 1024 shares == 1 vCPU
   memory       = 4 * 1024  # Measured in megabytes
   network_mode = "awsvpc"
 
   container_definitions = jsonencode([
     {
       name = "provisioner",
-      #cpu    = 2 * 1024,  # Measured in shares: 1024 shares == 1 vCPU
-      #memory = 4 * 1024,  # Measured in megabytes
 
       essential              = true,
       readonlyRootFilesystem = false,
@@ -24,7 +22,7 @@ resource aws_ecs_task_definition oracledb_e2e_runner {
         "logDriver" = "awslogs"
         "options"   = {
           "awslogs-group" : data.terraform_remote_state.base_framework.outputs.github_runner.aws_cloudwatch_log_group.github_task_runner.name,
-          "awslogs-region" : var.aws_region,
+          "awslogs-region" : data.terraform_remote_state.base_framework.outputs.github_runner.aws_cloudwatch_log_group.github_task_runner.region,
           "awslogs-stream-prefix" : split("/", data.terraform_remote_state.base_framework.outputs.github_runner.aws_cloudwatch_log_group.github_task_runner.name)[1]
         }
       }

@@ -11,7 +11,6 @@ DOCKER_GROUP := $(shell id -g)
 provision: terraform-init terraform-workspace-new terraform-apply
 deprovision: terraform-init terraform-workspace-new terraform-destroy
 
-.PHONY: terraform-init
 terraform-init:
 	@echo "=== $(INTEGRATION) === [ terraform ]: Initializing terraform..."
 	@TF_IN_AUTOMATION=1 \
@@ -30,21 +29,18 @@ terraform-init:
 #                hashicorp/terraform \
 #                init $(TERRAFORM_ARGS)
 
-.PHONY: terraform-workspace-new
 terraform-workspace-new:
 	@echo "=== $(INTEGRATION) === [ terraform ]: Creating terraform workspace..."
 	@TF_IN_AUTOMATION=1 \
 	 terraform $(TERRAFORM_CHDIR) workspace new $(TERRAFORM_WORKSPACE) || \
 	 terraform $(TERRAFORM_CHDIR) workspace select $(TERRAFORM_WORKSPACE)
 
-.PHONY: terraform-apply
 terraform-apply:
 	@echo "=== $(INTEGRATION) === [ terraform ]: Applying terraform..."
 	@TF_WORKSPACE=$(TERRAFORM_WORKSPACE) \
 	 TF_IN_AUTOMATION=1 \
 	 terraform $(TERRAFORM_CHDIR) apply -input=false -auto-approve
 
-.PHONY: terraform-destroy
 terraform-destroy:
 	@echo "=== $(INTEGRATION) === [ terraform ]: Destroying terraform..."
 	@TF_WORKSPACE=$(TERRAFORM_WORKSPACE) \

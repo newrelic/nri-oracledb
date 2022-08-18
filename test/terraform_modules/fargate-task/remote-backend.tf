@@ -6,6 +6,5 @@ data terraform_remote_state base_framework {
     dynamodb_table = "nr-coreint-terraform-locking"
     key            = "base-framework/global-state-store.tfstate"
     region         = "us-east-1"
-    profile        = "base-framework"
   }
 }

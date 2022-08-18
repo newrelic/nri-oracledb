@@ -35,6 +35,6 @@ test:
 # Include thematic Makefiles
 include $(CURDIR)/build/ci.mk
 include $(CURDIR)/build/release.mk
-include $(CURDIR)/test/terraform_modules/provision.mk
+include $(CURDIR)/test/provision.mk
 
 .PHONY: all build clean compile test
