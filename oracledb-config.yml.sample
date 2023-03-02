@@ -34,6 +34,8 @@ integrations:
 
     # A custom metrics query will run the custom query, then save the columns as
     # metrics on the OracleCustomSample event type.
+    # You can also setup a file with mutiple custom queries.
+    # CUSTOM_METRICS_CONFIG: 'C:\path\to\oracledb-custom-query.yml'
     # CUSTOM_METRICS_QUERY: >-
     #   SELECT
     #     SUM(PHYRDS) AS "physical_reads",
