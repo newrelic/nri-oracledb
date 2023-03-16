@@ -9,7 +9,7 @@ terraform {
   backend s3 {
     bucket         = "nr-coreint-terraform-tfstates"
     dynamodb_table = "nr-coreint-terraform-locking"
-    key            = "base-framework/nri-oracledb.tfstate"
+    key            = "base-framework/integrations/aws_managed_instance.tfstate"
     region         = "us-east-1"
     profile        = "base-framework"
   }
