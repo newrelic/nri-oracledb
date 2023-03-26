@@ -37,7 +37,12 @@ func TestCollectMetrics(t *testing.T) {
 	)
 
 	columns = []string{"INST_ID", "METRIC_NAME", "VALUE"}
-	mock.ExpectQuery(`.*sysmetric.*`).WillReturnRows(
+	mock.ExpectQuery(`.*\$con_sysmetric.*`).WillReturnRows(
+		sqlmock.NewRows(columns).AddRow("1", "CPU Usage Per Sec", 10.0),
+	)
+
+	columns = []string{"INST_ID", "METRIC_NAME", "VALUE"}
+	mock.ExpectQuery(`.*\$sysmetric.*`).WillReturnRows(
 		sqlmock.NewRows(columns).AddRow("1", "Buffer Cache Hit Ratio", 0.5),
 	)
 
@@ -297,7 +302,7 @@ func Test_PopulateMetrics_FromCustomQueryFile(t *testing.T) {
 
 	go func() {
 		wg.Wait()
-		close(ch)
+		close(ch) 
 	}()
 
 	for result := range ch {

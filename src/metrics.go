@@ -47,6 +47,7 @@ func (mc *metricsCollector) collect() {
 		oracleReadWriteMetrics,
 		oraclePgaMetrics,
 		oracleSysMetrics,
+		oraclePDBSysMetrics,
 		globalNameInstanceMetric,
 		dbIDInstanceMetric,
 		oracleLongRunningQueries,
