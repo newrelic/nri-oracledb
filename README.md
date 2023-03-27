@@ -16,7 +16,6 @@ GRANT SELECT ON cdb_data_files TO <username>;
 GRANT SELECT ON cdb_pdbs TO <username>;
 GRANT SELECT ON cdb_users TO <username>;
 GRANT SELECT ON gv_$sysmetric TO <username>;
-GRANT SELECT ON gv_$con_sysmetric TO <username>;
 GRANT SELECT ON gv_$pgastat TO <username>;
 GRANT SELECT ON gv_$instance TO <username>;
 GRANT SELECT ON gv_$filestat TO <username>;
@@ -40,8 +39,9 @@ GRANT SELECT ON gv_$rollstat TO <username>;
 GRANT SELECT ON v_$instance TO <username>;
 ```
 
-* For Oracle Container Databases greater than version 12.1 have global view for PDB containers which needs to be given explicit access
-```
+* For Oracle Container Databases greater than version 12.1 user must be given access to global view for PDB containers
+
+```sql
 GRANT SELECT ON gv$con_sysmetric TO <username>;
 ```
 
