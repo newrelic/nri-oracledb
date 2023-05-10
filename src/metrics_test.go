@@ -37,11 +37,129 @@ func TestCollectMetrics(t *testing.T) {
 	)
 
 	columns = []string{"INST_ID", "METRIC_NAME", "VALUE"}
+	mock.ExpectQuery(`.*\$sysmetric.*`).WillReturnRows(
+		sqlmock.NewRows(columns).AddRow("1", "Buffer Cache Hit Ratio", 0.5),
+	)
+
+	columns = []string{"TABLESPACE_NAME", "USED", "OFFLINE", "SIZE", "USED_PERCENT"}
+	mock.ExpectQuery(`.*TABLESPACE_NAME.*`).WillReturnRows(
+		sqlmock.NewRows(columns).AddRow("testtablespace", 11, 0, 123, 12),
+	)
+
+	lookup := map[string]string{
+		"1": "MyInstance",
+	}
+
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDb)
+	var populaterWg sync.WaitGroup
+	populaterWg.Add(1)
+	mc := metricsCollector{
+		integration:    i,
+		db:             dbWrapper,
+		wg:             &populaterWg,
+		instanceLookUp: lookup,
+	}
+	go mc.collect()
+	populaterWg.Wait()
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestCollectPDBMetrics(t *testing.T) {
+	args = argumentList{
+		SysMetricsSource:    "PDB",
+	}
+
+	i, err := integration.New("oracletest", "0.0.1")
+	if err != nil {
+		t.Error(err)
+	}
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Error(err)
+	}
+
+	mock.MatchExpectationsInOrder(false)
+
+	columns := []string{"INST_ID", "PhysicalReads", "PhysicalWrites", "PhysicalBlockReads", "PhysicalBlockWrites", "ReadTime", "WriteTime"}
+	mock.ExpectQuery(`.*PHYRDS.*`).WillReturnRows(
+		sqlmock.NewRows(columns).AddRow("1", 12, 23, 34, 45, 56, 67),
+	)
+
+	columns = []string{"INST_ID", "NAME", "VALUE"}
+	mock.ExpectQuery(`.*pgastat.*`).WillReturnRows(
+		sqlmock.NewRows(columns).AddRow("1", "total PGA inuse", 135),
+	)
+
+	columns = []string{"INST_ID", "METRIC_NAME", "VALUE"}
 	mock.ExpectQuery(`.*\$con_sysmetric.*`).WillReturnRows(
 		sqlmock.NewRows(columns).AddRow("1", "CPU Usage Per Sec", 10.0),
 	)
 
+	columns = []string{"TABLESPACE_NAME", "USED", "OFFLINE", "SIZE", "USED_PERCENT"}
+	mock.ExpectQuery(`.*TABLESPACE_NAME.*`).WillReturnRows(
+		sqlmock.NewRows(columns).AddRow("testtablespace", 11, 0, 123, 12),
+	)
+
+	lookup := map[string]string{
+		"1": "MyInstance",
+	}
+
+	sqlxDb := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDb)
+	var populaterWg sync.WaitGroup
+	populaterWg.Add(1)
+	mc := metricsCollector{
+		integration:    i,
+		db:             dbWrapper,
+		wg:             &populaterWg,
+		instanceLookUp: lookup,
+	}
+	go mc.collect()
+	populaterWg.Wait()
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestCollectAllMetrics(t *testing.T) {
+	args = argumentList{
+		SysMetricsSource:    "All",
+	}
+
+	i, err := integration.New("oracletest", "0.0.1")
+	if err != nil {
+		t.Error(err)
+	}
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Error(err)
+	}
+
+	mock.MatchExpectationsInOrder(false)
+
+	columns := []string{"INST_ID", "PhysicalReads", "PhysicalWrites", "PhysicalBlockReads", "PhysicalBlockWrites", "ReadTime", "WriteTime"}
+	mock.ExpectQuery(`.*PHYRDS.*`).WillReturnRows(
+		sqlmock.NewRows(columns).AddRow("1", 12, 23, 34, 45, 56, 67),
+	)
+
+	columns = []string{"INST_ID", "NAME", "VALUE"}
+	mock.ExpectQuery(`.*pgastat.*`).WillReturnRows(
+		sqlmock.NewRows(columns).AddRow("1", "total PGA inuse", 135),
+	)
+
 	columns = []string{"INST_ID", "METRIC_NAME", "VALUE"}
+	mock.ExpectQuery(`.*\$con_sysmetric.*`).WillReturnRows(
+		sqlmock.NewRows(columns).AddRow("1", "CPU Usage Per Sec", 10.0),
+	)
+
+		columns = []string{"INST_ID", "METRIC_NAME", "VALUE"}
 	mock.ExpectQuery(`.*\$sysmetric.*`).WillReturnRows(
 		sqlmock.NewRows(columns).AddRow("1", "Buffer Cache Hit Ratio", 0.5),
 	)
