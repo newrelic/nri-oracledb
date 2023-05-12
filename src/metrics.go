@@ -87,14 +87,14 @@ func (mc *metricsCollector) collect() {
 			go c.Collect(mc.db, &collectorWg, metricChan)
 		}
 
-		//Collect PDB metrics only when argument is set to 'PDB' or 'All'
+		// Collect PDB metrics only when argument is set to 'PDB' or 'All'
 		collectPDBMetrics:= args.SysMetricsSource == "PDB" || args.SysMetricsSource == "All" 
 		if collectPDBMetrics {
 			collectorWg.Add(1)
 			go oraclePDBSysMetrics.Collect(mc.db, &collectorWg, metricChan)
 		}
 
-		//Collect Sys metrics by default and any value other than 'PDB'
+		// Collect Sys metrics by default and any value other than 'PDB'
 		collectSysMetrics := args.SysMetricsSource != "PDB" 
 		if collectSysMetrics {
 			collectorWg.Add(1)
