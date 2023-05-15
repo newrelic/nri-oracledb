@@ -10,7 +10,7 @@ on:
 env:
   TAG: "v0.0.0"
   REPO_FULL_NAME: ${{ github.event.repository.full_name }}
-  ORIGINAL_REPO_NAME: "newrelic/nri-oracledb"
+  ORIGINAL_REPO_NAME: "nijugeorge173/nri-oracledb"
   GO_VERSION: '1.18'
   DOCKER_LOGIN_AVAILABLE: ${{ secrets.OHAI_DOCKER_HUB_ID }}
 
