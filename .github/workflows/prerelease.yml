@@ -2,6 +2,8 @@ name: Prerelease pipeline
 
 on:
   release:
+    branches:
+      - NEWRELIC-7761-OraclePDBMonitoring
     types:
       - prereleased
     tags:

@@ -3,8 +3,7 @@ name: Push/PR pipeline
 on:
   push:
     branches:
-      - main
-      - master
+      - NEWRELIC-7761-OraclePDBMonitoring
   pull_request:
 
 env:
