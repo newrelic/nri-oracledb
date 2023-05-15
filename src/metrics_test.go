@@ -50,8 +50,8 @@ func TestCollectMetrics(t *testing.T) {
 		"1": "MyInstance",
 	}
 
-	sqlxDb := sqlx.NewDb(db, "sqlmock")
-	dbWrapper := database.NewDBWrapper(sqlxDb)
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDB)
 	var populaterWg sync.WaitGroup
 	populaterWg.Add(1)
 	mc := metricsCollector{
@@ -109,8 +109,8 @@ func TestCollectPDBMetrics(t *testing.T) {
 		"1": "MyInstance",
 	}
 
-	sqlxDb := sqlx.NewDb(db, "sqlmock")
-	dbWrapper := database.NewDBWrapper(sqlxDb)
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDB)
 	var populaterWg sync.WaitGroup
 	populaterWg.Add(1)
 	mc := metricsCollector{
@@ -173,8 +173,8 @@ func TestCollectAllMetrics(t *testing.T) {
 		"1": "MyInstance",
 	}
 
-	sqlxDb := sqlx.NewDb(db, "sqlmock")
-	dbWrapper := database.NewDBWrapper(sqlxDb)
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDB)
 	var populaterWg sync.WaitGroup
 	populaterWg.Add(1)
 	mc := metricsCollector{
@@ -347,8 +347,8 @@ func Test_collectTableSpaces_NoWhitelist_Ok(t *testing.T) {
 	metricChan := make(chan newrelicMetricSender, 10)
 	var collectorWg sync.WaitGroup
 
-	sqlxDb := sqlx.NewDb(db, "sqlmock")
-	dbWrapper := database.NewDBWrapper(sqlxDb)
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDB)
 	collectorWg.Add(1)
 	mc := metricsCollector{
 		integration:    i,
@@ -406,8 +406,8 @@ func Test_PopulateMetrics_FromCustomQueryFile(t *testing.T) {
 		sqlmock.NewRows(columns).AddRow("something", "otherthing"),
 	)
 
-	sqlxDb := sqlx.NewDb(db, "sqlmock")
-	dbWrapper := database.NewDBWrapper(sqlxDb)
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDB)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
