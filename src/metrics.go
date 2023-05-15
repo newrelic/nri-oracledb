@@ -314,7 +314,8 @@ func PopulateCustomMetricsFromFile(db database.DBWrapper, wg *sync.WaitGroup, me
     }
 
     // Semaphore to run 10 custom queries concurrently
-    sem := make(chan struct{}, 10)
+    const customQueryCount = 10
+    sem := make(chan struct{}, customQueryCount)
     for _, config := range customYAML.Queries {
         sem <- struct{}{}
         wg.Add(1)
