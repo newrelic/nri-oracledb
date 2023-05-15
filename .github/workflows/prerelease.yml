@@ -2,8 +2,6 @@ name: Prerelease pipeline
 
 on:
   release:
-    branches:
-      - NEWRELIC-7761-OraclePDBMonitoring
     types:
       - prereleased
     tags:
@@ -13,7 +11,7 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   GO_VERSION: '1.18'
   INTEGRATION: "oracledb"
-  ORIGINAL_REPO_NAME: 'nijugeorge173/nri-oracledb'
+  ORIGINAL_REPO_NAME: 'newrelic/nri-oracledb'
   REPO_FULL_NAME: ${{ github.event.repository.full_name }}
   TAG: ${{ github.event.release.tag_name }}
 

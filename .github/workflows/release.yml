@@ -6,8 +6,6 @@ on:
       - released
     tags:
       - 'v*'
-    branches:
-      - NEWRELIC-7761-OraclePDBMonitoring
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
