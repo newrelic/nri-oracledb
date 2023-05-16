@@ -70,8 +70,9 @@ func TestCollectMetrics(t *testing.T) {
 
 func TestCollectPDBMetrics(t *testing.T) {
 	args = argumentList{
-		SysMetricsSource:    "PDB",
+		SysMetricsSource: "PDB",
 	}
+	defer func() { args = argumentList{} }()
 
 	i, err := integration.New("oracletest", "0.0.1")
 	if err != nil {
@@ -129,8 +130,9 @@ func TestCollectPDBMetrics(t *testing.T) {
 
 func TestCollectAllMetrics(t *testing.T) {
 	args = argumentList{
-		SysMetricsSource:    "All",
+		SysMetricsSource: "All",
 	}
+	defer func() { args = argumentList{} }()
 
 	i, err := integration.New("oracletest", "0.0.1")
 	if err != nil {
@@ -159,7 +161,7 @@ func TestCollectAllMetrics(t *testing.T) {
 		sqlmock.NewRows(columns).AddRow("1", "CPU Usage Per Sec", 10.0),
 	)
 
-		columns = []string{"INST_ID", "METRIC_NAME", "VALUE"}
+	columns = []string{"INST_ID", "METRIC_NAME", "VALUE"}
 	mock.ExpectQuery(`.*\$sysmetric.*`).WillReturnRows(
 		sqlmock.NewRows(columns).AddRow("1", "Buffer Cache Hit Ratio", 0.5),
 	)
@@ -193,7 +195,7 @@ func TestCollectAllMetrics(t *testing.T) {
 
 func TestGetOrCreateMetricSet(t *testing.T) {
 	args = argumentList{
-		Hostname:    "testhost",
+		Hostname:	 "testhost",//nolint
 		Port:        "1234",
 		ServiceName: "testServiceName",
 	}
