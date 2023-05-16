@@ -1,20 +1,20 @@
 package main
 
 import (
-		"fmt"
-		"io/ioutil"
-		"os"
-		"strconv"
-		"strings"
-		"sync"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"strconv"
+	"strings"
+	"sync"
 
-		"github.com/godror/godror"
-		"github.com/newrelic/infra-integrations-sdk/data/attribute"
-		nrmetric "github.com/newrelic/infra-integrations-sdk/data/metric"
-		"github.com/newrelic/infra-integrations-sdk/integration"
-		"github.com/newrelic/infra-integrations-sdk/log"
-		"github.com/newrelic/nri-oracledb/src/database"
-		"gopkg.in/yaml.v2"
+	"github.com/godror/godror"
+	"github.com/newrelic/infra-integrations-sdk/data/attribute"
+	nrmetric "github.com/newrelic/infra-integrations-sdk/data/metric"
+	"github.com/newrelic/infra-integrations-sdk/integration"
+	"github.com/newrelic/infra-integrations-sdk/log"
+	"github.com/newrelic/nri-oracledb/src/database"
+	"gopkg.in/yaml.v2"
 )
 
 type metricsCollector struct {
@@ -267,13 +267,14 @@ func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[stri
 		)
 
 		var newSet *nrmetric.Set
-		if entityType == "instance" {
-			newSet = e.NewMetricSet("OracleDatabaseSample", attribute.Attr("entityName", "ora-instance:"+entityIdentifier), attribute.Attr("displayName", entityIdentifier))
-		} else if entityType == "tablespace" {
-			newSet = e.NewMetricSet("OracleTablespaceSample", attribute.Attr("entityName", "ora-tablespace:"+entityIdentifier), attribute.Attr("displayName", entityIdentifier))
-		} else {
-			log.Error("Unreachable code")
-			os.Exit(1)
+		switch entityType {
+			case "instance":
+				newSet = e.NewMetricSet("OracleDatabaseSample", attribute.Attr("entityName", "ora-instance:"+entityIdentifier), attribute.Attr("displayName", entityIdentifier))
+			case "tablespace":
+				newSet = e.NewMetricSet("OracleTablespaceSample", attribute.Attr("entityName", "ora-tablespace:"+entityIdentifier), attribute.Attr("displayName", entityIdentifier))
+			default:
+				log.Error("Unreachable code")
+				os.Exit(1)	
 		}
 
 		// Put the new metric set the map
@@ -340,7 +341,7 @@ func CollectCustomConfig(db database.DBWrapper, metricChan chan<- newrelicMetric
     }
     defer func() {
         checkAndLogEmptyQueryResult(instanceQuery, instanceRows)
-        err := instanceRows.Close()
+        err = instanceRows.Close()
         if err != nil {
             log.Error("Failed to close rows: %s", err)
         }
