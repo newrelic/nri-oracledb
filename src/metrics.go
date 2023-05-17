@@ -306,7 +306,7 @@ func PopulateCustomMetricsFromFile(db database.DBWrapper, wg *sync.WaitGroup, me
         return
     }
 
-    var customYAML customMetricsYAML
+    var customYAML customMetricsYAML//nolint
     err = yaml.Unmarshal(contents, &customYAML)
     if err != nil {
         log.Error("Failed to unmarshal custom config file: %s", err)
