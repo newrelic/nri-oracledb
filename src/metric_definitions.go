@@ -569,43 +569,7 @@ var oracleSysstat = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
-		var sysScanner struct {
-			value  int
-			instID int
-			name   string
-		}
-
-		for rows.Next() {
-
-			// Scan the row into a struct
-			err := rows.Scan(&sysScanner.value, &sysScanner.instID, &sysScanner.name)
-			if err != nil {
-				return err
-			}
-
-			// Match the metric to one of the metrics we want to collect
-			for _, metric := range metrics {
-				if metric.defaultMetric || args.ExtendedMetrics {
-					if sysScanner.name == metric.identifier {
-						newMetric := &newrelicMetric{
-							name:       metric.name,
-							value:      sysScanner.value,
-							metricType: metric.metricType,
-						}
-
-						metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID)}
-
-						// Send the metric down the channel
-						metricsChan <- newrelicMetricSender{metadata: metadata, metric: newMetric}
-						break
-					}
-				}
-			}
-		}
-
-		return nil
-	},
+	metricsGenerator: rowMetricsGenerator,
 }
 
 var oracleSGA = oracleMetricGroup{
@@ -635,43 +599,7 @@ var oracleSGA = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
-		var sysScanner struct {
-			value  int
-			instID int
-			name   string
-		}
-
-		for rows.Next() {
-
-			// Scan the row into a struct
-			err := rows.Scan(&sysScanner.name, &sysScanner.value, &sysScanner.instID)
-			if err != nil {
-				return err
-			}
-
-			// Match the metric to one of the metrics we want to collect
-			for _, metric := range metrics {
-				if metric.defaultMetric || args.ExtendedMetrics {
-					if sysScanner.name == metric.identifier {
-						newMetric := &newrelicMetric{
-							name:       metric.name,
-							value:      sysScanner.value,
-							metricType: metric.metricType,
-						}
-
-						metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID)}
-
-						// Send the metric down the channel
-						metricsChan <- newrelicMetricSender{metadata: metadata, metric: newMetric}
-						break
-					}
-				}
-			}
-		}
-
-		return nil
-	},
+	metricsGenerator: rowMetricsGenerator,
 }
 
 var oracleRollbackSegments = oracleMetricGroup{
@@ -2471,45 +2399,9 @@ var oracleSysMetrics = oracleMetricGroup{
 			identifier:    "Physical Writes Per Sec",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
-		},	
+		},
 	},
-	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
-		var sysScanner struct {
-			instID     int
-			metricName string
-			value      float64
-		}
-
-		for rows.Next() {
-
-			// Scan the row into a struct
-			err := rows.Scan(&sysScanner.instID, &sysScanner.metricName, &sysScanner.value)
-			if err != nil {
-				return err
-			}
-
-			// Match the metric to one of the metrics we want to collect
-			for _, metric := range metrics {
-				if metric.defaultMetric || args.ExtendedMetrics {
-					if sysScanner.metricName == metric.identifier {
-						newMetric := &newrelicMetric{
-							name:       metric.name,
-							value:      sysScanner.value,
-							metricType: metric.metricType,
-						}
-
-						metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID)}
-
-						// Send the metric down the channel
-						metricsChan <- newrelicMetricSender{metadata: metadata, metric: newMetric}
-						break
-					}
-				}
-			}
-		}
-
-		return nil
-	},
+	metricsGenerator: rowMetricsGenerator,
 }
 
 var oraclePDBSysMetrics = oracleMetricGroup{
@@ -2541,19 +2433,19 @@ var oraclePDBSysMetrics = oracleMetricGroup{
 			identifier:    "Average Active Sessions",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
-		},		
+		},
 		{
 			name:          "db.backgroundCpuUsagePerSecond",
 			identifier:    "Background CPU Usage Per Sec",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
-		},		
+		},
 		{
 			name:          "db.backgroundTimePerSecond",
 			identifier:    "Background Time Per Sec",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
-		},		
+		},
 		{
 			name:          "db.cpuUsagePerSecond",
 			identifier:    "CPU Usage Per Sec",
@@ -2565,19 +2457,19 @@ var oraclePDBSysMetrics = oracleMetricGroup{
 			identifier:    "CPU Usage Per Txn",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
-		},		
+		},
 		{
 			name:          "db.currentLogons",
 			identifier:    "Current Logons Count",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
-		},	
+		},
 		{
 			name:          "db.currentOpenCursors",
 			identifier:    "Current Open Cursors Count",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
-		},	
+		},
 		{
 			name:          "db.cpuTimeRatio",
 			identifier:    "Database CPU Time Ratio",
@@ -2595,7 +2487,7 @@ var oraclePDBSysMetrics = oracleMetricGroup{
 			identifier:    "DB Block Changes Per Sec",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
-		},		
+		},
 		{
 			name:          "db.blockChangesPerTransaction",
 			identifier:    "DB Block Changes Per Txn",
@@ -2607,7 +2499,7 @@ var oraclePDBSysMetrics = oracleMetricGroup{
 			identifier:    "Executions Per Sec",
 			metricType:    metric.GAUGE,
 			defaultMetric: true,
-		},			
+		},
 		{
 			name:          "db.executionsPerTransaction",
 			identifier:    "Executions Per Txn",
@@ -2631,13 +2523,13 @@ var oraclePDBSysMetrics = oracleMetricGroup{
 			identifier:    "Logical Reads Per Sec",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
-		},			
+		},
 		{
 			name:          "db.logicalReadsPerTransaction",
 			identifier:    "Logical Reads Per Txn",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
-		},		
+		},
 		{
 			name:          "db.logonsPerTransaction",
 			identifier:    "Logons Per Txn",
@@ -2655,7 +2547,7 @@ var oraclePDBSysMetrics = oracleMetricGroup{
 			identifier:    "Open Cursors Per Sec",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
-		},			
+		},
 		{
 			name:          "db.openCursorsPerTransaction",
 			identifier:    "Open Cursors Per Txn",
@@ -2685,7 +2577,7 @@ var oraclePDBSysMetrics = oracleMetricGroup{
 			identifier:    "Physical Write Total Bytes Per Sec",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
-		},		
+		},
 		{
 			name:          "query.physicalWritesPerTransaction",
 			identifier:    "Physical Writes Per Txn",
@@ -2769,7 +2661,7 @@ var oraclePDBSysMetrics = oracleMetricGroup{
 			identifier:    "User Rollbacks Per Sec",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
-		},	
+		},
 		{
 			name:          "db.userRollbacksPercentage",
 			identifier:    "User Rollbacks Percentage",
@@ -2817,43 +2709,44 @@ var oraclePDBSysMetrics = oracleMetricGroup{
 			identifier:    "Physical Writes Per Sec",
 			metricType:    metric.GAUGE,
 			defaultMetric: false,
-		},	
+		},
 	},
-	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
-		var sysScanner struct {
-			instID     int
-			metricName string
-			value      float64
+	metricsGenerator: rowMetricsGenerator,
+}
+
+func rowMetricsGenerator(rows database.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
+	var sysScanner struct {
+		instID     int
+		metricName string
+		value      float64
+	}
+
+	for rows.Next() {
+		// Scan the row into a struct
+		err := rows.Scan(&sysScanner.instID, &sysScanner.metricName, &sysScanner.value)
+		if err != nil {
+			return err
 		}
 
-		for rows.Next() {
-
-			// Scan the row into a struct
-			err := rows.Scan(&sysScanner.instID, &sysScanner.metricName, &sysScanner.value)
-			if err != nil {
-				return err
-			}
-
-			// Match the metric to one of the metrics we want to collect
-			for _, metric := range metrics {
-				if metric.defaultMetric || args.ExtendedMetrics {
-					if sysScanner.metricName == metric.identifier {
-						newMetric := &newrelicMetric{
-							name:       metric.name,
-							value:      sysScanner.value,
-							metricType: metric.metricType,
-						}
-
-						metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID)}
-
-						// Send the metric down the channel
-						metricsChan <- newrelicMetricSender{metadata: metadata, metric: newMetric}
-						break
+		// Match the metric to one of the metrics we want to collect
+		for _, metric := range metrics {
+			if metric.defaultMetric || args.ExtendedMetrics {
+				if sysScanner.metricName == metric.identifier {
+					newMetric := &newrelicMetric{
+						name:       metric.name,
+						value:      sysScanner.value,
+						metricType: metric.metricType,
 					}
+
+					metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID)}
+
+					// Send the metric down the channel
+					metricsChan <- newrelicMetricSender{metadata: metadata, metric: newMetric}
+					break
 				}
 			}
 		}
+	}
 
-		return nil
-	},
+	return nil
 }

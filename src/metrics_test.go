@@ -422,7 +422,7 @@ func Test_PopulateMetrics_FromCustomQueryFile(t *testing.T) {
 
 	go func() {
 		wg.Wait()
-		close(ch) 
+		close(ch)
 	}()
 
 	for result := range ch {
