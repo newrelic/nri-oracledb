@@ -195,7 +195,7 @@ func TestCollectAllMetrics(t *testing.T) {
 
 func TestGetOrCreateMetricSet(t *testing.T) {
 	args = argumentList{
-		Hostname:	 "testhost",//nolint
+		Hostname:    "testhost",
 		Port:        "1234",
 		ServiceName: "testServiceName",
 	}
