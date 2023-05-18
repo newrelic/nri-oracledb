@@ -553,7 +553,6 @@ func TestOracleSysMetrics(t *testing.T) {
 		}
 
 		generatedMetrics = append(generatedMetrics, metric)
-
 	}
 
 	expectedMetrics := []newrelicMetricSender{

@@ -166,7 +166,7 @@ func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Inte
 		metric := metricSender.metric
 
 		// If the metric belongs to a tablespace, otherwise it belongs to an instance
-		if tsName, ok := metricSender.metadata["tablespace"]; ok {
+		if tsName, ok := metricSender.metadata["tablespace"]; ok { //nolint: nestif
 			ms := getOrCreateMetricSet(tsName, "tablespace", tsMetricSets, i)
 			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
 				log.Error("Failed to set metric %s: %s", metric.name, err)
@@ -213,7 +213,6 @@ func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Inte
 			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
 				log.Error("Failed to set metric %s: %s", metric.name, err)
 			}
-
 		}
 	}
 }
@@ -299,35 +298,35 @@ func createCustomMetricSet(sampleName string, instanceID string, i *integration.
 
 // PopulateCustomMetricsFromFile collects metrics defined by a custom config file
 func PopulateCustomMetricsFromFile(db database.DBWrapper, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender, configFile string) {
-    defer wg.Done()//nolint
-    contents, err := ioutil.ReadFile(configFile)
-    if err != nil {
-    	log.Error("Failed to read custom config file: %s", err)
-        return
-    }
+	defer wg.Done()
+	contents, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		log.Error("Failed to read custom config file: %s", err)
+		return
+	}
 
-    var customYAML customMetricsYAML//nolint
-    err = yaml.Unmarshal(contents, &customYAML)
-    if err != nil {
-        log.Error("Failed to unmarshal custom config file: %s", err)
-        return
-    }
+	var customYAML customMetricsYAML
+	err = yaml.Unmarshal(contents, &customYAML)
+	if err != nil {
+		log.Error("Failed to unmarshal custom config file: %s", err)
+		return
+	}
 
-    // Semaphore to run 10 custom queries concurrently
-    const customQueryCount = 10
-    sem := make(chan struct{}, customQueryCount)
-    for _, config := range customYAML.Queries {
-        sem <- struct{}{}
-        wg.Add(1)
-        go func(cfg customMetricsConfig) {
-            defer wg.Done()
-            defer func() {
-                <-sem
-            }()
+	// Semaphore to run 10 custom queries concurrently
+	const customQueryCount = 10
+	sem := make(chan struct{}, customQueryCount)
+	for _, config := range customYAML.Queries {
+		sem <- struct{}{}
+		wg.Add(1)
+		go func(cfg customMetricsConfig) {
+			defer wg.Done()
+			defer func() {
+				<-sem
+			}()
 
-            CollectCustomConfig(db, metricChan, cfg)
-        }(config)
-    }
+			CollectCustomConfig(db, metricChan, cfg)
+		}(config)
+	}
 }
 
 // CollectCustomConfig collects metrics defined by a custom config
