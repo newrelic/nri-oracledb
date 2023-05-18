@@ -2405,7 +2405,7 @@ var oracleSysMetrics = oracleMetricGroup{
 }
 
 var oraclePDBSysMetrics = oracleMetricGroup{
-	name: "sys_metrics",
+	name: "pdb_sys_metrics",
 	sqlQuery: func(metrics []*oracleMetric) string {
 		return `
 		SELECT
