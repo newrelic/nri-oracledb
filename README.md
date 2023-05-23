@@ -39,6 +39,12 @@ GRANT SELECT ON gv_$rollstat TO <username>;
 GRANT SELECT ON v_$instance TO <username>;
 ```
 
+* For Oracle Container Databases greater than version 12.1 user must be given access to global view for PDB containers
+
+```sql
+GRANT SELECT ON gv$con_sysmetric TO <username>;
+```
+
 ## Installation and usage
 
 For installation and usage instructions, see our [documentation web site](https://docs.newrelic.com/docs/integrations/host-integrations/host-integrations-list/oracledb-monitoring-integration).

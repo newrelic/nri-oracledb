@@ -553,7 +553,6 @@ func TestOracleSysMetrics(t *testing.T) {
 		}
 
 		generatedMetrics = append(generatedMetrics, metric)
-
 	}
 
 	expectedMetrics := []newrelicMetricSender{
@@ -573,6 +572,58 @@ func TestOracleSysMetrics(t *testing.T) {
 		t.Errorf("failed to get expected metric: %s", pretty.Diff(expectedMetrics, generatedMetrics))
 	}
 
+}
+
+func TestOraclePDBSysMetrics(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Error(err)
+	}
+
+	mock.ExpectQuery(".*").WillReturnRows(
+		sqlmock.NewRows([]string{"INST_ID", "METRIC_NAME", "VALUE"}).
+			AddRow("1", "CPU Usage Per Sec", 10.0),
+	)
+
+	sqlxDB := sqlx.NewDb(db, "sqlmock")
+	dbWrapper := database.NewDBWrapper(sqlxDB)
+
+	var wg sync.WaitGroup
+	metricChan := make(chan newrelicMetricSender, 10)
+
+	wg.Add(1)
+	var pdbGeneratedMetrics []newrelicMetricSender
+	go oraclePDBSysMetrics.Collect(dbWrapper, &wg, metricChan)
+	go func() {
+		wg.Wait()
+		close(metricChan)
+	}()
+
+	for {
+		metric, ok := <-metricChan
+		if !ok {
+			break
+		}
+
+		pdbGeneratedMetrics = append(pdbGeneratedMetrics, metric)
+	}
+
+	pdbExpectedMetrics := []newrelicMetricSender{
+		{
+			metric: &newrelicMetric{
+				name:       "db.cpuUsagePerSecond",
+				value:      10.0,
+				metricType: metric.GAUGE,
+			},
+			metadata: map[string]string{
+				"instanceID": "1",
+			},
+		},
+	}
+
+	if !reflect.DeepEqual(pdbExpectedMetrics, pdbGeneratedMetrics) {
+		t.Errorf("failed to get expected metric: %s", pretty.Diff(pdbExpectedMetrics, pdbGeneratedMetrics))
+	}
 }
 
 func TestInMetrics(t *testing.T) {

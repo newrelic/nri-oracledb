@@ -36,6 +36,7 @@ type argumentList struct {
 	CustomMetricsConfig   string `default:"" help:"YAML configuration file with one or more custom SQL queries to collect"`
 	DisableConnectionPool bool   `default:"false" help:"Disables connection pooling. It may make the integration run slower but may reduce issues with not being able to execute queries due to ORA-24459 (failure to get new connection)"`
 	ShowVersion           bool   `default:"false" help:"Print build information and exit"`
+	SysMetricsSource      string `default:"" help:"Default setting work for Standalone and Multitenant with CDB access only. For application container metrics set to 'PDB', or 'All' for CDB & PDB containers"`
 }
 
 const (

@@ -569,43 +569,7 @@ var oracleSysstat = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
-		var sysScanner struct {
-			value  int
-			instID int
-			name   string
-		}
-
-		for rows.Next() {
-
-			// Scan the row into a struct
-			err := rows.Scan(&sysScanner.value, &sysScanner.instID, &sysScanner.name)
-			if err != nil {
-				return err
-			}
-
-			// Match the metric to one of the metrics we want to collect
-			for _, metric := range metrics {
-				if metric.defaultMetric || args.ExtendedMetrics {
-					if sysScanner.name == metric.identifier {
-						newMetric := &newrelicMetric{
-							name:       metric.name,
-							value:      sysScanner.value,
-							metricType: metric.metricType,
-						}
-
-						metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID)}
-
-						// Send the metric down the channel
-						metricsChan <- newrelicMetricSender{metadata: metadata, metric: newMetric}
-						break
-					}
-				}
-			}
-		}
-
-		return nil
-	},
+	metricsGenerator: rowMetricsGenerator,
 }
 
 var oracleSGA = oracleMetricGroup{
@@ -635,43 +599,7 @@ var oracleSGA = oracleMetricGroup{
 		},
 	},
 
-	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
-		var sysScanner struct {
-			value  int
-			instID int
-			name   string
-		}
-
-		for rows.Next() {
-
-			// Scan the row into a struct
-			err := rows.Scan(&sysScanner.name, &sysScanner.value, &sysScanner.instID)
-			if err != nil {
-				return err
-			}
-
-			// Match the metric to one of the metrics we want to collect
-			for _, metric := range metrics {
-				if metric.defaultMetric || args.ExtendedMetrics {
-					if sysScanner.name == metric.identifier {
-						newMetric := &newrelicMetric{
-							name:       metric.name,
-							value:      sysScanner.value,
-							metricType: metric.metricType,
-						}
-
-						metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID)}
-
-						// Send the metric down the channel
-						metricsChan <- newrelicMetricSender{metadata: metadata, metric: newMetric}
-						break
-					}
-				}
-			}
-		}
-
-		return nil
-	},
+	metricsGenerator: rowMetricsGenerator,
 }
 
 var oracleRollbackSegments = oracleMetricGroup{
@@ -2424,42 +2352,401 @@ var oracleSysMetrics = oracleMetricGroup{
 			metricType:    metric.GAUGE,
 			defaultMetric: true,
 		},
+		{
+			name:          "db.capturedUserCalls",
+			identifier:    "Captured user calls",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.executeWithoutParseRatio",
+			identifier:    "Execute Without Parse Ratio",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.logonsPerSecond",
+			identifier:    "Logons Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.physicalReadBytesPerSecond",
+			identifier:    "Physical Read Bytes Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.physicalReadIORequestsPerSecond",
+			identifier:    "Physical Read IO Requests Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.physicalReadsPerSecond",
+			identifier:    "Physical Reads Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.physicalWriteBytesPerSecond",
+			identifier:    "Physical Write Bytes Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.physicalWritesPerSecond",
+			identifier:    "Physical Writes Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
 	},
-	metricsGenerator: func(rows database.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
-		var sysScanner struct {
-			instID     int
-			metricName string
-			value      float64
+	metricsGenerator: rowMetricsGenerator,
+}
+
+var oraclePDBSysMetrics = oracleMetricGroup{
+	name: "pdb_sys_metrics",
+	sqlQuery: func(metrics []*oracleMetric) string {
+		return `
+		SELECT
+			INST_ID,
+			METRIC_NAME,
+			VALUE
+		FROM gv$con_sysmetric`
+	},
+
+	metrics: []*oracleMetric{
+		{
+			name:          "db.activeParallelSessions",
+			identifier:    "Active Parallel Sessions",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "db.activeSerialSessions",
+			identifier:    "Active Serial Sessions",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.averageActiveSessions",
+			identifier:    "Average Active Sessions",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.backgroundCpuUsagePerSecond",
+			identifier:    "Background CPU Usage Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.backgroundTimePerSecond",
+			identifier:    "Background Time Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.cpuUsagePerSecond",
+			identifier:    "CPU Usage Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "db.cpuUsagePerTransaction",
+			identifier:    "CPU Usage Per Txn",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.currentLogons",
+			identifier:    "Current Logons Count",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.currentOpenCursors",
+			identifier:    "Current Open Cursors Count",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.cpuTimeRatio",
+			identifier:    "Database CPU Time Ratio",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.waitTimeRatio",
+			identifier:    "Database Wait Time Ratio",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.blockChangesPerSecond",
+			identifier:    "DB Block Changes Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.blockChangesPerTransaction",
+			identifier:    "DB Block Changes Per Txn",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.executionsPerSecond",
+			identifier:    "Executions Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "db.executionsPerTransaction",
+			identifier:    "Executions Per Txn",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.hardParseCountPerSecond",
+			identifier:    "Hard Parse Count Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.hardParseCountPerTransaction",
+			identifier:    "Hard Parse Count Per Txn",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.logicalReadsPerSecond",
+			identifier:    "Logical Reads Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.logicalReadsPerTransaction",
+			identifier:    "Logical Reads Per Txn",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.logonsPerTransaction",
+			identifier:    "Logons Per Txn",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "network.trafficBytePerSecond",
+			identifier:    "Network Traffic Volume Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "db.openCursorsPerSecond",
+			identifier:    "Open Cursors Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.openCursorsPerTransaction",
+			identifier:    "Open Cursors Per Txn",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.parseFailureCountPerSecond",
+			identifier:    "Parse Failure Count Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "disk.physicalReadBytesPerSecond",
+			identifier:    "Physical Read Total Bytes Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "query.physicalReadsPerTransaction",
+			identifier:    "Physical Reads Per Txn",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "disk.physicalWriteBytesPerSecond",
+			identifier:    "Physical Write Total Bytes Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "query.physicalWritesPerTransaction",
+			identifier:    "Physical Writes Per Txn",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "memory.redoGeneratedBytesPerSecond",
+			identifier:    "Redo Generated Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "memory.redoGeneratedBytesPerTransaction",
+			identifier:    "Redo Generated Per Txn",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.responseTimePerTransaction",
+			identifier:    "Response Time Per Txn",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.sessionCount",
+			identifier:    "Session Count",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "db.softParseRatio",
+			identifier:    "Soft Parse Ratio",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.sqlServiceResponseTime",
+			identifier:    "SQL Service Response Time",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "db.totalParseCountPerSecond",
+			identifier:    "Total Parse Count Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.totalParseCountPerTransaction",
+			identifier:    "Total Parse Count Per Txn",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.userCallsPerSecond",
+			identifier:    "User Calls Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.userCallsPerTransaction",
+			identifier:    "User Calls Per Txn",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.userCommitsPerSecond",
+			identifier:    "User Commits Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.userCommitsPercentage",
+			identifier:    "User Commits Percentage",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.userRollbacksPerSecond",
+			identifier:    "User Rollbacks Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.userRollbacksPercentage",
+			identifier:    "User Rollbacks Percentage",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "query.transactionsPerSecond",
+			identifier:    "User Transaction Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: true,
+		},
+		{
+			name:          "db.executeWithoutParseRatio",
+			identifier:    "Execute Without Parse Ratio",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.logonsPerSecond",
+			identifier:    "Logons Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.physicalReadBytesPerSecond",
+			identifier:    "Physical Read Bytes Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.physicalReadsPerSecond",
+			identifier:    "Physical Reads Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.physicalWriteBytesPerSecond",
+			identifier:    "Physical Write Bytes Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+		{
+			name:          "db.physicalWritesPerSecond",
+			identifier:    "Physical Writes Per Sec",
+			metricType:    metric.GAUGE,
+			defaultMetric: false,
+		},
+	},
+	metricsGenerator: rowMetricsGenerator,
+}
+
+func rowMetricsGenerator(rows database.Rows, metrics []*oracleMetric, metricsChan chan<- newrelicMetricSender) error {
+	var sysScanner struct {
+		instID     int
+		metricName string
+		value      float64
+	}
+
+	for rows.Next() {
+		// Scan the row into a struct
+		err := rows.Scan(&sysScanner.instID, &sysScanner.metricName, &sysScanner.value)
+		if err != nil {
+			return err
 		}
 
-		for rows.Next() {
-
-			// Scan the row into a struct
-			err := rows.Scan(&sysScanner.instID, &sysScanner.metricName, &sysScanner.value)
-			if err != nil {
-				return err
-			}
-
-			// Match the metric to one of the metrics we want to collect
-			for _, metric := range metrics {
-				if metric.defaultMetric || args.ExtendedMetrics {
-					if sysScanner.metricName == metric.identifier {
-						newMetric := &newrelicMetric{
-							name:       metric.name,
-							value:      sysScanner.value,
-							metricType: metric.metricType,
-						}
-
-						metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID)}
-
-						// Send the metric down the channel
-						metricsChan <- newrelicMetricSender{metadata: metadata, metric: newMetric}
-						break
+		// Match the metric to one of the metrics we want to collect
+		for _, metric := range metrics {
+			if metric.defaultMetric || args.ExtendedMetrics {
+				if sysScanner.metricName == metric.identifier {
+					newMetric := &newrelicMetric{
+						name:       metric.name,
+						value:      sysScanner.value,
+						metricType: metric.metricType,
 					}
+
+					metadata := map[string]string{"instanceID": strconv.Itoa(sysScanner.instID)}
+
+					// Send the metric down the channel
+					metricsChan <- newrelicMetricSender{metadata: metadata, metric: newMetric}
+					break
 				}
 			}
 		}
+	}
 
-		return nil
-	},
+	return nil
 }

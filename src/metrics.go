@@ -46,7 +46,6 @@ func (mc *metricsCollector) collect() {
 		oracleLockedAccounts,
 		oracleReadWriteMetrics,
 		oraclePgaMetrics,
-		oracleSysMetrics,
 		globalNameInstanceMetric,
 		dbIDInstanceMetric,
 		oracleLongRunningQueries,
@@ -86,6 +85,20 @@ func (mc *metricsCollector) collect() {
 		collectorWg.Add(1)
 		c := collection
 		go c.Collect(mc.db, &collectorWg, metricChan)
+	}
+
+	// Collect PDB metrics only when argument is set to 'PDB' or 'All'
+	collectPDBMetrics := strings.ToLower(args.SysMetricsSource) == "pdb" || strings.ToLower(args.SysMetricsSource) == "all"
+	if collectPDBMetrics {
+		collectorWg.Add(1)
+		go oraclePDBSysMetrics.Collect(mc.db, &collectorWg, metricChan)
+	}
+
+	// Collect Sys metrics by default and any value other than 'PDB'
+	collectSysMetrics := strings.ToLower(args.SysMetricsSource) != "pdb"
+	if collectSysMetrics {
+		collectorWg.Add(1)
+		go oracleSysMetrics.Collect(mc.db, &collectorWg, metricChan)
 	}
 
 	if mc.customMetricsQuery != "" {
@@ -153,7 +166,7 @@ func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Inte
 		metric := metricSender.metric
 
 		// If the metric belongs to a tablespace, otherwise it belongs to an instance
-		if tsName, ok := metricSender.metadata["tablespace"]; ok {
+		if tsName, ok := metricSender.metadata["tablespace"]; ok { //nolint: nestif
 			ms := getOrCreateMetricSet(tsName, "tablespace", tsMetricSets, i)
 			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
 				log.Error("Failed to set metric %s: %s", metric.name, err)
@@ -200,7 +213,6 @@ func populateMetrics(metricChan <-chan newrelicMetricSender, i *integration.Inte
 			if err := ms.SetMetric(metric.name, metric.value, metric.metricType); err != nil {
 				log.Error("Failed to set metric %s: %s", metric.name, err)
 			}
-
 		}
 	}
 }
@@ -254,11 +266,12 @@ func getOrCreateMetricSet(entityIdentifier string, entityType string, m map[stri
 	)
 
 	var newSet *nrmetric.Set
-	if entityType == "instance" {
+	switch entityType {
+	case "instance":
 		newSet = e.NewMetricSet("OracleDatabaseSample", attribute.Attr("entityName", "ora-instance:"+entityIdentifier), attribute.Attr("displayName", entityIdentifier))
-	} else if entityType == "tablespace" {
+	case "tablespace":
 		newSet = e.NewMetricSet("OracleTablespaceSample", attribute.Attr("entityName", "ora-tablespace:"+entityIdentifier), attribute.Attr("displayName", entityIdentifier))
-	} else {
+	default:
 		log.Error("Unreachable code")
 		os.Exit(1)
 	}
@@ -286,7 +299,6 @@ func createCustomMetricSet(sampleName string, instanceID string, i *integration.
 // PopulateCustomMetricsFromFile collects metrics defined by a custom config file
 func PopulateCustomMetricsFromFile(db database.DBWrapper, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender, configFile string) {
 	defer wg.Done()
-
 	contents, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		log.Error("Failed to read custom config file: %s", err)
@@ -301,7 +313,8 @@ func PopulateCustomMetricsFromFile(db database.DBWrapper, wg *sync.WaitGroup, me
 	}
 
 	// Semaphore to run 10 custom queries concurrently
-	sem := make(chan struct{}, 10)
+	const customQueryCount = 10
+	sem := make(chan struct{}, customQueryCount)
 	for _, config := range customYAML.Queries {
 		sem <- struct{}{}
 		wg.Add(1)
@@ -324,9 +337,10 @@ func CollectCustomConfig(db database.DBWrapper, metricChan chan<- newrelicMetric
 		log.Error("Failed to execute query %s: %s", formatQueryForLogging(instanceQuery), err)
 		return
 	}
+
 	defer func() {
 		checkAndLogEmptyQueryResult(instanceQuery, instanceRows)
-		err := instanceRows.Close()
+		err = instanceRows.Close()
 		if err != nil {
 			log.Error("Failed to close rows: %s", err)
 		}
