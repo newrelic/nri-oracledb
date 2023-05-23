@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## 3.5.0 (2023-06-29)
+### Added
+- Add support for PDB Sys metrics by setting up the new config field `SYS_METRICS_SOURCE`.
+- Include additional extended metrics in Sys metrics group.
+- Bump dependencies.
+
 ## 3.4.0 (2022-06-29)
 ### Changed
 - Removed 200 tablespace limitation. Use `TABLESPACE` config parameter to limit the number of tablespaces monitored.
