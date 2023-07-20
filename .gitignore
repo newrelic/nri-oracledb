@@ -43,3 +43,5 @@ Makefile-deploy.mk
 
 dist
 *.gpg
+
+.terraform
