@@ -1,0 +1,69 @@
+---
+queries:
+  # Metric names are set to the column names in the query results
+  - query: >-
+      SELECT
+        SUM(stat.gets) AS "gets",
+        SUM(stat.waits) AS "waits",
+        SUM(stat.waits)/SUM(stat.gets) AS "ratio",
+        inst.inst_id
+      FROM GV$ROLLSTAT stat, GV$INSTANCE inst
+      WHERE stat.inst_id=inst.inst_id
+      GROUP BY inst.inst_id
+    
+    # If not set explicitly here, metric type will default to 
+    # 'gauge' for numbers and 'attribute' for strings
+    metric_types:
+      gets: gauge
+
+    # If unset, sample_name defaults to OracleCustomSample
+    sample_name: MyCustomSample
+  - query: >-
+      SELECT S.USERNAME, s.sid, s.osuser, s.command, s.lockwait, s.status, s.schemaname, s.type, s.row_wait_obj#, s.row_wait_file#,
+        s.row_wait_block#, s.row_wait_row#, s.logon_time, s.last_call_et, s.blocking_session_status, s.blocking_instance, s.blocking_session,
+        s.event, s.wait_class, s.wait_time, s.seconds_in_wait, s.state, s.service_name,
+        t.sql_id, t.sql_text, t.hash_value, t.address, t.sql_fulltext, t.sql_id, t.sharable_mem, 
+        t.persistent_mem, t.runtime_mem, t.sorts, t.version_count, t.loaded_versions,
+        t.open_versions, t.users_opening, t.fetches, t.executions, t.users_executing, t.loads, t.first_load_time, t.invalidations, t.parse_calls,
+        t.disk_reads, t.direct_writes, t.direct_reads, t.buffer_gets, t.application_wait_time, t.concurrency_wait_time, t.cluster_wait_time,
+        t.user_io_wait_time, t.plsql_exec_time, t.java_exec_time, t.rows_processed, t.command_type, t.optimizer_mode, t.optimizer_cost, t.cpu_time,
+        t.elapsed_time, t.remote, t.object_status, t.last_load_time, t.is_obsolete, t.is_bind_sensitive, t.is_bind_aware, t.sql_profile, t.sql_patch,
+        t.sql_plan_baseline, t.program_id, t.program_line#, t.last_active_time, t.io_interconnect_bytes, t.physical_read_requests, t.physical_read_bytes,
+        t.physical_write_requests, t.physical_write_bytes, t.locked_total, t.pinned_total, t.is_reoptimizable
+        from sys.V$SQLAREA t,V$SESSION s
+        where s.sql_hash_value = t.hash_value
+        and s.sql_address    = t.address
+        and s.username is not null
+        and s.status = 'ACTIVE'
+        and s.username <> 'SYSTEM'
+    sample_name: OracleSQLArea
+  - query: >-
+      SELECT address, hash_value, plan_hash_value, full_plan_hash_value, child_number, operation, options, object#, object_owner, object_name, object_alias, object_type, optimizer, id, parent_id, depth, 
+        position, search_columns, cost, cardinality, bytes, cpu_cost, io_cost, temp_space, access_predicates, filter_predicates,
+        projection, time, qblock_name, remarks, other_xml, con_id
+      FROM sys.v_$sql_plan
+      WHERE cost IS NOT NULL
+      AND timestamp > (timestamp - INTERVAL '1' MINUTE)
+      ORDER BY timestamp desc, cost desc
+      FETCH FIRST 25 rows only
+    sample_name: OracleSQLPlan
+  - query: >-
+      SELECT TO_CHAR (timestamp, 'MM-DD-YYYY HH24:MI:SS') AS "PlanGeneratedTimeStamp", sql.sql_text, sql.sql_fulltext, pln.address, pln.hash_value, pln.plan_hash_value, pln.full_plan_hash_value,
+      pln.child_number, pln.operation, pln.options, pln.object#, pln.object_owner, pln.object_name, pln.object_alias,
+      pln.object_type, pln.optimizer, pln.id, pln.parent_id, pln.depth, pln.position, pln.search_columns, pln.cost,
+      pln.cardinality, pln.bytes, pln.cpu_cost, pln.io_cost, pln.temp_space, pln.access_predicates, pln.filter_predicates,
+      pln.projection, pln.time, pln.qblock_name, pln.remarks, pln.other_xml, pln.con_id
+      FROM sys.v_$sql_plan pln
+      inner  join
+      v$sql sql on pln.sql_id    = sql.sql_id        and
+                pln.child_number = sql.child_number
+      WHERE pln.cost IS NOT NULL
+      ORDER BY pln.timestamp desc, pln.cost desc
+      FETCH FIRST 50 rows only
+    sample_name: OracleSQLPlan2
+  - query: >-
+      SELECT job_name, status, error#, additional_info, to_char(actual_start_date)
+      FROM all_scheduler_job_run_details
+      WHERE req_start_date > (req_start_date - INTERVAL '1' MINUTE)
+      FETCH FIRST 25 rows only
+    sample_name: OracleFailedJobs

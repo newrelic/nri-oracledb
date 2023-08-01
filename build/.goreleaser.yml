@@ -26,6 +26,14 @@ nfpms:
     contents:
       - src: oracledb-config.yml.sample
         dst: /etc/newrelic-infra/integrations.d/oracledb-config.yml.sample
+      - src: oracledb-custom-query.yml.sample
+        dst: /etc/newrelic-infra/integrations.d/oracledb-custom-query.yml.sample
+      - src: oracledb-custom-query-11g.yml.sample
+        dst: /etc/newrelic-infra/integrations.d/oracledb-custom-query-11g.yml.sample
+      - src: oracledb-custom-query-12c.yml.sample
+        dst: /etc/newrelic-infra/integrations.d/oracledb-custom-query-12c.yml.sample
+      - src: oracledb-custom-query-19c.yml.sample
+        dst: /etc/newrelic-infra/integrations.d/oracledb-custom-query-19c.yml.sample       
       - src: CHANGELOG.md
         dst: /usr/share/doc/nri-oracledb/CHANGELOG.md
       - src: README.md
@@ -54,6 +62,14 @@ nfpms:
     contents:
       - src: oracledb-config.yml.sample
         dst: /etc/newrelic-infra/integrations.d/oracledb-config.yml.sample
+      - src: oracledb-custom-query.yml.sample
+        dst: /etc/newrelic-infra/integrations.d/oracledb-custom-query.yml.sample
+      - src: oracledb-custom-query-11g.yml.sample
+        dst: /etc/newrelic-infra/integrations.d/oracledb-custom-query-11g.yml.sample
+      - src: oracledb-custom-query-12c.yml.sample
+        dst: /etc/newrelic-infra/integrations.d/oracledb-custom-query-12c.yml.sample
+      - src: oracledb-custom-query-19c.yml.sample
+        dst: /etc/newrelic-infra/integrations.d/oracledb-custom-query-19c.yml.sample 
       - src: CHANGELOG.md
         dst: /usr/share/doc/nri-oracledb/CHANGELOG.md
       - src: README.md
