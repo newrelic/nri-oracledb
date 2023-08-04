@@ -1,11 +1,17 @@
-# Change Log
+# Changelog
 
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## 3.5.0 (2023-06-29)
+Unreleased section should follow [Release Toolkit](https://github.com/newrelic/release-toolkit#render-markdown-and-update-markdown)
+
+## Unreleased
+### enhancement
+ - bumped golang version pinning 1.20.6
+
+## 3.5.0 (2023-06-06)
 ### Added
 - Add support for PDB Sys metrics by setting up the new config field `SYS_METRICS_SOURCE`.
 - Include additional extended metrics in Sys metrics group.
