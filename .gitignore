@@ -43,3 +43,6 @@ Makefile-deploy.mk
 
 dist
 *.gpg
+
+# Release toolkit
+CHANGELOG.partial.md

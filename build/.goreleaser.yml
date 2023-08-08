@@ -8,6 +8,9 @@ builds:
       - linux
     goarch:
       - amd64
+    # godorr requires C compiler with CGO_ENABLED=1
+    # env:
+    #   - CGO_ENABLED=0
 
 nfpms:
   - id: nri-oracledb-deb
