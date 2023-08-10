@@ -1,0 +1,52 @@
+---
+queries:
+  # Metric names are set to the column names in the query results
+  - query: >-
+      SELECT
+        SUM(stat.gets) AS "gets",
+        SUM(stat.waits) AS "waits",
+        SUM(stat.waits)/SUM(stat.gets) AS "ratio",
+        inst.inst_id
+      FROM GV$ROLLSTAT stat, GV$INSTANCE inst
+      WHERE stat.inst_id=inst.inst_id
+      GROUP BY inst.inst_id
+    
+    # If not set explicitly here, metric type will default to 
+    # 'gauge' for numbers and 'attribute' for strings
+    metric_types:
+      gets: gauge
+
+    # If unset, sample_name defaults to OracleCustomSample
+    sample_name: MyCustomSample
+  - query: >-
+      SELECT S.USERNAME, s.sid, s.osuser, s.command, s.lockwait, s.status, s.schemaname, s.type, s.row_wait_obj#, s.row_wait_file#,
+        s.row_wait_block#, s.row_wait_row#, to_char(s.logon_time) AS "LOGON_TIME", s.last_call_et, s.blocking_session_status, s.blocking_instance, s.blocking_session,
+        s.event, s.wait_class, s.wait_time, s.seconds_in_wait, s.state, s.service_name,
+        t.sql_id, t.sql_text, t.hash_value, t.address, t.sql_fulltext, t.sharable_mem, 
+        t.persistent_mem, t.runtime_mem, t.sorts, t.version_count, t.loaded_versions,
+        t.open_versions, t.users_opening, t.fetches, t.executions, t.users_executing, t.loads, t.first_load_time, t.invalidations, t.parse_calls,
+        t.disk_reads, t.direct_writes, t.buffer_gets, t.application_wait_time, t.concurrency_wait_time, t.cluster_wait_time,
+        t.user_io_wait_time, t.plsql_exec_time, t.java_exec_time, t.rows_processed, t.command_type, t.optimizer_mode, t.optimizer_cost, t.cpu_time,
+        t.elapsed_time, t.remote, t.object_status, to_char(t.last_load_time) AS "LAST_LOAD_TIME", t.is_obsolete, t.is_bind_sensitive, t.sql_profile, t.sql_patch,
+        t.sql_plan_baseline, t.program_id, t.program_line#, to_char(t.last_active_time) AS "LAST_ACTIVE_TIME", t.io_interconnect_bytes, t.physical_read_requests, t.physical_read_bytes,
+        t.physical_write_requests, t.physical_write_bytes, t.locked_total, t.pinned_total
+        from sys.V$SQLAREA t,V$SESSION s
+        where s.sql_hash_value = t.hash_value
+        and s.sql_address    = t.address
+        and s.username is not null
+        and s.status = 'ACTIVE'
+        and s.username <> 'SYSTEM'
+    sample_name: OracleSQLArea
+  - query: >-
+      SELECT TO_CHAR (timestamp, 'MM-DD-YYYY HH24:MI:SS') AS "PlanGeneratedTimeStamp", operation, options, object#, object_owner, object_name, object_alias, object_type, optimizer, id, parent_id, depth, 
+        position, search_columns, cost, cardinality, bytes, cpu_cost, io_cost, temp_space, access_predicates, filter_predicates,
+        projection, time, qblock_name, remarks, con_id
+      FROM sys.V$SQL_PLAN
+      WHERE cost IS NOT NULL
+      ORDER BY timestamp desc, cost desc
+      FETCH FIRST 50 rows only
+    sample_name: OracleSQLPlan
+  - query: >-
+      SELECT job_name, status, error#, to_char(run_duration) AS "RUN_DURATION", to_char(cpu_used) AS "CPU_USED", additional_info, to_char(actual_start_date) AS "ACTUAL_START_DATE"
+      FROM user_scheduler_job_run_details
+    sample_name: OracleFailedJobs
