@@ -1,4 +1,7 @@
-FROM golang:1.19.10-bookworm
+# Changing the container's glib version might cause issues.
+# In the past, we experienced problems when bumping Go versions and using the `bookworm` versions.
+# glib issue: https://github.com/golang/go/issues/58550#issuecomment-1597411275
+FROM golang:1.19.10-buster
 
 ARG GH_VERSION='1.9.2'
 
