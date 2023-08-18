@@ -9,7 +9,9 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ## Unreleased
 
-### bugfix
+## v3.6.2 - 2023-08-18
+
+### 🐞 Bug fixes
 - Restore golang docker image to buster
 
 ## v3.6.1 - 2023-08-15
