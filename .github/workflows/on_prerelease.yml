@@ -17,7 +17,7 @@ env:
 jobs:
   test-nix:
     name: Run unit tests on *Nix
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - name: Login to DockerHub
@@ -30,7 +30,7 @@ jobs:
 
   prerelease:
     name: Build binary for *Nix/Win, create archives for *Nix/Win, create packages for *Nix, upload all artifacts into GH Release assets
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [test-nix]
     steps:
       - uses: actions/checkout@v4
@@ -53,7 +53,7 @@ jobs:
 
   publish-to-s3:
     name: Send release assets to S3
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: [prerelease]
     steps:
       - name: Login to DockerHub
