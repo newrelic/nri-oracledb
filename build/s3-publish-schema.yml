@@ -29,6 +29,7 @@
         - groovy
         - hirsute
         - bullseye
+        - bookworm
 
 - src: "{app_name}-{version}-1.{arch}.rpm"
   arch:
@@ -56,6 +57,7 @@
         - 15.2
         - 15.3
         - 15.4
+        - 15.5
 
     - type: yum
       dest: "{dest_prefix}linux/yum/amazonlinux/{os_version}/{arch}/"

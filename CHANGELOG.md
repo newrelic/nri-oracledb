@@ -9,6 +9,9 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ## Unreleased
 
+### enhancement
+- publish as well for RHEL 15.5 and bookworm
+ 
 ## v3.6.2 - 2023-08-18
 
 ### 🐞 Bug fixes
