@@ -9,6 +9,11 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ## Unreleased
 
+## v3.7.1 - 2023-12-19
+
+### ⛓️ Dependencies
+- Updated github.com/data-dog/go-sqlmock to v1.5.1 - [Changelog 🔗](https://github.com/data-dog/go-sqlmock/releases/tag/v1.5.1)
+
 ## v3.7.0 - 2023-11-06
 
 ### 🚀 Enhancements
