@@ -3,7 +3,7 @@ module github.com/newrelic/nri-oracledb
 go 1.19
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.5.1
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/godror/godror v0.24.6
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/kr/pretty v0.3.1
