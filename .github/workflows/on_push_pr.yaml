@@ -11,7 +11,6 @@ on:
 jobs:
   push-pr:
     uses: newrelic/coreint-automation/.github/workflows/reusable_push_pr.yaml@v2
-    secrets: inherit
     with:
       run_test_windows: false
       run_integration_nix: false
