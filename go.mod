@@ -8,7 +8,7 @@ require (
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/kr/pretty v0.3.1
 	github.com/newrelic/infra-integrations-sdk v3.8.2+incompatible
-	gopkg.in/yaml.v2 v2.4.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
