@@ -10,7 +10,7 @@ on:
 
 jobs:
   push-pr:
-    uses: newrelic/coreint-automation/.github/workflows/reusable_push_pr.yaml@v2
+    uses: newrelic/coreint-automation/.github/workflows/reusable_push_pr.yaml@v3
     with:
       run_test_windows: false
       run_integration_nix: false
