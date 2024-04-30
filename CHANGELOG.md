@@ -9,6 +9,11 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ## Unreleased
 
+## v3.7.4 - 2024-04-30
+
+### ⛓️ Dependencies
+- Updated github.com/jmoiron/sqlx to v1.4.0 - [Changelog 🔗](https://github.com/jmoiron/sqlx/releases/tag/v1.4.0)
+
 ## v3.7.3 - 2024-02-20
 
 ### ⛓️ Dependencies
