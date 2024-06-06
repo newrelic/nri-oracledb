@@ -9,6 +9,9 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ## Unreleased
 
+### Bugfix
+- Bump go version to go 1.19.13
+
 ## v3.7.4 - 2024-04-30
 
 ### ⛓️ Dependencies
