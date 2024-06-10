@@ -136,9 +136,11 @@ func getConnectionString() string {
 	return godror.ConnectionParams{
 		StandaloneConnection: args.DisableConnectionPool,
 		CommonParams: dsn.CommonParams{
-			Username:      args.Username,
-			Password:      dsn.NewPassword(args.Password),
-			ConnectString: connString,
+			CommonSimpleParams: dsn.CommonSimpleParams{
+				Username:      args.Username,
+				Password:      dsn.NewPassword(args.Password),
+				ConnectString: connString,
+			},
 		},
 		PoolParams: dsn.PoolParams{
 			MinSessions:      0,
