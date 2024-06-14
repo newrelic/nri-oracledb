@@ -533,7 +533,7 @@ var oracleSysstat = oracleMetricGroup{
 	name: "sysstat",
 	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
-		SELECT sysstat.value,inst.inst_id, sysstat.name
+		SELECT inst.inst_id, sysstat.name, sysstat.value
 		FROM GV$SYSSTAT sysstat, GV$INSTANCE inst
 		WHERE sysstat.inst_id=inst.inst_id AND
     `
@@ -576,7 +576,7 @@ var oracleSGA = oracleMetricGroup{
 	name: "sga",
 	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
-    SELECT sga.name, sga.value,inst.inst_id
+    SELECT inst.inst_id, sga.name, sga.value
     FROM GV$SGA sga, GV$INSTANCE inst
     WHERE sga.inst_id=inst.inst_id AND
     `
