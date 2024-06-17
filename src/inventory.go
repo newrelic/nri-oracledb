@@ -52,10 +52,7 @@ func (ic *inventoryCollector) collect() {
 	}
 	defer func() {
 		checkAndLogEmptyQueryResult(sqlQuery, rows)
-		err := rows.Close()
-		if err != nil {
-			log.Error("Failed to close rows: %s", err)
-		}
+		rows.Close()
 	}()
 
 	for rows.Next() {

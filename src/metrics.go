@@ -340,10 +340,7 @@ func CollectCustomConfig(db database.DBWrapper, metricChan chan<- newrelicMetric
 
 	defer func() {
 		checkAndLogEmptyQueryResult(instanceQuery, instanceRows)
-		err = instanceRows.Close()
-		if err != nil {
-			log.Error("Failed to close rows: %s", err)
-		}
+		instanceRows.Close()
 	}()
 
 	var instanceID string
@@ -362,7 +359,7 @@ func CollectCustomConfig(db database.DBWrapper, metricChan chan<- newrelicMetric
 	}
 	defer func() {
 		checkAndLogEmptyQueryResult(cfg.Query, rows)
-		_ = rows.Close()
+		rows.Close()
 	}()
 
 	sampleName := func() string {

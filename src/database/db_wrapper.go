@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"errors"
+	"github.com/newrelic/infra-integrations-sdk/log"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -15,7 +16,6 @@ type Rows interface {
 	ScannedRowsCount() int
 	MapScan(dest map[string]interface{}) error
 	Columns() ([]string, error)
-	Close() error
 }
 
 type DBWrapper struct {
@@ -49,6 +49,13 @@ func (r *RowsWrapper) Next() bool {
 	return n
 }
 
+func (r *RowsWrapper) Close() {
+	err := r.Rows.Close()
+	if err != nil {
+		log.Error("Failed to close rows: %s", err)
+	}
+}
+
 // ScannedRowsCount returns the number of rows iterated with Next
 func (r *RowsWrapper) ScannedRowsCount() int {
 	return r.count
@@ -74,4 +81,11 @@ func (rx *RowsxWrapper) Next() bool {
 // ScannedRowsCount returns the number of rows iterated with Next
 func (rx *RowsxWrapper) ScannedRowsCount() int {
 	return rx.count
+}
+
+func (rx *RowsxWrapper) Close() {
+	err := rx.Rows.Close()
+	if err != nil {
+		log.Error("Failed to close rows: %s", err)
+	}
 }
