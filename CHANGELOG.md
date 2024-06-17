@@ -9,11 +9,13 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ## Unreleased
 
-### security
+## v3.8.0 - 2024-06-17
+
+### 🛡️ Security notices
 - Updated Golang version to address some vulnerabilities
 - Updated Godror dependency
 
-### bugfix
+### 🐞 Bug fixes
 - Fixed two queries. Now the integration correctly collects `sga.logBufferRedoAllocationRetries`, `sga.logBufferRedoEntries`, `sorts.memoryInBytes`, `sorts.diskInBytes`, `sga.fixedSizeInBytes`, and `sga.redoBuffersInBytes`
 
 ## v3.7.4 - 2024-04-30
