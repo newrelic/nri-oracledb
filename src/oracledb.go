@@ -197,10 +197,7 @@ func createInstanceIDLookup(db database.DBWrapper) (map[string]string, error) {
 
 	defer func() {
 		checkAndLogEmptyQueryResult(instanceQuery, rows)
-		err := rows.Close()
-		if err != nil {
-			log.Error("Failed to close rows: %s", err)
-		}
+		rows.Close()
 	}()
 
 	var instance struct {

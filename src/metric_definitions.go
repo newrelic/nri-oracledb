@@ -67,10 +67,7 @@ func (mg *oracleMetricGroup) Collect(db database.DBWrapper, wg *sync.WaitGroup, 
 	}
 	defer func() {
 		checkAndLogEmptyQueryResult(query, rows)
-		err := rows.Close()
-		if err != nil {
-			log.Error("Failed to close rows: %s", err)
-		}
+		rows.Close()
 	}()
 
 	if err = mg.metricsGenerator(rows, mg.metrics, metricChan); err != nil {
@@ -202,12 +199,7 @@ func (mg *customMetricGroup) Collect(db database.DBWrapper, wg *sync.WaitGroup, 
 		log.Error("Failed to execute query %s: %s", formatQueryForLogging(mg.Query), err)
 		return
 	}
-	defer func() {
-		err := rows.Close()
-		if err != nil {
-			log.Error("Failed to close rows: %s", err)
-		}
-	}()
+	defer rows.Close()
 
 	var instanceID string
 	for rows.Next() {
@@ -218,17 +210,12 @@ func (mg *customMetricGroup) Collect(db database.DBWrapper, wg *sync.WaitGroup, 
 		}
 	}
 
-	rows, err = db.Queryx(mg.Query)
+	rowsCustom, err := db.Queryx(mg.Query)
 	if err != nil {
 		log.Error("Failed to execute query %s: %s", formatQueryForLogging(mg.Query), err)
 		return
 	}
-	defer func() {
-		err := rows.Close()
-		if err != nil {
-			log.Error("Failed to close rows: %s", err)
-		}
-	}()
+	defer rowsCustom.Close()
 
 	sender := newrelicMetricSender{
 		isCustom: true,
