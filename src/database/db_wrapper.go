@@ -50,7 +50,7 @@ func (r *RowsWrapper) Next() bool {
 }
 
 func (r *RowsWrapper) Close() {
-	if r == nil {
+	if r.Rows == nil {
 		return
 	}
 	err := r.Rows.Close()
@@ -87,7 +87,7 @@ func (rx *RowsxWrapper) ScannedRowsCount() int {
 }
 
 func (rx *RowsxWrapper) Close() {
-	if rx == nil {
+	if rx.Rows == nil {
 		return
 	}
 	err := rx.Rows.Close()
