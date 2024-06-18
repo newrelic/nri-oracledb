@@ -9,9 +9,11 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ## Unreleased
 
-### bugfix
+## v3.8.1 - 2024-06-18
+
+### 🐞 Bug fixes
 - A wrong custom query could cause a panic. Now the error is managed properly.
- 
+
 ## v3.8.0 - 2024-06-17
 
 ### 🛡️ Security notices
