@@ -50,6 +50,9 @@ func (r *RowsWrapper) Next() bool {
 }
 
 func (r *RowsWrapper) Close() {
+	if r == nil {
+		return
+	}
 	err := r.Rows.Close()
 	if err != nil {
 		log.Error("Failed to close rows: %s", err)
@@ -84,6 +87,9 @@ func (rx *RowsxWrapper) ScannedRowsCount() int {
 }
 
 func (rx *RowsxWrapper) Close() {
+	if rx == nil {
+		return
+	}
 	err := rx.Rows.Close()
 	if err != nil {
 		log.Error("Failed to close rows: %s", err)
