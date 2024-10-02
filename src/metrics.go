@@ -9,10 +9,10 @@ import (
 	"sync"
 
 	"github.com/godror/godror"
-	"github.com/newrelic/infra-integrations-sdk/data/attribute"
-	nrmetric "github.com/newrelic/infra-integrations-sdk/data/metric"
-	"github.com/newrelic/infra-integrations-sdk/integration"
-	"github.com/newrelic/infra-integrations-sdk/log"
+	"github.com/newrelic/infra-integrations-sdk/v3/data/attribute"
+	nrmetric "github.com/newrelic/infra-integrations-sdk/v3/data/metric"
+	"github.com/newrelic/infra-integrations-sdk/v3/integration"
+	"github.com/newrelic/infra-integrations-sdk/v3/log"
 	"github.com/newrelic/nri-oracledb/src/database"
 	"gopkg.in/yaml.v2"
 )

@@ -12,9 +12,9 @@ import (
 	"github.com/godror/godror"
 	"github.com/godror/godror/dsn"
 	"github.com/jmoiron/sqlx"
-	sdkArgs "github.com/newrelic/infra-integrations-sdk/args"
-	"github.com/newrelic/infra-integrations-sdk/integration"
-	"github.com/newrelic/infra-integrations-sdk/log"
+	sdkArgs "github.com/newrelic/infra-integrations-sdk/v3/args"
+	"github.com/newrelic/infra-integrations-sdk/v3/integration"
+	"github.com/newrelic/infra-integrations-sdk/v3/log"
 	"github.com/newrelic/nri-oracledb/src/database"
 )
 
