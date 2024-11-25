@@ -1,4 +1,4 @@
-FROM golang:1.23.2-bullseye
+FROM golang:1.23.3-bullseye
 
 ARG GH_VERSION='1.9.2'
 
