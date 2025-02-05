@@ -1,6 +1,6 @@
 module github.com/newrelic/nri-oracledb
 
-go 1.23.5
+go 1.23.6
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
