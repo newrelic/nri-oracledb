@@ -22,5 +22,4 @@ jobs:
       publish_schema_fips: "custom"
       # here we can use the same are there are no incompatible architectures for fips
       publish_schema_url_fips: "https://raw.githubusercontent.com/newrelic/nri-oracledb/${{ github.event.release.tag_name }}/build/s3-publish-schema.yml"
-      dest_prefix: "fips-test-nri-oracledb-rahul/"
     secrets: inherit
