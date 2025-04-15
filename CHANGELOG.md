@@ -9,48 +9,10 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ## Unreleased
 
-## v3.10.4 - 2025-08-12
-
-### ⛓️ Dependencies
-- Updated golang patch version to v1.24.6
-
-## v3.10.3 - 2025-07-21
-
-### ⛓️ Dependencies
-- Updated golang patch version to v1.24.5
-
-## v3.10.3 - 2025-07-15
-
-### ⛓️ Dependencies
-- Updated golang patch version to v1.24.5
-
-## v3.10.2 - 2025-07-07
-
-### 🐞 Bug fixes
-- Fix fetch instance ID query for non-cdb/pdb
-
-## v3.10.1 - 2025-06-30
-
-### 🐞 Bug fixes
-- Update lockedAccounts query to fetch non-cdb/pdb accounts
-
-### ⛓️ Dependencies
-- Updated golang version to v1.24.4
-
-## v3.10.0 - 2025-06-06
-
-### 🛡️ Security notices
-- Updated Golang version to address some vulnerabilities
-
-## v3.9.4 - 2025-05-22
-
-### 🐞 Bug fixes
-- fix lockedAccounts metric
-
-## v3.9.3 - 2025-03-11
-
 ### enhancements
 - Add FIPS compliant packages
+
+## v3.9.3 - 2025-03-11
 
 ### ⛓️ Dependencies
 - Updated golang patch version to v1.23.6
