@@ -679,3 +679,88 @@ func TestInWhiteList(t *testing.T) {
 		}
 	}
 }
+
+func TestOracleLockedAccountsMetrics(t *testing.T) {
+	tests := []struct {
+		name           string
+		mockRows       *sqlmock.Rows
+		expectedMetric []newrelicMetricSender
+	}{
+		{
+			name: "single instance, some locked accounts (any user)",
+			mockRows: sqlmock.NewRows([]string{"INST_ID", "LOCKED_ACCOUNTS"}).
+				AddRow(int64(1), int64(5)), // e.g., 5 locked accounts, could be any user
+			expectedMetric: []newrelicMetricSender{
+				{
+					metric: &newrelicMetric{
+						name:       "lockedAccounts",
+						value:      int64(5),
+						metricType: metric.GAUGE,
+					},
+					metadata: map[string]string{
+						"instanceID": "1",
+					},
+				},
+			},
+		},
+		{
+			name: "multiple instances, mixed locked accounts (any user)",
+			mockRows: sqlmock.NewRows([]string{"INST_ID", "LOCKED_ACCOUNTS"}).
+				AddRow(int64(1), int64(2)). // instance 1 has 2 locked accounts
+				AddRow(int64(2), int64(4)), // instance 2 has 4 locked accounts
+			expectedMetric: []newrelicMetricSender{
+				{
+					metric: &newrelicMetric{
+						name:       "lockedAccounts",
+						value:      int64(2),
+						metricType: metric.GAUGE,
+					},
+					metadata: map[string]string{
+						"instanceID": "1",
+					},
+				},
+				{
+					metric: &newrelicMetric{
+						name:       "lockedAccounts",
+						value:      int64(4),
+						metricType: metric.GAUGE,
+					},
+					metadata: map[string]string{
+						"instanceID": "2",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			db, mock, err := sqlmock.New()
+			if err != nil {
+				t.Fatal(err)
+			}
+			mock.ExpectQuery("SELECT\\s+INST_ID, LOCKED_ACCOUNTS").WillReturnRows(tc.mockRows)
+
+			sqlxDB := sqlx.NewDb(db, "sqlmock")
+			dbWrapper := database.NewDBWrapper(sqlxDB)
+
+			var wg sync.WaitGroup
+			metricChan := make(chan newrelicMetricSender, 10)
+			wg.Add(1)
+			go oracleLockedAccounts.Collect(dbWrapper, &wg, metricChan)
+			go func() {
+				wg.Wait()
+				close(metricChan)
+			}()
+
+			var got []newrelicMetricSender
+			for m := range metricChan {
+				got = append(got, m)
+			}
+
+			if !reflect.DeepEqual(tc.expectedMetric, got) {
+				t.Errorf("metrics mismatch:\n%s", pretty.Diff(tc.expectedMetric, got))
+			}
+		})
+	}
+}
