@@ -85,6 +85,8 @@ func getInstanceIDString(originalID interface{}) string {
 		return id.String()
 	case int:
 		return strconv.Itoa(id)
+	case int64:
+		return strconv.FormatInt(id, 10)
 	case string:
 		return id
 	default:
@@ -885,7 +887,6 @@ var oracleLockedAccounts = oracleMetricGroup{
         cdb_users a,
         cdb_pdbs b
       WHERE a.con_id = b.con_id
-        AND username IN ('SYS', 'SYSTEM', 'DBSNMP')
         AND a.account_status != 'OPEN'
     ) l,
     gv$instance i
