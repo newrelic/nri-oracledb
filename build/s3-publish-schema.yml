@@ -16,6 +16,7 @@
       src_repo: "{access_point_host}/infrastructure_agent/linux/apt"
       dest: "{dest_prefix}linux/apt/"
       os_version:
+        - noble
         - jammy
         - focal
         - bionic
@@ -58,6 +59,7 @@
         - 15.3
         - 15.4
         - 15.5
+        - 15.6
 
     - type: yum
       dest: "{dest_prefix}linux/yum/amazonlinux/{os_version}/{arch}/"
