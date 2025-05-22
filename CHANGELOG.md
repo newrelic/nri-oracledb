@@ -9,8 +9,10 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ## Unreleased
 
-### bugfix 
-- fix lockedAccounts metric 
+## v3.9.4 - 2025-05-22
+
+### 🐞 Bug fixes
+- fix lockedAccounts metric
 
 ## v3.9.3 - 2025-03-11
 
