@@ -9,6 +9,9 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ## Unreleased
 
+### bugfix 
+- Update lockedAccounts query to fetch non-cdb/pdb accounts 
+
 ## v3.10.0 - 2025-06-06
 
 ### 🛡️ Security notices

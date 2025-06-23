@@ -26,10 +26,13 @@ type DBWrapper struct {
 func NewDBWrapper(db *sqlx.DB) DBWrapper {
 	return DBWrapper{db: db}
 }
-
 func (d *DBWrapper) Query(query string, args ...interface{}) (*RowsWrapper, error) {
 	rows, err := d.db.Query(query, args...)
 	return &RowsWrapper{Rows: rows}, err
+}
+
+func (d *DBWrapper) QueryRow(query string, args ...interface{}) *sql.Row {
+	return d.db.QueryRow(query, args...)
 }
 
 func (d *DBWrapper) Queryx(query string, args ...interface{}) (*RowsxWrapper, error) {

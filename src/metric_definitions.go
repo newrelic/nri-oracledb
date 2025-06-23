@@ -58,6 +58,7 @@ type oracleMetricGroup struct {
 func (mg *oracleMetricGroup) Collect(db database.DBWrapper, wg *sync.WaitGroup, metricChan chan<- newrelicMetricSender) {
 	defer wg.Done()
 
+	handleLockedAccountsMetricGroup(mg, db)
 	query := mg.sqlQuery(mg.metrics)
 
 	rows, err := db.Query(query)
@@ -185,6 +186,29 @@ func inWhitelist(field string, addWhere bool, grouped bool) string {
 	}
 
 	return query
+}
+
+// This function is to handle the locked accounts metric group query for non-CDB databases.
+func handleLockedAccountsMetricGroup(mg *oracleMetricGroup, db database.DBWrapper) {
+	if mg.name != "locked_accounts" {
+		return
+	}
+	var isCDB string
+	err := db.QueryRow("SELECT CDB FROM v$database").Scan(&isCDB)
+	if err != nil {
+		log.Error("Failed to determine if the database is a CDB: %s", err)
+		return
+	}
+	if !strings.EqualFold(isCDB, "YES") {
+		mg.sqlQuery = func(metrics []*oracleMetric) string {
+			query := `
+				SELECT 0 AS INST_ID, COUNT(1) AS LOCKED_ACCOUNTS
+				FROM dba_users
+				WHERE account_status != 'OPEN'
+				`
+			return query
+		}
+	}
 }
 
 type customMetricGroup struct {
@@ -879,7 +903,7 @@ var oracleLockedAccounts = oracleMetricGroup{
 	name: "locked_accounts",
 	sqlQuery: func(metrics []*oracleMetric) string {
 		query := `
-    SELECT
+		SELECT
       INST_ID, LOCKED_ACCOUNTS
     FROM
     (	SELECT count(1) AS "LOCKED_ACCOUNTS"
