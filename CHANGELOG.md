@@ -9,8 +9,13 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ## Unreleased
 
-### bugfix 
-- Update lockedAccounts query to fetch non-cdb/pdb accounts 
+## v3.10.1 - 2025-06-30
+
+### 🐞 Bug fixes
+- Update lockedAccounts query to fetch non-cdb/pdb accounts
+
+### ⛓️ Dependencies
+- Updated golang version to v1.24.4
 
 ## v3.10.0 - 2025-06-06
 
