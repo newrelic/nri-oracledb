@@ -8,13 +8,29 @@ The New Relic integration for Oracle Database monitors key performance metrics f
 
 * A working installation of the Oracle Instant Client. Installation instructions [here](http://www.oracle.com/technetwork/database/database-technologies/instant-client/downloads/index.html).
 * A user with the necessary permissions to collect all the metrics and inventory can be configured as follows:
+
+* For standalone databases, use the following commands:
+
 ```sql
 ALTER SESSION set "_Oracle_SCRIPT"=true;
 CREATE USER <username> IDENTIFIED BY "<user_password>";
 GRANT CONNECT TO <username>;
+```
+
+* For multi-tenant databases,  log in to the root database as an administrator use the following commands:
+
+```sql
+CREATE USER <username> IDENTIFIED BY "<user_password>";
+ALTER USER <username> SET CONTAINER_DATA=ALL CONTAINER=CURRENT;
+GRANT CONNECT TO <username>;
+```
+* Grant `SELECT` privileges to the user on the following global views
+
+```sql
 GRANT SELECT ON cdb_data_files TO <username>;
 GRANT SELECT ON cdb_pdbs TO <username>;
 GRANT SELECT ON cdb_users TO <username>;
+GRANT SELECT ON dba_users to <username>;
 GRANT SELECT ON gv_$sysmetric TO <username>;
 GRANT SELECT ON gv_$pgastat TO <username>;
 GRANT SELECT ON gv_$instance TO <username>;
