@@ -202,9 +202,15 @@ func handleLockedAccountsMetricGroup(mg *oracleMetricGroup, db database.DBWrappe
 	if !strings.EqualFold(isCDB, "YES") {
 		mg.sqlQuery = func(metrics []*oracleMetric) string {
 			query := `
-				SELECT 0 AS INST_ID, COUNT(1) AS LOCKED_ACCOUNTS
-				FROM dba_users
-				WHERE account_status != 'OPEN'
+				SELECT NVL(INST_ID, 0) AS INST_ID, LOCKED_ACCOUNTS
+				FROM (
+					SELECT
+						INST_ID,
+						(SELECT COUNT(1) 
+						FROM dba_users
+						WHERE account_status != 'OPEN') AS LOCKED_ACCOUNTS
+					FROM gv$instance i
+				)
 				`
 			return query
 		}
