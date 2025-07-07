@@ -9,8 +9,10 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ## Unreleased
 
-### bugfix 
-- Fix fetch instance ID query for non-cdb/pdb 
+## v3.10.2 - 2025-07-07
+
+### 🐞 Bug fixes
+- Fix fetch instance ID query for non-cdb/pdb
 
 ## v3.10.1 - 2025-06-30
 
