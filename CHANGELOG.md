@@ -49,6 +49,9 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ## v3.9.3 - 2025-03-11
 
+### enhancements
+- Add FIPS compliant packages
+
 ### ⛓️ Dependencies
 - Updated golang patch version to v1.23.6
 
