@@ -27,10 +27,6 @@ builds:
     env:
       - CGO_ENABLED=1
       - GOEXPERIMENT=boringcrypto
-      - >-
-        {{- if eq .Arch "arm64" -}}
-        CC=aarch64-linux-gnu-gcc
-        {{- end }}
     tags:
       - fips
 
