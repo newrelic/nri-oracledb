@@ -9,6 +9,11 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ## Unreleased
 
+## v3.12.1 - 2025-12-15
+
+### ⛓️ Dependencies
+- Updated go to v1.25.5
+
 ## v3.12.0 - 2025-11-05
 
 ### 🛡️ Security notices
