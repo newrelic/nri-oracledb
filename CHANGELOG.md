@@ -186,7 +186,6 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 - Metrics `tablespace.spaceConsumedInBytes` and `tablespace.spaceReservedInBytes` previously reported in block sizes are now reported in Bytes (#94)
 
 ## 3.1.1 (2022-01-10)
-
 ### Changed
 - Added warning log when a query returns no results (#87)
 - Fix missing event type on custom metric config (#86)
@@ -198,8 +197,8 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 Please notice that old [V3](https://docs.newrelic.com/docs/create-integrations/infrastructure-integrations-sdk/specifications/host-integrations-standard-configuration-format/) configuration format is deprecated, but still supported.
 
-## 3.0.0 (2021-05-12)
 
+## 3.0.0 (2021-05-12)
 ### Changed
 - Integration SDK has been upgrade to 3.6.7, which fixes a bug that caused scrambled metrics when integration autodiscovery was used (#67)
   - Additionally, this PR also switches to go modules, go 1.16, and upgrades the driver used to connect to the database to its latest version
@@ -228,7 +227,6 @@ While we have not detected any breakage during our tests, we encourage users to 
 - Custom metrics query now does not require special column names, and returns each row as a separate sample with the column names as the metric names. This fixes issues with overwriting metric names as well as increases flexibility of collection so that the queries are less awkward to write. This is a breaking change since metric types are no longer defineable, (numerics are assumed to be gauges) and metric names are defined by the column name.
 
 ## 2.3.1 (2020-02-28)
-
 ### Fixed
 - Tablespace usage percent calculation
 - Connections not being closed cleanly
