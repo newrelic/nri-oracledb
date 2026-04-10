@@ -9,6 +9,8 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ## Unreleased
 
+### security
+- Updated go to v1.25.8
 ## v3.13.0 - 2026-02-10
 
 ### 🛡️ Security notices
@@ -176,7 +178,7 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 - Add `SKIP_METRICS_GROUPS` config: Metrics collected are group together depending on the query used to obtain the data. These metric groups are here and can be skipped from collection by adding the name of the group to SKIP_METRICS_GROUPS in Json array format. By default no group is skipped so no breaking changes are added.
 
 ### Changed
-- Bumped dependencies 
+- Bumped dependencies
 - Change pipeline to use Go 1.18
 
 ## 3.2.0 (2022-02-17)
@@ -189,7 +191,6 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 - Fix missing event type on custom metric config (#86)
 - Strip spaces from logged result query (#88)
 
-
 ## 3.1.0 (2021-09-30)
 ### Changed
 - Moved default config.sample to [V4](https://docs.newrelic.com/docs/create-integrations/infrastructure-integrations-sdk/specifications/host-integrations-newer-configuration-format/), added a dependency for infra-agent version 1.20.0
@@ -199,11 +200,11 @@ Please notice that old [V3](https://docs.newrelic.com/docs/create-integrations/i
 
 ## 3.0.0 (2021-05-12)
 ### Changed
-* Integration SDK has been upgrade to 3.6.7, which fixes a bug that caused scrambled metrics when integration autodiscovery was used (#67)
+- Integration SDK has been upgrade to 3.6.7, which fixes a bug that caused scrambled metrics when integration autodiscovery was used (#67)
   - Additionally, this PR also switches to go modules, go 1.16, and upgrades the driver used to connect to the database to its latest version
 
 Since these changes involve a change of the oracle database driver, a major version bump has been issued.
-While we have not detected any breakage during our tests, we encourage users to monitor the solution to ensure their use case has not been impacted. 
+While we have not detected any breakage during our tests, we encourage users to monitor the solution to ensure their use case has not been impacted.
 
 ## 2.5.2 (2020-12-04)
 ### Changed
@@ -281,7 +282,7 @@ While we have not detected any breakage during our tests, we encourage users to 
 - lockedAccounts metric
 - tablespace.offlinePDBDatafiles metric
 - tablespace.offlineCDBDatafiles metric
-- tablespace.pdbDatafilesNonWrite  metric
+- tablespace.pdbDatafilesNonWrite metric
 
 ## 2.0.0 - 2019-04-26
 ### Changed
