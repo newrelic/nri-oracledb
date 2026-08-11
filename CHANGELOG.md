@@ -9,7 +9,9 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ## Unreleased
 
-### Security
+## v3.17.0 - 2026-08-11
+
+### 🛡️ Security notices
 - Updated filippo.io/edwards25519 to v1.1.1
 - Added explicit `permissions` blocks to GitHub Actions workflows
 - Added `security-events: write` permission to the security scan workflow so scan results can be uploaded
