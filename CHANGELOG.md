@@ -9,6 +9,9 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ## Unreleased
 
+### bugfix
+- Added RHEL/EL 10 to the yum publish list.
+
 ## v3.18.0 - 2026-09-08
 
 ### 🛡️ Security notices
