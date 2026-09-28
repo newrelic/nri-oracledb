@@ -11,6 +11,7 @@ Unreleased section should follow [Release Toolkit](https://github.com/newrelic/r
 
 ### bugfix
 - Added RHEL/EL 10 to the yum publish list.
+- Added Debian trixie to the apt publish list.
 
 ## v3.18.0 - 2026-09-08
 
